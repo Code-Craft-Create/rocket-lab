@@ -465,7 +465,8 @@ function defaultSave() {
     stats: { coins: 0, hits: 0, perfect: 0, rings: 0, smashed: 0, pax: 0, time: 0, jobs: 0, nights: 0, close: 0 },
     ach: {},
     cond: 'clear', jobs: [], avg: { coins: 8, rings: 0.6, close: 0.6, alt: 500, v: 110, total: 110, smash: 0 },
-    settings: { music: true, sfx: true, shake: true },
+    settings: { music: true, sfx: true, shake: true, ghost: true },
+    ghosts: {},        // route id -> {alt, step, a:[alt...], x:[x...]} best run replay
     ended: false,
   };
 }
@@ -2126,6 +2127,9 @@ function prepareRocket() {
   const cd = CONDS[R.cond];
   if (cd.thrustMul) { G.st = Object.assign({}, G.st, { thrust: G.st.thrust * cd.thrustMul }); }
   R.startPy = R.py;
+  R.trace = { a: [], x: [] }; R.traceT = 0; R.ghostBeat = false;
+  const gh = S.ghosts && S.ghosts[route ? route.id : 'free'];
+  G.ghost = S.settings.ghost && gh && gh.a && gh.a.length > 4 ? gh : null;
   G.R = R;
   G.obs = []; G.picks = []; G.parts = []; G.floaters = []; G.banners = []; G.station = null; G.warnings = [];
   G.spawnY = R.py + 260;
@@ -2350,6 +2354,7 @@ function updateFlight(dt) {
   const steps = Math.max(1, Math.ceil(simDt / 0.02));
   for (let i = 0; i < steps; i++) physStep(R, st, simDt / steps, { tiltCos });
   handlePhysEvents();
+  recordTrace(R, dt);
   // --- visual vertical motion
   const vpy = pxv(R.vy);
   R.py += vpy * dt;
@@ -2748,6 +2753,7 @@ function computeResult() {
   // ---- apply to save immediately (so closing the tab does not lose the flight)
   const prevFlights = S.flights;
   S.money += total; S.earned += total; S.flights++;
+  saveGhost(R);
   S.stats.time += R.time; S.stats.pax += R.delivered ? R.pax : 0;
   if (alt > S.bestAlt) S.bestAlt = alt;
   if (r && R.delivered) {
@@ -2908,6 +2914,7 @@ function render() {
   for (const p of G.parts) if (p.k === 'smoke' || p.k === 'glow' || p.k === 'line') drawParticle(p);
   for (const o of G.obs) drawObstacle(o);
   for (const p of G.picks) drawPickup(p);
+  drawGhostRocket();
   drawPlayerRocket();
   for (const p of G.parts) if (!(p.k === 'smoke' || p.k === 'glow' || p.k === 'line')) drawParticle(p);
   for (const f of G.floaters) { const a = 1 - clamp((f.t - 0.6) / 0.5, 0, 1); ctx.globalAlpha = a; text(ctx, f.s, f.x, -f.py - f.t * 40, f.size * (f.t < 0.12 ? 0.6 + f.t * 3.3 : 1), f.col); ctx.globalAlpha = 1; }
@@ -3372,6 +3379,64 @@ function updateParticles(dt) {
   G.banners = G.banners.filter(b => b.t < b.dur);
 }
 
+// ---------------------------------------------------------------- ghost racer (replay of your best run on this route)
+function recordTrace(R, dt) {
+  if (!R.trace) return;
+  R.traceT += dt;
+  while (R.traceT >= 0.1 && R.trace.a.length < 6000) { R.traceT -= 0.1; R.trace.a.push(Math.round(R.alt)); R.trace.x.push(Math.round(R.x)); }
+  const g = G.ghost;
+  if (g && !S.seen.ghost && R.time > 1.5) { S.seen.ghost = 1; toast('The faded rocket is your <b>ghost</b>: your best run on this route. Beat it!'); }
+  if (g && !R.ghostBeat && R.time > 2 && R.alt > g.alt) {
+    R.ghostBeat = true;
+    // the record banner already covers it when the ghost was also the all-time best
+    if (g.alt < S.bestAlt * 0.995) { floater(R.x - 40, R.py + 30, 'Beat your ghost!', '#d8ecff', 18); sfx.good(); }
+  }
+}
+function saveGhost(R) {
+  if (!R.trace || R.trace.a.length < 10) return;
+  S.ghosts = S.ghosts || {};
+  const key = R.route ? R.route.id : 'free';
+  const old = S.ghosts[key];
+  if (old && old.alt >= R.maxAlt) return;
+  let a = R.trace.a, x = R.trace.x, step = 0.1;
+  while (a.length > 700) { a = a.filter((_, i) => i % 2 === 0); x = x.filter((_, i) => i % 2 === 0); step *= 2; }
+  S.ghosts[key] = { alt: Math.round(R.maxAlt), step, a, x };
+}
+function ghostAt(g, t) {
+  const n = g.a.length, f = t / g.step, i = Math.floor(f);
+  if (i >= n - 1) return { alt: g.a[n - 1], x: g.x[n - 1], up: false, fade: clamp(1 - (t - (n - 1) * g.step) / 1.2, 0, 1) };
+  const k = f - i;
+  return { alt: lerp(g.a[i], g.a[i + 1], k), x: lerp(g.x[i], g.x[i + 1], k), up: g.a[i + 1] > g.a[i], fade: clamp(t / 0.8, 0, 1) };
+}
+function drawGhostIcon(c, r, t) {
+  c.save(); ink(c, 2.5);
+  const wob = Math.sin(t * 4) * r * 0.08;
+  c.beginPath(); c.moveTo(-r, r * 0.9);
+  c.lineTo(-r, -r * 0.1); c.arc(0, -r * 0.1, r, Math.PI, 0); c.lineTo(r, r * 0.9);
+  for (let i = 3; i >= 0; i--) { const xx = -r + (i / 3) * 2 * r; c.quadraticCurveTo(xx + r / 3, r * 0.9 + (i % 2 ? -1 : 1) * r * 0.35 + wob, xx, r * 0.9); }
+  c.closePath(); fillStroke(c, '#eef6ff', 2.5);
+  c.fillStyle = INK; circ(c, -r * 0.35, -r * 0.15, r * 0.17); c.fill(); circ(c, r * 0.35, -r * 0.15, r * 0.17); c.fill();
+  c.beginPath(); c.ellipse(0, r * 0.32, r * 0.16, r * 0.12, 0, 0, TAU); c.fill();
+  c.restore();
+}
+function drawGhostRocket() {
+  const R = G.R, g = G.ghost;
+  if (!g || !R || G.mode !== 'flight' || R.crashed) return;
+  const gp = ghostAt(g, R.time);
+  if (gp.fade <= 0.02) return;
+  const dy = (gp.alt - R.alt) * pxScale(R.vy);
+  if (Math.abs(dy) < 6 && Math.abs(gp.x - R.x) < 12) return; // hidden behind the real rocket
+  const gpy = R.py + dy;
+  const z = G.cam.z, top = G.cam.py + (H * G.cam.anchor) / z, bot = G.cam.py - (H * (1 - G.cam.anchor)) / z;
+  if (gpy > top + 120 || gpy < bot - 120) return;
+  ctx.save();
+  ctx.translate(gp.x, -gpy); ctx.scale(G.rocketScale, G.rocketScale);
+  ctx.globalAlpha = 0.3 * gp.fade;
+  drawRocket(ctx, G.look, { t: G.t, throttle: gp.up ? 0.7 : 0, faces: [], stage: R.visStage, boostersOn: false, dropsOn: false });
+  ctx.globalAlpha = 0.75 * gp.fade;
+  ctx.translate(0, -rocketDims(G.look).BL / 2 - 46); drawGhostIcon(ctx, 10, G.t);
+  ctx.restore();
+}
 function drawPlayerRocket() {
   const R = G.R;
   const look = G.look || rocketLook();
@@ -3541,6 +3606,8 @@ function drawProgressTrack() {
   for (const zz of ZONES) { if (zz.alt <= start || zz.alt > maxA) continue; const yy = toY(zz.alt); ctx.strokeStyle = 'rgba(255,255,255,.6)'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(x - 10, yy); ctx.lineTo(x + 10, yy); ctx.stroke(); }
   if (S.bestAlt > start) { const yy = toY(S.bestAlt); ink(ctx, 2.5); ctx.beginPath(); ctx.moveTo(x - 4, yy); ctx.lineTo(x - 20, yy); ctx.stroke(); ctx.beginPath(); ctx.moveTo(x - 20, yy); ctx.lineTo(x - 20, yy - 14); ctx.lineTo(x - 32, yy - 10); ctx.lineTo(x - 20, yy - 6); fillStroke(ctx, '#ffd93d', 2.5); }
   if (r) { const yy = toY(r.alt); ctx.save(); ctx.translate(x, yy); ink(ctx, 3); circ(ctx, 0, 0, 11); fillStroke(ctx, R.docked ? '#5fd068' : '#ffffff', 3); text(ctx, R.docked ? '✓' : '★', 0, 1, 12, INK, 'center', null); ctx.restore(); if (!small) text(ctx, fmtAlt(r.alt), x - 18, yy, 12, '#fff', 'right'); }
+  const gp = G.ghost && G.mode === 'flight' ? ghostAt(G.ghost, R.time) : null;
+  if (gp && gp.fade > 0.05) { const yy = toY(gp.alt); ctx.save(); ctx.globalAlpha = 0.85 * gp.fade; ctx.translate(x - 22, yy); drawGhostIcon(ctx, small ? 8 : 9, G.t); ctx.restore(); }
   if (R.apogee > 0 && G.st.control && !R.ended) { const yy = toY(R.apogee); ctx.save(); ctx.globalAlpha = 0.7 + Math.sin(G.t * 6) * 0.3; ink(ctx, 2.5); ctx.beginPath(); ctx.moveTo(x + 8, yy); ctx.lineTo(x + 18, yy - 6); ctx.lineTo(x + 18, yy + 6); ctx.closePath(); fillStroke(ctx, '#f15bb5', 2.5); ctx.restore(); }
   // rocket marker
   const ry = toY(R.alt);
@@ -4081,6 +4148,7 @@ const UI = (() => {
     row('Music', 'music', v => AudioSys.setMusic(v));
     row('Sound effects', 'sfx', v => AudioSys.setSfx(v));
     row('Screen shake & buzz', 'shake');
+    row('Ghost of your best run', 'ghost');
     const reset = el('button', 'btn red', 'Reset progress');
     reset.addEventListener('click', () => confirmBox('Start over?', 'This wipes your rocket, money and routes. No undo!', () => { resetSave(); location.reload(); }));
     col.appendChild(reset);
@@ -4359,7 +4427,7 @@ window.__skyhop = {
   setMoney(v) { S.money = v; if (UI.current === 'hangar') UI.refresh(); },
   setLevel(id, l) { S.up[id] = l; G.look = rocketLook(); G.st = computeStats(); if (UI.current === 'hangar') UI.refresh(); },
   done(id) { S.routes[id] = { done: true, stars: 3, runs: 1 }; const nx = nextRoute(); S.route = nx ? nx.id : 'free'; },
-  start: startGame, launch(v = 0.8) { if (G.mode !== 'launch') enterLaunch(); G.launch.v = v; doLaunch(); },
+  start: startGame, launch(v = 0.8) { $('scr-results').classList.add('hidden'); if (G.mode !== 'launch') enterLaunch(); G.launch.v = v; doLaunch(); },
   hangar: () => goHangar(true), reset() { resetSave(); },
   teleport(alt) { const R = G.R; if (!R) return; R.alt = alt; R.maxAlt = Math.max(R.maxAlt, alt); },
   save: saveGame, music: Music, audio: AudioSys, sfxTest() { const errs = []; for (const k in AudioSys.sfx) { try { AudioSys.sfx[k](); } catch (e) { errs.push(k + ':' + e.message); } } return errs; },
