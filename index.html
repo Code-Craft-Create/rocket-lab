@@ -62,7 +62,7 @@ button{font-family:var(--font)}
 
 /* ---------- Hangar ---------- */
 #scr-hangar .side{position:absolute;right:16px;top:16px;bottom:16px;width:min(580px,54vw);display:flex;flex-direction:column;overflow:hidden}
-.side-head{display:flex;align-items:center;justify-content:space-between;padding:10px 12px 6px 14px;gap:8px}
+.side-head{display:flex;align-items:center;justify-content:space-between;padding:10px 12px 6px 14px;gap:8px;flex:0 0 auto}
 .money{display:flex;align-items:center;gap:8px;font-weight:900;font-size:28px;background:var(--ink);color:var(--yellow);padding:4px 14px 4px 6px;border-radius:999px}
 .money .coin{width:30px;height:30px}
 .money.bump{animation:bump .35s}
@@ -70,7 +70,7 @@ button{font-family:var(--font)}
 .head-btns{display:flex;gap:8px;position:relative}
 .head-btns .icon-btn{position:relative}
 .badge-dot{position:absolute;top:-8px;right:-8px;background:var(--red);color:#fff;font-size:11px;font-weight:900;border:3px solid var(--ink);border-radius:999px;padding:1px 5px;line-height:1.1}
-#tabs{display:flex;gap:6px;padding:4px 12px 0;overflow-x:auto;scrollbar-width:none}
+#tabs{display:flex;gap:6px;padding:4px 12px 0;overflow-x:auto;overflow-y:hidden;scrollbar-width:none;flex:0 0 auto;min-height:44px}
 #tabs::-webkit-scrollbar{display:none}
 .tab{flex:0 0 auto;display:flex;align-items:center;gap:6px;border:4px solid var(--ink);border-bottom:none;border-radius:14px 14px 0 0;padding:6px 10px 6px 8px;
   background:#e9dcc4;font-weight:800;font-size:15px;cursor:pointer;position:relative;color:var(--ink2);transform:translateY(4px)}
@@ -81,7 +81,7 @@ button{font-family:var(--font)}
 .tab .badge-dot{top:-9px;right:-6px}
 .tab.new-tab{animation:tabGlow 1.2s ease-in-out infinite}
 @keyframes tabGlow{50%{background:#fff3b0}}
-#tree{position:relative;flex:1 1 auto;min-height:150px;background:var(--paper);border-top:4px solid var(--ink);border-bottom:4px solid var(--ink);overflow:auto;
+#tree{position:relative;flex:1 1 auto;min-height:110px;background:var(--paper);border-top:4px solid var(--ink);border-bottom:4px solid var(--ink);overflow:auto;
   background-image:radial-gradient(circle,rgba(43,34,64,.09) 1.5px,transparent 2px);background-size:22px 22px}
 #tree-inner{position:relative;margin:0 auto}
 #tree-lines{position:absolute;inset:0;width:100%;height:100%;overflow:visible;pointer-events:none}
@@ -105,7 +105,7 @@ button{font-family:var(--font)}
 .node .lock{position:absolute;right:-8px;bottom:-8px;width:24px;height:24px}
 .node .newb{position:absolute;top:-10px;left:-10px;background:var(--red);color:#fff;font-size:10px;font-weight:900;border:3px solid var(--ink);border-radius:8px;padding:0 4px;transform:rotate(-10deg)}
 .orb{position:absolute;transform:translate(-50%,-50%);background:var(--ink);color:var(--yellow);font-weight:900;font-size:13px;border-radius:999px;padding:2px 8px;pointer-events:none}
-#detail{padding:10px 14px;display:flex;gap:12px;align-items:flex-start;min-height:118px}
+#detail{padding:10px 14px;display:flex;gap:12px;align-items:flex-start;min-height:118px;flex:0 0 auto}
 #detail .dicon{flex:0 0 auto;width:74px;height:74px;border:4px solid var(--ink);border-radius:18px;background:#fff;display:flex;align-items:center;justify-content:center}
 #detail .dicon svg{width:54px;height:54px}
 #detail .dbody{flex:1 1 auto;min-width:0}
@@ -117,7 +117,7 @@ button{font-family:var(--font)}
 #detail .dact{flex:0 0 auto;display:flex;flex-direction:column;gap:6px;align-items:stretch;justify-content:center;align-self:center}
 #detail .dact .btn{font-size:17px;padding:8px 14px}
 #detail .note{font-size:12px;font-weight:800;color:var(--purple)}
-.side-foot{display:flex;gap:10px;align-items:center;padding:10px 12px 12px}
+.side-foot{display:flex;gap:10px;align-items:center;padding:10px 12px 12px;flex:0 0 auto}
 #route-chip{flex:1 1 auto;min-width:0;display:flex;align-items:center;gap:10px;background:#fff;border:4px solid var(--ink);border-radius:16px;padding:6px 10px;cursor:pointer;box-shadow:0 4px 0 var(--ink)}
 #route-chip:active{transform:translateY(3px);box-shadow:0 1px 0 var(--ink)}
 #route-chip .rc-ico{flex:0 0 auto;width:40px;height:40px}
@@ -136,9 +136,18 @@ button{font-family:var(--font)}
   #statcard{display:none}
   .money{font-size:22px}
   .side-head{padding:8px 10px 4px}
-  #detail{min-height:96px;padding:8px 10px}
-  #detail h3{font-size:18px}
-  #detail p{font-size:13px}
+  #detail{min-height:86px;padding:8px 10px;gap:8px}
+  #detail h3{font-size:17px}
+  #detail p{font-size:12px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;margin:2px 0 3px}
+  #detail .fx{font-size:12px}
+  #detail .dicon{width:54px;height:54px;border-radius:14px}
+  #detail .dicon svg{width:40px;height:40px}
+  #detail .dact .btn{font-size:15px;padding:7px 10px}
+  .side-foot{padding:8px 10px 10px}
+  #route-chip{padding:4px 8px}
+  #route-chip .rc-n{font-size:14px}
+  .toast{font-size:13px;padding:6px 12px}
+  .rc-pre{display:none}
   .btn.big{font-size:22px;padding:10px 18px}
 }
 @media (max-height:520px) and (min-width:821px){
@@ -204,8 +213,8 @@ button{font-family:var(--font)}
 body.in-hangar #toasts{left:calc((100vw - min(580px,54vw) - 16px)/2)}
 @media (max-width:820px){body.in-hangar #toasts{left:50%}}
 #toasts{position:absolute;top:12px;left:50%;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;gap:8px;z-index:6;pointer-events:none}
-.toast{background:var(--ink);color:var(--cream);font-weight:800;font-size:15px;padding:8px 16px;border-radius:999px;border:3px solid var(--cream);box-shadow:0 4px 0 rgba(0,0,0,.25);
-  animation:toastIn .35s cubic-bezier(.2,1.6,.4,1),toastOut .4s 3.2s forwards;display:flex;align-items:center;gap:8px;white-space:nowrap;max-width:92vw;overflow:hidden;text-overflow:ellipsis}
+.toast{background:var(--ink);color:var(--cream);font-weight:800;font-size:15px;padding:8px 16px;border-radius:22px;text-align:center;justify-content:center;border:3px solid var(--cream);box-shadow:0 4px 0 rgba(0,0,0,.25);
+  animation:toastIn .35s cubic-bezier(.2,1.6,.4,1),toastOut .4s 3.2s forwards;display:flex;align-items:center;gap:8px;white-space:normal;max-width:min(92vw,560px)}
 .toast b{color:var(--yellow)}
 @keyframes toastIn{from{transform:translateY(-30px) scale(.8);opacity:0}}
 @keyframes toastOut{to{transform:translateY(-20px);opacity:0}}
@@ -828,7 +837,7 @@ const ROUTES = [
   { id: 'r1', to: 'Cloud Nine Café', alt: 1200, pax: 1, reward: 200, fare: 40, icon: 'cafe',
     desc: 'A floating café on a blimp. Mayor Plum wants a latte with a view.',
     who: ['plum'] },
-  { id: 'r2', to: 'Thunderhead Station', alt: 4000, pax: 2, reward: 600, fare: 90, icon: 'storm',
+  { id: 'r2', to: 'Thunderhead Station', alt: 3000, pax: 2, reward: 600, fare: 90, icon: 'storm',
     desc: 'Weather scientists need a lift to their lightning lab above the clouds.',
     who: ['volt', 'nimbus'] },
   { id: 'r3', to: 'Skyhook Hotel', alt: 12000, pax: 3, reward: 1800, fare: 220, icon: 'hotel',
@@ -1143,7 +1152,7 @@ function computeStats() {
   st.ab = L('afterburner') ? { dur: STAT.abDur(L('afterburner')), cd: STAT.abCd(L('afterburner')) } : null;
   st.stage2 = L('stage2') ? st.fuelCap * STAT.stage2Pct(L('stage2')) : 0;
   st.stage1Mass = 0.35;
-  st.spaceK = 0.05 * STAT.warpDrag(L('warp'));
+  st.spaceK = 0.07 * STAT.warpDrag(L('warp'));
   st.hp = STAT.hp(L('hull'));
   st.cd = 0.0011 * STAT.drag(L('nose'));
   st.repair = L('repair') ? STAT.repair(L('repair')) : 0;
@@ -1174,7 +1183,7 @@ function computeStats() {
 }
 
 // ---------------------------------------------------------- economy
-const ECON = { payK: 0.5, payExp: 0.8, coinBase: [1, 2, 4, 8, 16, 32, 64, 128] };
+const ECON = { payK: 0.9, payExp: 0.75, coinBase: [1, 2, 4, 8, 12, 20, 32, 50] };
 const altitudePay = (alt) => ECON.payK * Math.pow(Math.max(0, alt), ECON.payExp);
 const coinValue = alt => ECON.coinBase[zoneIndex(alt)];
 
@@ -1250,7 +1259,7 @@ function simWarp(R) {
   const coasting = R.fuel <= 0 && R.dropFuel <= 0 && R.stage2Fuel <= 0;
   if (R.alt < 12000) return 1;
   const k = invLerp(12000, 60000, R.alt);
-  return 1 + (coasting ? 2.2 : 0.6) * k;
+  return 1 + (coasting ? 3 : 1.2) * k;
 }
 
 // ================================================================ CANVAS + ART
@@ -2025,8 +2034,8 @@ function spawnChunk(y0, y1) {
     for (let i = 0; i < n; i++) spawnObstacle(type, cx + rand(-spread, spread), rand(y0, y1));
   }
   // goodies
-  if (chance(0.55 * k * 3)) spawnCoins(cx + rand(-spread * 0.8, spread * 0.8), rand(y0, y1));
-  if (chance(0.11 * k * 3 * st.canRate)) G.picks.push({ type: 'fuel', x: cx + rand(-spread * 0.7, spread * 0.7), py: rand(y0, y1), r: 16, seed: Math.random(), vx: 0, vy: 0 });
+  if (chance(0.42 * k * 3)) spawnCoins(cx + rand(-spread * 0.8, spread * 0.8), rand(y0, y1));
+  if (chance(0.045 * k * 3 * st.canRate)) G.picks.push({ type: 'fuel', x: cx + rand(-spread * 0.7, spread * 0.7), py: rand(y0, y1), r: 16, seed: Math.random(), vx: 0, vy: 0 });
   if ((S.flights >= 2 || R.alt > 400) && chance(0.07 * k * 3)) G.picks.push({ type: 'ring', x: cx + rand(-spread * 0.6, spread * 0.6), py: rand(y0, y1), r: 46, seed: Math.random(), vx: 0, vy: 0, hit: false });
   if (chance((st.repair ? 0.03 + 0.012 * lvl('repair') : 0.012) * k * 3) && R.hp < st.hp) G.picks.push({ type: 'wrench', x: cx + rand(-spread * 0.6, spread * 0.6), py: rand(y0, y1), r: 16, seed: Math.random(), vx: 0, vy: 0 });
   if (chance(0.012 * k * 3)) G.picks.push({ type: 'star', x: cx + rand(-spread * 0.7, spread * 0.7), py: rand(y0, y1), r: 18, seed: Math.random(), vx: 0, vy: 0 });
@@ -2352,7 +2361,7 @@ function updatePickups(dt) {
         sparks(p.x, p.py, 5, ['#ffd93d', '#fff'], 120);
         if (v > 1) floater(p.x, p.py + 16, '+' + fmtMoney(v), '#ffd93d', 14);
       } else if (p.type === 'fuel') {
-        const add = st.fuelCap * 0.14 * st.canMul;
+        const add = Math.min(st.fuelCap * 0.25, st.burn * 1.4 * st.canMul);
         const wasEmpty = R.fuel <= 0 && R.dropFuel <= 0 && R.stage2Fuel <= 0;
         R.fuel = Math.min(R.stage === 2 ? Math.max(R.fuel + add, 0) : st.fuelCap, R.fuel + add);
         if (wasEmpty) { R.shownEngineOut = false; R.peakV = Math.max(R.vy, 1); floater(R.x, R.py + 70, 'RE-IGNITION!', '#ff9f43', 20); }
@@ -2566,14 +2575,15 @@ function drawSunAndPlanets(alt) {
   // sun
   const sunA = 1 - invLerp(9000, 20000, alt);
   const sx = W * 0.82, sy = H * 0.16 + invLerp(0, 9000, alt) * 30;
+  const ss = clamp(Math.min(W, H) / 700, 0.55, 1);
   if (sunA > 0) {
     ctx.save(); ctx.globalAlpha = sunA;
-    ctx.translate(sx, sy); ctx.rotate(G.t * 0.1);
+    ctx.translate(sx, sy); ctx.scale(ss, ss); ctx.rotate(G.t * 0.1);
     ctx.fillStyle = 'rgba(255,240,170,.45)';
     for (let i = 0; i < 12; i++) { ctx.rotate(TAU / 12); ctx.beginPath(); ctx.moveTo(-8, 52); ctx.lineTo(8, 52); ctx.lineTo(0, 82 + Math.sin(G.t * 2 + i) * 6); ctx.closePath(); ctx.fill(); }
     ctx.restore();
-    ctx.save(); ctx.globalAlpha = sunA; ink(ctx, 4); circ(ctx, sx, sy, 40); fillStroke(ctx, '#ffd93d', 4);
-    ctx.fillStyle = 'rgba(255,255,255,.5)'; circ(ctx, sx - 12, sy - 12, 10); ctx.fill();
+    ctx.save(); ctx.globalAlpha = sunA; ink(ctx, 4); circ(ctx, sx, sy, 40 * ss); fillStroke(ctx, '#ffd93d', 4);
+    ctx.fillStyle = 'rgba(255,255,255,.5)'; circ(ctx, sx - 12 * ss, sy - 12 * ss, 10 * ss); ctx.fill();
     ctx.restore();
   }
   const spaceSun = invLerp(14000, 30000, alt);
@@ -3065,7 +3075,7 @@ function toast(html, ms = 3600) {
   const t = el('div', 'toast', html);
   $('toasts').appendChild(t);
   setTimeout(() => t.remove(), ms + 300);
-  while ($('toasts').children.length > 4) $('toasts').firstChild.remove();
+  while ($('toasts').children.length > (W < 600 ? 2 : 4)) $('toasts').firstChild.remove();
 }
 
 const Dialog = (() => {
@@ -3296,7 +3306,7 @@ const UI = (() => {
     else {
       const done = routeDone(r.id);
       kind = done ? 'Regular service' : (r.id === 'r0' ? 'Mission' : 'Next route');
-      name = 'Pebbleton → ' + r.to;
+      name = '<span class="rc-pre">Pebbleton → </span>' + r.to;
       const px = paxForRoute(r, st);
       if (r.pax > 0 && !px.ok) { warn = true; sub = `Needs ${r.pax} seats (you have ${st.seats})`; }
       else sub = `${fmtAlt(r.alt)} · ${r.pax ? px.pax + ' pax' : 'Buckley'} · ${done ? fmtMoney(r.fare * px.pax) + ' fares' : fmtMoney(r.reward) + ' bonus'}`;
