@@ -236,6 +236,7 @@ button{font-family:var(--font)}
 /* ---------- Toasts ---------- */
 body.in-hangar #toasts{left:calc((100vw - min(580px,54vw) - 16px)/2)}
 @media (max-width:820px){body.in-hangar #toasts{left:50%}}
+@media (max-width:600px){body.in-flight #toasts{top:96px}body.in-flight .toast{font-size:12px;padding:5px 10px;max-width:64vw;border-width:2px}}
 #toasts{position:absolute;top:12px;left:50%;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;gap:8px;z-index:6;pointer-events:none}
 .toast{background:var(--ink);color:var(--cream);font-weight:800;font-size:15px;padding:8px 16px;border-radius:22px;text-align:center;justify-content:center;border:3px solid var(--cream);box-shadow:0 4px 0 rgba(0,0,0,.25);
   animation:toastIn .35s cubic-bezier(.2,1.6,.4,1),toastOut .4s 3.2s forwards;display:block;white-space:normal;max-width:min(92vw,560px);line-height:1.25}
@@ -410,7 +411,7 @@ function defaultSave() {
     tabsSeen: {},
     stats: { coins: 0, hits: 0, perfect: 0, rings: 0, smashed: 0, pax: 0, time: 0 },
     ach: {},
-    jobs: [], avg: { coins: 8, rings: 0.6, close: 0.6, alt: 500, v: 110, total: 110, smash: 0 },
+    cond: 'clear', jobs: [], avg: { coins: 8, rings: 0.6, close: 0.6, alt: 500, v: 110, total: 110, smash: 0 },
     settings: { music: true, sfx: true, shake: true },
     ended: false,
   };
@@ -1930,6 +1931,25 @@ const G = {
 
 function worldZoom() { return clamp(Math.min(W, H * 1.25) / 880, 0.6, 1.08); }
 
+// ---------------------------------------------------------------- sky forecast (one condition per flight)
+const CONDS = {
+  clear:    { name: 'Clear skies', fx: '', w: 4, min: 0 },
+  sunset:   { name: 'Sunset run', fx: 'Coins worth +25%', w: 2, min: 4, coinMul: 1.25, tint: '#ff9a6a', tintA: 0.5, sky: ['#ff7fa0', '#ffd08a'] },
+  night:    { name: 'Night flight', fx: 'Height pays +20%', w: 2, min: 7, altMul: 1.2, tint: '#3d4a9c', tintA: 0.78, sky: ['#0b1238', '#33407e'], stars: true },
+  tailwind: { name: 'Tailwind', fx: 'Thrust +10%', w: 1.5, min: 5, thrustMul: 1.1 },
+  coins:    { name: 'Coin shower', fx: 'Twice the coins', w: 1, min: 5, coinRate: 2 },
+  rings:    { name: 'Ring festival', fx: 'Boost rings everywhere', w: 1, min: 8, ringRate: 3 },
+};
+function rollCond() {
+  const pool = [];
+  for (const id in CONDS) { const c = CONDS[id]; if (S.flights < c.min) continue; if (id !== 'clear' && id === S.cond) continue; pool.push([id, c.w]); }
+  let t = Math.random() * pool.reduce((a, x) => a + x[1], 0);
+  for (const [id, w] of pool) { t -= w; if (t <= 0) return id; }
+  return 'clear';
+}
+function curCond() { const id = (G.R && G.R.cond) || S.cond || 'clear'; return CONDS[id] || CONDS.clear; }
+function condK(alt) { return 1 - invLerp(3500, 11000, alt); }
+
 // ---------------------------------------------------------------- flight setup
 function flightRoute() {
   if (S.route === 'free') return null;
@@ -1965,6 +1985,9 @@ function prepareRocket() {
     tumble: 0, chuteY: 0, capsule: null, spaceSeen: false, startPy: 0, coinStreak: 0, coinStreakT: 0, gustVx: 0, shownEngineOut: false,
     topV: 0, starsGot: 0, cleanAlt: 0, jobs: jobsUnlocked() && S.jobs && S.jobs.length ? S.jobs.map(j => Object.assign({}, j, { done: false, p: 0 })) : null, jobsDone: 0,
   });
+  R.cond = CONDS[S.cond] ? S.cond : 'clear';
+  const cd = CONDS[R.cond];
+  if (cd.thrustMul) { G.st = Object.assign({}, G.st, { thrust: G.st.thrust * cd.thrustMul }); }
   R.startPy = R.py;
   G.R = R;
   G.obs = []; G.picks = []; G.parts = []; G.floaters = []; G.banners = []; G.station = null; G.warnings = [];
@@ -1978,6 +2001,8 @@ function enterLaunch() {
   G.launch = { t: 0, v: 0.1, dir: 1, speed: 1.05, done: false, hold: 0 };
   UI.showScreen('flight');
   Music.play('flight');
+  const cd = CONDS[G.R.cond];
+  if (cd && cd.fx) toast(`<b>${cd.name}:</b> ${cd.fx}`, 3000);
   if (G.R.route && !G.R.paxOk && G.R.route.pax > 0) {
     toast(`Need <b>${G.R.route.pax} seats</b> for ${G.R.route.to}: flying without passengers`);
   }
@@ -2090,10 +2115,11 @@ function spawnChunk(y0, y1) {
     for (let i = 0; i < n; i++) spawnObstacle(type, cx + rand(-spread, spread), rand(y0, y1));
   }
   // goodies
-  if (chance(0.42 * k * 3)) spawnCoins(cx + rand(-spread * 0.8, spread * 0.8), rand(y0, y1));
+  const cnd = CONDS[R.cond] || CONDS.clear;
+  if (chance(0.42 * k * 3 * (cnd.coinRate || 1))) spawnCoins(cx + rand(-spread * 0.8, spread * 0.8), rand(y0, y1));
   const canFade = clamp(1 - (R.time - 40) / 40, 0.15, 1);
   if (chance(0.045 * k * 3 * st.canRate * canFade)) G.picks.push({ type: 'fuel', x: cx + rand(-spread * 0.7, spread * 0.7), py: rand(y0, y1), r: 16, seed: Math.random(), vx: 0, vy: 0 });
-  if ((S.flights >= 2 || R.alt > 400) && chance(0.07 * k * 3)) G.picks.push({ type: 'ring', x: cx + rand(-spread * 0.6, spread * 0.6), py: rand(y0, y1), r: 46, seed: Math.random(), vx: 0, vy: 0, hit: false });
+  if ((S.flights >= 2 || R.alt > 400) && chance(0.07 * k * 3 * (cnd.ringRate || 1))) G.picks.push({ type: 'ring', x: cx + rand(-spread * 0.6, spread * 0.6), py: rand(y0, y1), r: 46, seed: Math.random(), vx: 0, vy: 0, hit: false });
   if (chance((st.repair ? 0.03 + 0.012 * lvl('repair') : 0.012) * k * 3) && R.hp < st.hp) G.picks.push({ type: 'wrench', x: cx + rand(-spread * 0.6, spread * 0.6), py: rand(y0, y1), r: 16, seed: Math.random(), vx: 0, vy: 0 });
   if (chance(0.012 * k * 3)) G.picks.push({ type: 'star', x: cx + rand(-spread * 0.7, spread * 0.7), py: rand(y0, y1), r: 18, seed: Math.random(), vx: 0, vy: 0 });
 }
@@ -2507,6 +2533,9 @@ function computeResult() {
   rows.push(['Altitude ' + fmtAlt(alt), altPay]);
   const coinPay = Math.round(R.coinCash * ctrlMul);
   rows.push([`Coins ×${R.coins}`, coinPay]);
+  const cnd = CONDS[R.cond] || CONDS.clear;
+  if (cnd.coinMul) rows.push([`${cnd.name}: coins +${Math.round((cnd.coinMul - 1) * 100)}%`, Math.round(coinPay * (cnd.coinMul - 1))]);
+  if (cnd.altMul) rows.push([`${cnd.name}: height +${Math.round((cnd.altMul - 1) * 100)}%`, Math.round(altPay * (cnd.altMul - 1))]);
   let fare = 0, reward = 0, firstTime = false, stars = 0;
   if (r && R.delivered) {
     const comfortMul = 0.5 + 0.5 * R.comfort;
@@ -2552,6 +2581,7 @@ function computeResult() {
       if (r.id === 'r7') S.ended = true;
     }
   }
+  S.cond = rollCond();
   if (prevFlights === 0) S.pendingFirst = true;
   if (R.crashed && !S.seen.crash) S.pendingCrash = true;
   checkAchievements();
@@ -2632,6 +2662,11 @@ function settleJobs(R, rows) {
 
 // ================================================================ RENDER
 function skyColors(alt) {
+  const c = curCond(), ck = c.sky ? condK(alt) : 0;
+  if (ck > 0) { const [t, b] = skyColorsBase(alt); return [mixRGB(t, hex2rgb(c.sky[0]), ck), mixRGB(b, hex2rgb(c.sky[1]), ck)]; }
+  return skyColorsBase(alt);
+}
+function skyColorsBase(alt) {
   let i = 0; for (let k = 0; k < ZONES.length; k++) if (alt >= ZONES[k].alt) i = k;
   const z = ZONES[i], nz = ZONES[i + 1];
   if (!nz) return [hex2rgb(z.sky[0]), hex2rgb(z.sky[1])];
@@ -2665,6 +2700,7 @@ function render() {
   const ox = W / 2 - G.cam.x * z + sx, oy = H * G.cam.anchor + G.cam.py * z + sy;
   ctx.setTransform(z * DPR, 0, 0, z * DPR, ox * DPR, oy * DPR);
   drawGround();
+  drawCondTint(alt);
   drawStationAndRecord();
   for (const p of G.parts) if (p.k === 'smoke' || p.k === 'glow' || p.k === 'line') drawParticle(p);
   for (const o of G.obs) drawObstacle(o);
@@ -2679,6 +2715,65 @@ function render() {
   if (G.mode === 'launch') { drawHUD(); drawLaunchGauge(); }
   drawBanners();
   if (G.cam.flash > 0) { ctx.globalAlpha = clamp(G.cam.flash * 2, 0, 0.8); ctx.fillStyle = G.cam.flashCol; ctx.fillRect(0, 0, W, H); ctx.globalAlpha = 1; }
+}
+function drawForecastSign(x, y) {
+  const id = CONDS[S.cond] ? S.cond : 'clear', c = CONDS[id];
+  ctx.save(); ctx.translate(x, y); ink(ctx, 3);
+  ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(0, -64); ctx.lineWidth = 5; ctx.stroke(); ctx.lineWidth = 3;
+  ctx.rotate(Math.sin(G.t * 1.3) * 0.02);
+  rr(ctx, -46, -114, 92, 52, 9); fillStroke(ctx, '#fff6e5', 3);
+  text(ctx, 'FORECAST', 0, -103, 9, '#9b5de5', 'center', null);
+  ctx.save(); ctx.translate(-27, -81); drawCondIcon(id, 11); ctx.restore();
+  const w = c.name.split(' ');
+  if (w.length > 1) { text(ctx, w[0], 10, -88, 11, INK, 'center', null); text(ctx, w.slice(1).join(' '), 10, -75, 11, INK, 'center', null); }
+  else text(ctx, c.name, 10, -81, 11, INK, 'center', null);
+  ctx.restore();
+}
+function drawCondIcon(id, r) {
+  ink(ctx, 2.5);
+  if (id === 'night') {
+    ctx.beginPath(); ctx.arc(0, 0, r, -1.2, 1.2, true); ctx.arc(r * 0.6, 0, r * 0.962, 1.82, -1.82, false); ctx.closePath(); fillStroke(ctx, '#fff2a8', 2.5);
+  } else if (id === 'sunset') {
+    ctx.save(); ctx.beginPath(); ctx.rect(-r * 1.6, -r * 1.6, r * 3.2, r * 1.75); ctx.clip(); circ(ctx, 0, r * 0.15, r); fillStroke(ctx, '#ff9f43', 2.5); ctx.restore();
+    ctx.beginPath(); ctx.moveTo(-r * 1.4, r * 0.15); ctx.lineTo(r * 1.4, r * 0.15); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(-r * 0.8, r * 0.7); ctx.lineTo(r * 0.8, r * 0.7); ctx.stroke();
+  } else if (id === 'tailwind') {
+    ctx.lineWidth = 3; ctx.strokeStyle = '#4d96ff';
+    for (let i = 0; i < 3; i++) { const yy = (i - 1) * r * 0.65; ctx.beginPath(); ctx.moveTo(-r * 1.2, yy); ctx.lineTo(r * 0.5, yy); ctx.arc(r * 0.5, yy - r * 0.3, r * 0.3, Math.PI / 2, -Math.PI / 2, true); ctx.stroke(); }
+  } else if (id === 'coins') {
+    circ(ctx, 0, 0, r); fillStroke(ctx, '#ffd93d', 2.5); circ(ctx, 0, 0, r * 0.55); ctx.strokeStyle = '#e0a800'; ctx.lineWidth = 2; ctx.stroke();
+  } else if (id === 'rings') {
+    ctx.lineWidth = 6; ctx.strokeStyle = INK; ctx.beginPath(); ctx.ellipse(0, 0, r * 0.65, r, 0, 0, TAU); ctx.stroke(); ctx.lineWidth = 3; ctx.strokeStyle = '#4fd8ff'; ctx.stroke();
+  } else {
+    ctx.save(); ctx.strokeStyle = '#ffb000'; ctx.lineWidth = 2.5; for (let i = 0; i < 8; i++) { const a = i * TAU / 8 + G.t * 0.5; ctx.beginPath(); ctx.moveTo(Math.cos(a) * r * 1.0, Math.sin(a) * r * 1.0); ctx.lineTo(Math.cos(a) * r * 1.45, Math.sin(a) * r * 1.45); ctx.stroke(); } ctx.restore();
+    circ(ctx, 0, 0, r * 0.75); fillStroke(ctx, '#ffd93d', 2.5);
+  }
+}
+function drawCondTint(alt) {
+  const c = curCond(); if (!c.tint) return;
+  const k = condK(alt); if (k <= 0) return;
+  ctx.save(); ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+  ctx.globalCompositeOperation = 'multiply'; ctx.globalAlpha = k * c.tintA; ctx.fillStyle = c.tint; ctx.fillRect(0, 0, W, H);
+  ctx.globalCompositeOperation = 'source-over'; ctx.globalAlpha = 1;
+  if (c.stars) {
+    const z = G.cam.z, hz = Math.min(H, groundScreenY(0.35) + 40 * z - 215 * z);
+    if (hz > 0) {
+      ctx.beginPath(); ctx.rect(0, 0, W, hz); ctx.clip();
+      for (let i = 0; i < 90; i++) {
+        const x = hash(i * 17 + 3) * W, y = ((hash(i * 23 + 7) * H * 1.3 + G.cam.py * 0.02 * z) % (H * 1.3));
+        ctx.globalAlpha = k * (0.5 + 0.5 * Math.sin(G.t * (1 + hash(i) * 2) + i));
+        ctx.fillStyle = i % 6 === 0 ? '#ffe9a8' : '#ffffff';
+        ctx.beginPath(); ctx.arc(x, y, 0.7 + hash(i * 5) * 1.5, 0, TAU); ctx.fill();
+      }
+      // moon
+      ctx.globalAlpha = k; const mx = W * 0.8, my = H * 0.17, mr = 34 * clamp(Math.min(W, H) / 700, 0.55, 1);
+      const g = ctx.createRadialGradient(mx, my, mr * 0.8, mx, my, mr * 2.6); g.addColorStop(0, 'rgba(255,250,220,.35)'); g.addColorStop(1, 'rgba(255,250,220,0)');
+      ctx.fillStyle = g; circ(ctx, mx, my, mr * 2.6); ctx.fill();
+      ink(ctx, 4); circ(ctx, mx, my, mr); fillStroke(ctx, '#fff6d8', 4);
+      ctx.fillStyle = 'rgba(200,190,160,.6)'; circ(ctx, mx - mr * 0.3, my - mr * 0.2, mr * 0.22); ctx.fill(); circ(ctx, mx + mr * 0.35, my + mr * 0.3, mr * 0.15); ctx.fill(); circ(ctx, mx + mr * 0.1, my - mr * 0.45, mr * 0.1); ctx.fill();
+    }
+  }
+  ctx.restore();
 }
 function w2s(x, py) { const z = G.cam.z; return [W / 2 + (x - G.cam.x) * z, H * G.cam.anchor - (py - G.cam.py) * z]; }
 
@@ -2724,7 +2819,7 @@ const BODIES = [
 ];
 function drawSunAndPlanets(alt) {
   // sun
-  const sunA = 1 - invLerp(5000, 11000, alt);
+  const sunA = (1 - invLerp(5000, 11000, alt)) * (curCond().stars ? 1 - condK(alt) : 1);
   const sx = W * 0.82, sy = H * 0.16 + invLerp(0, 9000, alt) * 30;
   const ss = clamp(Math.min(W, H) / 700, 0.55, 1);
   if (sunA > 0) {
@@ -2905,6 +3000,8 @@ function drawGround() {
     for (let fx = 110; fx < 360; fx += 26) { ctx.beginPath(); ctx.moveTo(fx, 0); ctx.lineTo(fx, -20); ctx.stroke(); }
     ctx.beginPath(); ctx.moveTo(104, -12); ctx.lineTo(360, -12); ctx.stroke();
   }
+  // ---- forecast sign
+  if (G.mode === 'hangar' && S.flights >= 4) drawForecastSign(126, 0);
   // ---- launch pad
   rr(ctx, -80, -4, 160, 22, 5); fillStroke(ctx, '#c9ced8');
   ctx.save(); rr(ctx, -80, -4, 160, 22, 5); ctx.clip(); ctx.fillStyle = '#ffd93d'; for (let i = -10; i < 10; i++) { ctx.beginPath(); ctx.moveTo(i * 22, 18); ctx.lineTo(i * 22 + 11, 18); ctx.lineTo(i * 22 + 22, -4); ctx.lineTo(i * 22 + 11, -4); ctx.fill(); } ctx.restore();
@@ -3271,7 +3368,8 @@ function toast(html, ms = 3600) {
   const t = el('div', 'toast', html);
   $('toasts').appendChild(t);
   setTimeout(() => t.remove(), ms + 300);
-  while ($('toasts').children.length > (W < 600 ? 2 : 4)) $('toasts').firstChild.remove();
+  const maxT = W < 600 ? (document.body.classList.contains('in-flight') ? 1 : 2) : 4;
+  while ($('toasts').children.length > maxT) $('toasts').firstChild.remove();
 }
 
 const Dialog = (() => {
@@ -3321,6 +3419,7 @@ const UI = (() => {
   function showScreen(name) {
     current = name;
     document.body.classList.toggle('in-hangar', name === 'hangar');
+    document.body.classList.toggle('in-flight', name === 'flight');
     for (const k in screens) screens[k].classList.toggle('hidden', k !== name);
     if (name === 'hangar') refresh();
   }
@@ -3539,6 +3638,7 @@ const UI = (() => {
       ['Seats', st.seats || '—'],
       ['Est. height', '~' + fmtAlt(sim.alt)],
     ];
+    if (S.flights >= 4 && CONDS[S.cond] && S.cond !== 'clear') rows.push(['Forecast', `<span title="${CONDS[S.cond].fx}">${CONDS[S.cond].name}</span>`]);
     $('statcard').innerHTML = `<h4>Your rocket</h4>${rows.map(r => `<div class="row"><span>${r[0]}</span><span>${r[1]}</span></div>`).join('')}<div class="row best"><span>Best flight</span><span>${fmtAlt(S.bestAlt)}</span></div><div class="row"><span>Flights</span><span>${S.flights}</span></div>`
       + (jobsUnlocked() && S.jobs && S.jobs.length ? `<div class="jobs"><h4>Job board</h4>${S.jobs.map(j => `<div class="job"><span>${jobText(j, true)}</span><span class="jp">${fmtMoney(j.pay)}</span></div>`).join('')}</div>` : '');
     const jb = $('statcard').querySelector('.jobs'); if (jb) jb.onclick = () => { sfx.click(); openJobs(); };
