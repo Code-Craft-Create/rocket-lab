@@ -2309,6 +2309,12 @@ function updateObstacles(dt) {
       const tta = rel / closing;
       if (rel > 0 && tta < 0.8 + st.radar * 0.5) G.warnings.push({ x: o.x, k: 1 - tta / (0.8 + st.radar * 0.5), big: o.dmg > 1 });
     }
+    // near-miss bonus
+    if (!o.harmless && !o.nm && !R.crashed) {
+      const dd = Math.hypot(o.x - R.x, o.py - R.py) - (o.w ? o.w * 0.45 : o.r);
+      if (o.minD === undefined || dd < o.minD) o.minD = dd;
+      if (o.py < R.py - 70 && o.hitT <= 0 && !o.wasHit) { o.nm = true; if (o.minD < 34 && o.minD > -5) { const v = coinValue(R.alt) * 3; R.coins += 3; R.coinCash += v; R.nearMiss = (R.nearMiss || 0) + 1; floater(R.x, R.py + 60, `CLOSE CALL! +${fmtMoney(v)}`, '#bff8ff', 17); sfx.whoosh(); } }
+    }
     // collision
     if (R.crashed || o.hitT > 0) continue;
     const hit = hitTest(o, hc);
@@ -2327,7 +2333,7 @@ function bolt(x0, y0, x1, y1) { const pts = [[x0, y0]]; const n = 7; for (let i 
 function hitRocket(o, lightning) {
   const R = G.R, st = G.st;
   if (R.crashed || R.invuln > 0) return;
-  o.hitT = 0.8;
+  o.hitT = 0.8; o.wasHit = true;
   // shield
   if (R.shieldOn) {
     R.shieldOn = false; R.shieldT = 0; sfx.shield(); R.invuln = 0.5;
@@ -2492,6 +2498,7 @@ function computeResult() {
   if (R.hits === 0 && R.time > 6) badges.push('No scratches');
   if (R.rings >= 3) badges.push(`${R.rings} boost rings`);
   if (R.smashed >= 3) badges.push(`${R.smashed} smashed`);
+  if ((R.nearMiss || 0) >= 3) badges.push(`${R.nearMiss} close calls`);
   if (R.crashed) badges.push('Kaboom');
   G.result = { rows, total, alt, crashed: R.crashed, delivered: R.delivered, route: r, firstTime, stars, record, badges, shown: false, zone: zoneAt(alt).name, time: R.time };
   // ---- apply to save immediately (so closing the tab does not lose the flight)
@@ -3371,8 +3378,13 @@ const UI = (() => {
   function buy(u) {
     const cost = upCost(u);
     if (upState(u) !== 'open' || cost > S.money) { sfx.deny(); return; }
+    const pax0 = paxForRoute(flightRoute(), computeStats()).pax;
+    const before = simulateFlight(computeStats(), { launchQ: 1.3, pax: pax0 }).alt;
     S.money -= cost; S.up[u.id] = lvl(u.id) + 1; S.viewed[u.id] = 1;
     sfx.buy();
+    const after = simulateFlight(computeStats(), { launchQ: 1.3, pax: pax0 }).alt;
+    if (after - before > 5) floater(0, padRestPy(rocketLook()) * 2 + 40, `+${fmtAlt(after - before)} height`, '#5fd068', 22);
+    else floater(0, padRestPy(rocketLook()) * 2 + 40, u.name + '!', '#ffd93d', 20);
     G.hangarPop = 1; G.look = rocketLook(); G.st = computeStats();
     const py = padRestPy(G.look);
     sparks(0, py, 24, ['#ffd93d', '#ffffff', '#5fd068'], 360);
@@ -3489,6 +3501,24 @@ const UI = (() => {
     overlay('scr-map', true);
   }
 
+  // ---------- ending credits
+  function showCredits() {
+    const list = $('map-list'); list.innerHTML = '';
+    $('scr-map').querySelector('h2').textContent = 'The End!';
+    const cnv = document.createElement('canvas'); cnv.width = 1000; cnv.height = 560; cnv.style.width = '100%'; cnv.style.borderRadius = '18px'; cnv.style.border = '4px solid #2b2240';
+    const c = cnv.getContext('2d'); c.scale(2, 2);
+    const g = c.createLinearGradient(0, 0, 0, 280); g.addColorStop(0, '#123c4a'); g.addColorStop(1, '#2a1450'); c.fillStyle = g; c.fillRect(0, 0, 500, 280);
+    for (let i = 0; i < 80; i++) { c.fillStyle = '#fff'; c.globalAlpha = hash(i * 3); c.beginPath(); c.arc(hash(i * 7) * 500, hash(i * 11) * 280, 0.6 + hash(i) * 1.4, 0, TAU); c.fill(); } c.globalAlpha = 1;
+    c.save(); c.translate(250, 120); drawStation(c, 'gate', 2, 0.6); c.restore();
+    const who = Object.keys(CHARS).filter(k => k !== 'tourist');
+    who.forEach((k, i) => { const row = i < 12 ? 0 : 1; const n = row ? who.length - 12 : 12; const x = 250 + ((row ? i - 12 : i) - (n - 1) / 2) * 38; c.save(); c.translate(x, 200 + row * 44); drawFace(c, k, 15, 'joy', i); c.restore(); });
+    text(c, 'THANK YOU FOR FLYING SKYHOP!', 250, 24, 18, '#ffd93d');
+    list.appendChild(cnv);
+    list.appendChild(el('div', 'small-note', `<br><b>You built a rocket line from a backyard shed to the edge of the sky.</b><br>${S.flights} flights · ${S.stats.pax} passengers delivered · ${fmtMoney(S.earned)} earned · best ${fmtAlt(S.bestAlt)}<br><br>Your <b>Solid Gold</b> paint job is in the Paint Shop.<br>Endless mode: keep flying the Starlight route as far as you dare!<br><br><i>Story, art, music & code: generated with love by Claude for David.</i>`));
+    overlay('scr-map', true);
+    sfx.deliver(); confetti(0, 200, 120);
+  }
+
   // ---------- paint shop
   function openPaint() {
     const list = $('map-list'); list.innerHTML = '';
@@ -3528,6 +3558,8 @@ const UI = (() => {
     const reset = el('button', 'btn red', 'Reset progress');
     reset.addEventListener('click', () => confirmBox('Start over?', 'This wipes your rocket, money and routes. No undo!', () => { resetSave(); location.reload(); }));
     col.appendChild(reset);
+    const st = S.stats;
+    col.appendChild(el('div', 'small-note', `<b>Your stats</b><br>${S.flights} flights · best ${fmtAlt(S.bestAlt)} · ${fmtMoney(S.earned)} earned<br>${fmtInt(st.coins)} coins · ${st.rings} rings · ${st.perfect} perfect launches · ${st.pax} passengers · ${Math.round(st.time / 60)} min flying`));
     col.appendChild(el('div', 'small-note', 'Skyhop Express · every picture, sound and tune is generated by code.<br>Steer: ← → / A D or tap sides · Boost: Space · Pause: P'));
     overlay('scr-settings', true);
   }
@@ -3598,7 +3630,7 @@ const UI = (() => {
     if (S.pendingFork) { S.pendingFork = false; lines.push(...STORY.fork); }
     if (S.pendingAch && S.pendingAch.length) { for (const id of S.pendingAch) { const a = ACH.find(x => x.id === id); toast(`Achievement: <b>${a.name}</b> +${fmtMoney(a.reward)}`); } sfx.ach(); S.pendingAch = []; }
     saveGame();
-    Dialog.play(lines, () => { refresh(); if (S.ended && !S.seen.endCredits) { S.seen.endCredits = 1; saveGame(); toast('<b>THE END</b>, but the sky keeps going. Endless mode unlocked!', 6000); } if (then) then(); });
+    Dialog.play(lines, () => { refresh(); if (S.ended && !S.seen.endCredits) { S.seen.endCredits = 1; saveGame(); showCredits(); } if (then) then(); });
   }
 
   // ---------- wiring
@@ -3609,7 +3641,7 @@ const UI = (() => {
   $('btn-launch').addEventListener('click', () => { AudioSys.init(); sfx.click(); enterLaunch(); });
   soundBtns($('title-tools'));
 
-  return { showScreen, overlay, refresh, renderTree, showResults, openMap, openPause, announceNew, flushPending, get current() { return current; } };
+  return { showScreen, overlay, refresh, renderTree, showResults, openMap, openPause, announceNew, flushPending, showCredits, get current() { return current; } };
 })();
 
 function goHangar(skipFlush) {
