@@ -462,7 +462,7 @@ function defaultSave() {
     seen: {},          // story / disclosure flags
     viewed: {},        // upgrade nodes the player has looked at
     tabsSeen: {},
-    stats: { coins: 0, hits: 0, perfect: 0, rings: 0, smashed: 0, pax: 0, time: 0, jobs: 0, nights: 0, close: 0 },
+    stats: { coins: 0, hits: 0, perfect: 0, rings: 0, smashed: 0, pax: 0, time: 0, jobs: 0, nights: 0, close: 0, pokes: 0 },
     ach: {},
     cond: 'clear', jobs: [], avg: { coins: 8, rings: 0.6, close: 0.6, alt: 500, v: 110, total: 110, smash: 0 },
     settings: { music: true, sfx: true, shake: true, ghost: true },
@@ -646,6 +646,13 @@ const AudioSys = (() => {
     jelly() { tone({ type: 'sine', f: 400, f2: 900, dur: 0.25, vol: 0.12 }); },
     warp() { tone({ type: 'sine', f: 200, f2: 1600, dur: 0.8, vol: 0.12 }); noise({ dur: 0.8, vol: 0.15, filter: 'bandpass', f: 300, f2: 5000, q: 4 }); },
     ach() { [0, 4, 7, 12, 16].forEach((s, i) => tone({ type: 'triangle', f: N(79 + s), dur: 0.3, vol: 0.12, delay: i * 0.05 })); },
+    boing() { tone({ type: 'sine', f: 200, f2: 620, dur: 0.16, vol: 0.2 }); tone({ type: 'sine', f: 620, f2: 260, dur: 0.3, vol: 0.13, delay: 0.14 }); },
+    cheer() {
+      noise({ dur: 1.1, vol: 0.16, filter: 'bandpass', f: 1300, f2: 900, q: 0.7, attack: 0.1 });
+      for (let i = 0; i < 7; i++) tone({ type: 'triangle', f: rand(380, 620), f2: rand(650, 950), dur: 0.3, vol: 0.035, delay: rand(0, 0.35) });
+      for (let i = 0; i < 10; i++) noise({ dur: 0.04, vol: 0.14, filter: 'highpass', f: 1800, delay: 0.1 + i * 0.09 + rand(0, 0.04) });
+    },
+    creak() { tone({ type: 'sawtooth', f: 110, f2: 190, dur: 0.45, vol: 0.06, filter: 'bandpass', ff: 700, q: 6 }); },
     talk(pitch = 1) { if (!gate('talk', 55)) return; tone({ type: 'triangle', f: rand(300, 420) * pitch, dur: 0.05, vol: 0.06 }); },
   };
 
@@ -2063,6 +2070,7 @@ const G = {
   R: null, st: null, look: null,
   obs: [], picks: [], parts: [], floaters: [], banners: [],
   spawnY: 0, launch: null, result: null, station: null, hangarPop: 0,
+  poke: { rocket: 0, ada: 0, adaLine: '', crowd: 0, shed: 0, rocketLine: '', rocketLineT: 0 },
   input: { keys: {}, pointers: new Map(), steer: 0, boostPressed: false },
   rocketScale: 1.1, warnings: [],
 };
@@ -2809,6 +2817,7 @@ const ACH = [
   { id: 'stars10', prog: () => [ROUTES.filter(r => (S.routes[r.id] || {}).stars >= 3).length, ROUTES.length], name: 'Perfect Line', desc: 'Get 3 stars on every route', test: () => ROUTES.every(r => (S.routes[r.id] || {}).stars >= 3), reward: 60000 },
   { id: 'km1000', prog: () => [S.bestAlt / 1000, 1000, ' km'], name: 'Thousand Club', desc: 'Reach 1,000 km', test: () => S.bestAlt >= 1000000, reward: 100000 },
   { id: 'km2500', prog: () => [S.bestAlt / 1000, 2500, ' km'], name: 'Beyond the Gate', desc: 'Reach 2,500 km in endless mode', test: () => S.bestAlt >= 2500000, reward: 250000 },
+  { id: 'tickle', secret: true, name: 'Tickle Tank', desc: 'Poke your rocket 25 times in the workshop', test: () => (S.stats.pokes || 0) >= 25, reward: 250 },
   { id: 'fork', name: 'Decisions!', desc: 'Pick your first fork upgrade', test: () => UPGRADES.some(u => u.fork && lvl(u.id) > 0), reward: 500 },
 ];
 function checkAchievements() {
@@ -3169,7 +3178,12 @@ function drawGround() {
     const shx = -300;
     rr(ctx, shx - 70, -90, 140, 90, 6); fillStroke(ctx, '#d9534f');
     ctx.beginPath(); ctx.moveTo(shx - 82, -86); ctx.lineTo(shx, -140); ctx.lineTo(shx + 82, -86); ctx.closePath(); fillStroke(ctx, '#8b3a3a');
-    rr(ctx, shx - 30, -64, 60, 64, 4); fillStroke(ctx, '#fff6e5'); ctx.beginPath(); ctx.moveTo(shx - 30, -64); ctx.lineTo(shx + 30, 0); ctx.moveTo(shx + 30, -64); ctx.lineTo(shx - 30, 0); ctx.stroke();
+    if (G.poke.shed > 0) { // door swings open and Buckley peeks out
+      const op = clamp(Math.min(G.poke.shed, 2.6 - G.poke.shed) * 4, 0, 1);
+      rr(ctx, shx - 30, -64, 60, 64, 4); fillStroke(ctx, '#3a2f52');
+      ctx.save(); ctx.translate(shx - 4 - op * 4, -30 + (1 - op) * 30); drawFace(ctx, 'buckley', 12, 'joy', G.t); ctx.restore();
+      rr(ctx, shx - 30, -64, 60 * (1 - op * 0.75), 64, 4); fillStroke(ctx, '#fff6e5');
+    } else { rr(ctx, shx - 30, -64, 60, 64, 4); fillStroke(ctx, '#fff6e5'); ctx.beginPath(); ctx.moveTo(shx - 30, -64); ctx.lineTo(shx + 30, 0); ctx.moveTo(shx + 30, -64); ctx.lineTo(shx - 30, 0); ctx.stroke(); }
     rr(ctx, shx - 62, -122, 124, 26, 6); fillStroke(ctx, '#fff6e5');
     text(ctx, routeDone('r2') ? 'SKYHOP EXPRESS' : "ADA'S ROCKETS", shx, -109, routeDone('r2') ? 12 : 13, INK, 'center', null);
     if (routeDone('r3')) { const on = Math.sin(G.t * 3) > 0; ctx.beginPath(); ctx.moveTo(shx, -140); ctx.lineTo(shx, -162); ctx.stroke(); circ(ctx, shx, -166, 5); fillStroke(ctx, on ? '#ff5a5f' : '#7a1d2e', 2.5); }
@@ -3189,7 +3203,8 @@ function drawGround() {
     }
     for (let i = crowdN - 1; i >= 0; i--) { // back rows first
       const row = Math.floor(i / 9), c = i % 9;
-      const cx = 170 + c * 22 + (c % 2) * 6 + (row % 2) * 11, bob = Math.abs(Math.sin(G.t * (G.mode === 'flight' || G.mode === 'launch' ? 9 : 3) + i * 1.7)) * (G.mode === 'launch' || G.mode === 'flight' ? 8 : 2) + row * 12;
+      const hype = G.mode === 'flight' || G.mode === 'launch' || G.poke.crowd > 0;
+      const cx = 170 + c * 22 + (c % 2) * 6 + (row % 2) * 11, bob = Math.abs(Math.sin(G.t * (hype ? 9 : 3) + i * 1.7)) * (hype ? 8 + (G.poke.crowd > 0 ? 6 : 0) : 2) + row * 12;
       const col = ['#ff5a5f', '#4d96ff', '#ffd93d', '#5fd068', '#9b5de5', '#ff9f43'][(i + row) % 6];
       rr(ctx, cx - 8, -26 - bob, 16, 22, 6); fillStroke(ctx, col, 2.5);
       circ(ctx, cx, -34 - bob, 8); fillStroke(ctx, ['#ffd9b3', '#c68b59', '#8d5a3b', '#f5c9a5'][(i + row) % 4], 2.5);
@@ -3197,24 +3212,16 @@ function drawGround() {
       if (row > 0 && c % 4 === 1) { ctx.beginPath(); ctx.moveTo(cx - 7, -28 - bob); ctx.lineTo(cx - 13, -44 - bob - Math.abs(Math.sin(G.t * 4 + i)) * 4); ctx.stroke(); } // waving arm
     }
     // Grandma Ada with her cane
-    ctx.save(); ctx.translate(-190, -4);
+    ctx.save(); ctx.translate(-190, -4 - (G.poke.ada > 2.6 ? Math.sin((3 - G.poke.ada) / 0.4 * Math.PI) * 10 : 0));
     rr(ctx, -10, -30, 20, 28, 8); fillStroke(ctx, '#ff5a5f', 2.5);
     ctx.save(); ctx.translate(0, -42); drawFace(ctx, 'ada', 11, G.mode === 'launch' || G.mode === 'flight' ? 'joy' : 'happy', G.t); ctx.restore();
     const wave = Math.sin(G.t * 6) * 0.5;
     ctx.beginPath(); ctx.moveTo(8, -24); ctx.lineTo(18 + wave * 6, -44); ctx.lineWidth = 4; ctx.stroke();
-    if (G.mode === 'hangar' && S.flights > 0) {
+    if (G.mode === 'hangar' && G.poke.ada > 0) speechBubble(ctx, G.poke.adaLine, 30, -70, clamp(G.poke.ada * 3, 0, 1) * clamp((3 - G.poke.ada) * 6, 0, 1), 170, true);
+    else if (G.mode === 'hangar' && S.flights > 0) {
       const ti = Math.floor(G.t / 7) % ADA_TIPS.length, k = (G.t % 7);
       const a = clamp(k * 3, 0, 1) * clamp((6.5 - k) * 3, 0, 1);
-      if (a > 0) {
-        ctx.globalAlpha = a; ctx.font = `800 13px ${FONT}`;
-        const lines = wrapText(ADA_TIPS[ti], 170);
-        const bw = Math.max(...lines.map(l => ctx.measureText(l).width)) + 22, bh = lines.length * 17 + 14;
-        const bx = -bw / 2 + 30, by = -70 - bh;
-        rr(ctx, bx, by, bw, bh, 12); ink(ctx, 3); fillStroke(ctx, '#fff', 3);
-        ctx.beginPath(); ctx.moveTo(6, by + bh - 1); ctx.lineTo(0, by + bh + 12); ctx.lineTo(18, by + bh - 1); ctx.fillStyle = '#fff'; ctx.fill(); ctx.stroke(); ctx.fillRect(7, by + bh - 4, 10, 5);
-        lines.forEach((l, i) => text(ctx, l, bx + bw / 2, by + 15 + i * 17, 13, INK, 'center', null));
-        ctx.globalAlpha = 1;
-      }
+      speechBubble(ctx, ADA_TIPS[ti], 30, -70, a, 170, true);
     }
     ctx.restore();
     // ground
@@ -3277,6 +3284,60 @@ const ADA_TIP_LIST = [
 ];
 let ADA_TIPS = ADA_TIP_LIST.map(t => t[0]);
 function refreshAdaTips() { const l = ADA_TIP_LIST.filter(t => { try { return t[1](); } catch (e) { return false; } }).map(t => t[0]); if (l.length) ADA_TIPS = l; }
+// world-space speech bubble; (x, y) is the bottom of the bubble, tail pointing down-left
+function speechBubble(c, str, x, y, a, maxW = 170, centered = false) {
+  if (a <= 0 || !str) return;
+  c.save(); c.globalAlpha = a; c.font = `900 13px ${FONT}`;
+  const lines = wrapText(str, maxW);
+  const bw = Math.max(...lines.map(l => c.measureText(l).width)) + 22, bh = lines.length * 17 + 14;
+  const bx = centered ? -bw / 2 + x : x - 12, by = y - bh;
+  rr(c, bx, by, bw, bh, 12); ink(c, 3); fillStroke(c, '#fff', 3);
+  const tx = centered ? 0 : x;
+  c.beginPath(); c.moveTo(tx + 6, by + bh - 1); c.lineTo(tx, by + bh + 12); c.lineTo(tx + 18, by + bh - 1); c.fillStyle = '#fff'; c.fill(); c.stroke(); c.fillRect(tx + 7, by + bh - 4, 10, 5);
+  lines.forEach((l, i) => text(c, l, bx + bw / 2, by + 15 + i * 17, 13, INK, 'center', null));
+  c.restore();
+}
+const ADA_QUIPS = [
+  'Back in my day, rockets ran on pure stubbornness!', 'Mind the paint, dear!', 'I built my first rocket out of a teapot.',
+  'Every great trip starts with a wobbly launch.', 'Have you had a snack? Pilots need snacks.', 'Ooh, that tickles!',
+  'The sky isn’t the limit. It’s the lobby!', 'Buckley says hi. Buckley always says hi.', 'Fifty years of rockets and I still squeal at liftoff.',
+  'If it explodes, we call it a learning flight.', 'My knitting club wants a ride. Heaven help us.', 'Don’t tell Mayor Plum, but I drew this on a napkin.',
+];
+const ROCKET_POKES = ['Boing!', 'Hey!', 'Hee hee!', 'Stop, that tickles!', 'Are we there yet?', 'Vroom vroom!', 'Again!', '*rattle rattle*'];
+function pokeHangar(sx, sy) {
+  const z = G.cam.z, wx = G.cam.x + (sx - W / 2) / z, wpy = G.cam.py + (H * G.cam.anchor - sy) / z;
+  const st = G.st || computeStats(), town = !(st.startAlt > 0), P = G.poke;
+  const look = G.look || rocketLook(), d = rocketDims(look), rs = G.rocketScale;
+  const rh = (d.BL + d.NH + d.BH) * rs;
+  if (Math.abs(wx) < (d.BW / 2 + d.FW + 10) * rs && wpy > 0 && wpy < rh + 20) {
+    P.rocket = 1; S.stats.pokes = (S.stats.pokes || 0) + 1;
+    sfx.boing(); if (chance(0.3)) sfx.honk();
+    if (S.stats.pokes % 5 === 0 || chance(0.25)) { P.rocketLine = S.stats.pokes === 25 ? 'OK OK, you win a trophy!' : pick(ROCKET_POKES); P.rocketLineT = 1.8; }
+    puff(wx + rand(-20, 20), 4, 2, '#ffffff', 40);
+    if (S.stats.pokes === 25) { checkAchievements(); if (S.pendingAch && S.pendingAch.length) { for (const id of S.pendingAch) { const a = ACH.find(x => x.id === id); toast(`Achievement: <b>${a.name}</b> +${fmtMoney(a.reward)}`); } sfx.ach(); S.pendingAch = []; UI.refresh(); } saveGame(); }
+    return true;
+  }
+  if (!town) return false;
+  if (wx > -214 && wx < -166 && wpy > 0 && wpy < 66) {
+    let line = pick(ADA_QUIPS); if (line === P.adaLine) line = pick(ADA_QUIPS);
+    P.adaLine = line; P.ada = 3;
+    for (let i = 0; i < 6; i++) setTimeout(() => sfx.talk(1.25), i * 70);
+    return true;
+  }
+  if (wx > 155 && wx < 395 && wpy > 0 && wpy < 90) {
+    if (P.crowd <= 0.4) { sfx.cheer(); confetti(270, 70, 26); }
+    P.crowd = 1.8; return true;
+  }
+  if (wx > -372 && wx < -228 && wpy > 0 && wpy < 145) {
+    if (P.shed <= 0) { P.shed = 2.6; sfx.creak(); setTimeout(() => { for (let i = 0; i < 4; i++) setTimeout(() => sfx.talk(0.8), i * 80); }, 350); }
+    return true;
+  }
+  if (S.flights >= 4 && wx > 100 && wx < 152 && wpy > 0 && wpy < 100) {
+    const cd = CONDS[S.cond] || CONDS.clear; toast(`<b>Next flight:</b> ${cd.name}${cd.fx ? ': ' + cd.fx : ''}`); sfx.click(); return true;
+  }
+  return false;
+}
+function updatePokes(dt) { const P = G.poke; for (const k of ['rocket', 'ada', 'crowd', 'shed', 'rocketLineT']) if (P[k] > 0) P[k] = Math.max(0, P[k] - dt); }
 function wrapText(str, maxW) { const words = str.split(' '); const out = []; let line = ''; for (const w of words) { const t = line ? line + ' ' + w : w; if (ctx.measureText(t).width > maxW && line) { out.push(line); line = w; } else line = t; } if (line) out.push(line); return out; }
 function drawStationAndRecord() {
   const R = G.R;
@@ -3443,9 +3504,11 @@ function drawPlayerRocket() {
   const sc = G.rocketScale * (1 + G.hangarPop * 0.12);
   ctx.save();
   if (!R || G.mode === 'title' || G.mode === 'hangar') {
-    const py = padRestPy(look);
+    const py = padRestPy(look), pk = G.poke.rocket;
     ctx.translate(0, -py); ctx.scale(sc, sc);
-    drawRocket(ctx, look, { t: G.t, throttle: 0, faces: hangarFaces(), shieldOn: false });
+    if (pk > 0) { const d = rocketDims(look), base = d.BL / 2 + d.BH; ctx.translate(0, base); ctx.rotate(Math.sin(pk * 38) * 0.1 * pk); ctx.scale(1 + Math.sin(pk * 30) * 0.07 * pk, 1 - Math.sin(pk * 30) * 0.07 * pk); ctx.translate(0, -base); }
+    drawRocket(ctx, look, { t: G.t, throttle: pk > 0.55 ? 0.45 : 0, faces: hangarFaces(), shieldOn: false, mood: pk > 0 ? 'joy' : 'happy' });
+    if (G.poke.rocketLineT > 0 && G.mode === 'hangar') { const d = rocketDims(look); speechBubble(ctx, G.poke.rocketLine, 26, -d.BL / 2 - 24, clamp(G.poke.rocketLineT * 3, 0, 1), 150); }
     ctx.restore(); return;
   }
   if (R.crashed) {
@@ -4059,7 +4122,8 @@ const UI = (() => {
       card.appendChild(el('div', 'r-ico', got ? ICONS.trophy : ICONS.lock));
       let pr = '';
       if (!got && a.prog) { const [c, n, u] = a.prog(); const k = clamp(c / n, 0, 1); pr = `<div class="ach-bar"><i style="width:${Math.round(k * 100)}%"></i><span>${fmtInt(Math.min(c, n))}${u || ''} / ${fmtInt(n)}${u || ''}</span></div>`; }
-      card.appendChild(el('div', 'r-main', `<div class="r-name">${a.name}</div><div class="r-desc">${a.desc}</div>${pr}<div class="r-meta"><span class="chip pay">${fmtMoney(a.reward)}</span>${got ? '<span class="chip ok">Earned!</span>' : ''}</div>`));
+      const hid = a.secret && !got;
+      card.appendChild(el('div', 'r-main', `<div class="r-name">${hid ? 'Secret' : a.name}</div><div class="r-desc">${hid ? 'Have a good poke around the workshop...' : a.desc}</div>${pr}<div class="r-meta"><span class="chip pay">${fmtMoney(a.reward)}</span>${got ? '<span class="chip ok">Earned!</span>' : ''}</div>`));
       list.appendChild(card);
     }
     $('scr-map').querySelector('h2').textContent = 'Achievements';
@@ -4314,6 +4378,7 @@ cv.addEventListener('pointerdown', e => {
   cv.focus();
   if (G.mode === 'title') { startGame(); return; }
   if (G.mode === 'launch') { doLaunch(); return; }
+  if (G.mode === 'hangar' && UI.current === 'hangar') { pokeHangar(e.clientX, e.clientY); return; }
   if (G.mode === 'flight') {
     if (G.st && G.st.ab) { const b = boostBtnPos(); if (Math.hypot(e.clientX - b.x, e.clientY - b.y) < b.r + 12) { G.input.boostPressed = true; tryAfterburner(); G.input.pointers.set(e.pointerId, { side: 0, boost: true }); return; } }
     G.input.pointers.set(e.pointerId, { side: pointerSide(e.clientX) });
@@ -4367,6 +4432,7 @@ function update(dt) {
   G.cam.shake = Math.max(0, G.cam.shake - dt * 40);
   G.cam.flash = Math.max(0, G.cam.flash - dt);
   G.hangarPop = Math.max(0, G.hangarPop - dt * 3);
+  updatePokes(dt);
   if (DEBUG.bot && G.mode === 'flight') botSteer();
   if (G.mode === 'launch') updateLaunch(sdt);
   else if (G.mode === 'flight') updateFlight(sdt);
