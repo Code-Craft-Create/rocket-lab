@@ -742,6 +742,41 @@ const Music = (() => {
         if (s === 8) drum('shaker', t, 0.4);
       },
     },
+    // breezy bossa for later hangar visits (Fmaj7–Gm7–Am7–Bbmaj7)
+    hangar2: {
+      bpm: 104, swing: 0.12,
+      prog: [[53, [0, 4, 7, 11]], [55, [0, 3, 7, 10]], [57, [0, 3, 7, 10]], [58, [0, 4, 7, 11]]],
+      mel: [[0, 77], [2, 76], [4, 74], [6, 72], [10, 74], [12, 76], [16, 74], [18, 72], [20, 70], [22, 69], [26, 70], [28, 72], [32, 72], [34, 74], [36, 76], [38, 77], [42, 79], [44, 81], [48, 79], [50, 77], [52, 76], [54, 74], [58, 72], [60, 74]],
+      step(i, t, sd) {
+        const barI = Math.floor(i / 16) % 4, s = i % 16, [root, ch] = this.prog[barI];
+        if (s === 0) voice('triangle', N(root - 12), t, sd * 5, 0.32, { lp: 800 });
+        if (s === 6 || s === 8) voice('triangle', N(root - 5), t, sd * 2, 0.26, { lp: 800 });
+        if (s === 14) voice('triangle', N(root - 12), t, sd * 2, 0.22, { lp: 800 });
+        if (s === 2 || s === 5 || s === 9 || s === 12) ch.forEach((c, k) => voice('square', N(root + 12 + c), t + k * 0.01, sd * 1.2, 0.028, { lp: 1500 }));
+        if (s % 2 === 0) drum('shaker', t, s % 4 === 0 ? 0.5 : 0.9);
+        if (s === 3 || s === 6 || s === 10 || s === 13) drum('hat', t, 0.5);
+        if (s === 0) drum('kick', t, 0.35);
+        const phrase = Math.floor(i / 64) % 2, mi = i % 64;
+        for (const [st, n] of this.mel) if (st === mi) { voice(phrase ? 'triangle' : 'sine', N(n + (phrase ? 0 : -12)), t, sd * 2.4, phrase ? 0.12 : 0.1, { lp: 2800 }); if (phrase) voice('sine', N(n + 12), t, sd * 1.4, 0.03); }
+      },
+    },
+    // pulsing deep-space synthwave past Mars (Dm7–G7–Bbmaj7–Am7)
+    deep: {
+      bpm: 108, swing: 0,
+      prog: [[50, [0, 3, 7, 10]], [55, [0, 4, 7, 10]], [46, [0, 4, 7, 11]], [45, [0, 3, 7, 10]]],
+      lead: [14, 12, 10, 7, 10, 12, 15, 14, 12, 10, 12, 7, 5, 7, 3, 2],
+      step(i, t, sd) {
+        const barI = Math.floor(i / 16) % 4, s = i % 16, [root, ch] = this.prog[barI];
+        const sec = Math.floor(i / 64) % 4;
+        if (s % 2 === 0) voice('sawtooth', N(root - 12 + (s % 4 === 2 ? 12 : 0)), t, sd * 1.5, 0.12, { lp: 420 + 80 * Math.sin(i * 0.2), q: 3 });
+        voice('triangle', N(root + 24 + ch[(s + barI) % 4] + (s % 8 >= 4 ? 12 : 0)), t, sd * 0.8, 0.04, { lp: 2200 });
+        if (s === 0) ch.forEach((c, k) => voice('sawtooth', N(root + 12 + c), t, sd * 16, 0.016, { att: 0.5, lp: 800, det: -7 + k * 4 }));
+        if (s === 0 || s === 8 || (sec > 1 && s === 11)) drum('kick', t, 0.6);
+        if (sec > 0 && (s === 4 || s === 12)) drum('clap', t, 0.3);
+        if (s % 4 === 2) drum('hat', t, 0.5);
+        if (sec >= 2 && s % 4 === 0) { const n = root + 24 + this.lead[(i / 4 + barI) % 16]; voice('square', N(n), t, sd * 3.5, 0.03, { lp: 2600, att: 0.02 }); voice('sine', N(n + 12), t, sd * 2, 0.02); }
+      },
+    },
     // gentle title
     title: {
       bpm: 92, swing: 0.1,
@@ -2846,15 +2881,16 @@ function drawCondTint(alt) {
   if (c.stars) {
     const z = G.cam.z, hz = Math.min(H, groundScreenY(0.35) + 40 * z - 215 * z);
     if (hz > 0) {
-      ctx.beginPath(); ctx.rect(0, 0, W, hz); ctx.clip();
+      ctx.save(); ctx.beginPath(); ctx.rect(0, 0, W, hz); ctx.clip();
       for (let i = 0; i < 90; i++) {
         const x = hash(i * 17 + 3) * W, y = ((hash(i * 23 + 7) * H * 1.3 + G.cam.py * 0.02 * z) % (H * 1.3));
         ctx.globalAlpha = k * (0.5 + 0.5 * Math.sin(G.t * (1 + hash(i) * 2) + i));
         ctx.fillStyle = i % 6 === 0 ? '#ffe9a8' : '#ffffff';
         ctx.beginPath(); ctx.arc(x, y, 0.7 + hash(i * 5) * 1.5, 0, TAU); ctx.fill();
       }
+      ctx.restore();
       // moon
-      ctx.globalAlpha = k; const mx = W * 0.8, my = H * 0.17, mr = 34 * clamp(Math.min(W, H) / 700, 0.55, 1);
+      const mr = 34 * clamp(Math.min(W, H) / 700, 0.55, 1), mx = W * 0.8, my = Math.max(mr * 1.6, Math.min(H * 0.17, hz - mr * 1.5)); ctx.globalAlpha = k;
       const g = ctx.createRadialGradient(mx, my, mr * 0.8, mx, my, mr * 2.6); g.addColorStop(0, 'rgba(255,250,220,.35)'); g.addColorStop(1, 'rgba(255,250,220,0)');
       ctx.fillStyle = g; circ(ctx, mx, my, mr * 2.6); ctx.fill();
       ink(ctx, 4); circ(ctx, mx, my, mr); fillStroke(ctx, '#fff6d8', 4);
@@ -3048,14 +3084,30 @@ function drawGround() {
     ctx.beginPath(); ctx.moveTo(shx - 82, -86); ctx.lineTo(shx, -140); ctx.lineTo(shx + 82, -86); ctx.closePath(); fillStroke(ctx, '#8b3a3a');
     rr(ctx, shx - 30, -64, 60, 64, 4); fillStroke(ctx, '#fff6e5'); ctx.beginPath(); ctx.moveTo(shx - 30, -64); ctx.lineTo(shx + 30, 0); ctx.moveTo(shx + 30, -64); ctx.lineTo(shx - 30, 0); ctx.stroke();
     rr(ctx, shx - 62, -122, 124, 26, 6); fillStroke(ctx, '#fff6e5');
-    text(ctx, "ADA'S ROCKETS", shx, -109, 13, INK, 'center', null);
-    // crowd
-    for (let i = 0; i < 9; i++) {
-      const cx = 170 + i * 22 + (i % 2) * 6, bob = Math.abs(Math.sin(G.t * (G.mode === 'flight' || G.mode === 'launch' ? 9 : 3) + i * 1.7)) * (G.mode === 'launch' || G.mode === 'flight' ? 8 : 2);
-      const col = ['#ff5a5f', '#4d96ff', '#ffd93d', '#5fd068', '#9b5de5', '#ff9f43'][i % 6];
+    text(ctx, routeDone('r2') ? 'SKYHOP EXPRESS' : "ADA'S ROCKETS", shx, -109, routeDone('r2') ? 12 : 13, INK, 'center', null);
+    if (routeDone('r3')) { const on = Math.sin(G.t * 3) > 0; ctx.beginPath(); ctx.moveTo(shx, -140); ctx.lineTo(shx, -162); ctx.stroke(); circ(ctx, shx, -166, 5); fillStroke(ctx, on ? '#ff5a5f' : '#7a1d2e', 2.5); }
+    // crowd grows with every route delivered
+    const nDone = ROUTES.filter(r => routeDone(r.id)).length;
+    const crowdN = Math.min(9 + nDone * 2, 27);
+    if (nDone > 1) { // celebration pennants, one per delivered route
+      const ax = 160, bx = 372, ay = -100;
+      ctx.beginPath(); ctx.moveTo(ax, 0); ctx.lineTo(ax, ay - 6); ctx.moveTo(bx, 0); ctx.lineTo(bx, ay - 6); ctx.lineWidth = 3; ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(ax, ay); ctx.quadraticCurveTo((ax + bx) / 2, ay + 30, bx, ay); ctx.lineWidth = 2; ctx.stroke(); ctx.lineWidth = 3;
+      const cols = ['#ff5a5f', '#ffd93d', '#4d96ff', '#5fd068', '#f15bb5', '#ff9f43', '#9b5de5', '#2ec4b6'];
+      for (let k = 0; k < nDone; k++) {
+        const u = (k + 0.5) / nDone, px = ax + (bx - ax) * u, py = ay + 30 * 2 * u * (1 - u) * 1;
+        const sw = Math.sin(G.t * 2 + k) * 2;
+        ctx.beginPath(); ctx.moveTo(px - 8, py); ctx.lineTo(px + 8, py); ctx.lineTo(px + sw, py + 16); ctx.closePath(); fillStroke(ctx, cols[k % cols.length], 2);
+      }
+    }
+    for (let i = crowdN - 1; i >= 0; i--) { // back rows first
+      const row = Math.floor(i / 9), c = i % 9;
+      const cx = 170 + c * 22 + (c % 2) * 6 + (row % 2) * 11, bob = Math.abs(Math.sin(G.t * (G.mode === 'flight' || G.mode === 'launch' ? 9 : 3) + i * 1.7)) * (G.mode === 'launch' || G.mode === 'flight' ? 8 : 2) + row * 12;
+      const col = ['#ff5a5f', '#4d96ff', '#ffd93d', '#5fd068', '#9b5de5', '#ff9f43'][(i + row) % 6];
       rr(ctx, cx - 8, -26 - bob, 16, 22, 6); fillStroke(ctx, col, 2.5);
-      circ(ctx, cx, -34 - bob, 8); fillStroke(ctx, ['#ffd9b3', '#c68b59', '#8d5a3b', '#f5c9a5'][i % 4], 2.5);
-      if (i % 3 === 0) { ctx.beginPath(); ctx.moveTo(cx + 6, -30 - bob); ctx.lineTo(cx + 14, -54 - bob); ctx.stroke(); ctx.beginPath(); ctx.moveTo(cx + 14, -54 - bob); ctx.lineTo(cx + 30, -50 - bob); ctx.lineTo(cx + 14, -44 - bob); fillStroke(ctx, col, 2.5); }
+      circ(ctx, cx, -34 - bob, 8); fillStroke(ctx, ['#ffd9b3', '#c68b59', '#8d5a3b', '#f5c9a5'][(i + row) % 4], 2.5);
+      if (i % 3 === 0 && row === 0) { ctx.beginPath(); ctx.moveTo(cx + 6, -30 - bob); ctx.lineTo(cx + 14, -54 - bob); ctx.stroke(); ctx.beginPath(); ctx.moveTo(cx + 14, -54 - bob); ctx.lineTo(cx + 30, -50 - bob); ctx.lineTo(cx + 14, -44 - bob); fillStroke(ctx, col, 2.5); }
+      if (row > 0 && c % 4 === 1) { ctx.beginPath(); ctx.moveTo(cx - 7, -28 - bob); ctx.lineTo(cx - 13, -44 - bob - Math.abs(Math.sin(G.t * 4 + i)) * 4); ctx.stroke(); } // waving arm
     }
     // Grandma Ada with her cane
     ctx.save(); ctx.translate(-190, -4);
@@ -3990,7 +4042,7 @@ function goHangar(skipFlush) {
   AudioSys.setEngine(0, false); AudioSys.setWind(0);
   UI.showScreen('hangar');
   UI.announceNew(false);
-  Music.play('hangar');
+  Music.play(Music.current === 'hangar2' || Music.current === 'hangar' ? Music.current : routeDone('r2') && Math.random() < 0.5 ? 'hangar2' : 'hangar');
   if (!skipFlush) UI.flushPending();
 }
 function setPaused(p) {
@@ -4104,7 +4156,7 @@ function update(dt) {
   else updateIdleCamera(dt);
   updateParticles(sdt);
   // music by altitude
-  if ((G.mode === 'flight' || G.mode === 'ending') && G.R) { if (G.R.alt > 12000 && Music.current === 'flight') Music.play('space'); }
+  if ((G.mode === 'flight' || G.mode === 'ending') && G.R) { if (G.R.alt > 12000 && Music.current === 'flight') Music.play('space'); else if (G.R.alt > 110000 && Music.current === 'space') Music.play('deep'); }
   saveTimer += dt;
 }
 function frame() {
