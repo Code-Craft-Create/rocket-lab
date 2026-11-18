@@ -192,6 +192,9 @@ button{font-family:var(--font)}
 .route .r-meta{display:flex;flex-wrap:wrap;gap:6px;margin-top:5px}
 .chip{font-size:12px;font-weight:900;border:3px solid var(--ink);border-radius:999px;padding:1px 8px;background:var(--paper);white-space:nowrap}
 .chip.alt{background:#d8f0ff}.chip.pax{background:#ffe3f1}.chip.pay{background:#fff1b8}.chip.warn{background:#ffd0d0}.chip.ok{background:#d7f7dc}
+.ach-bar{position:relative;height:16px;margin-top:6px;border:3px solid var(--ink);border-radius:999px;background:#efe6d6;overflow:hidden}
+.ach-bar i{position:absolute;left:0;top:0;bottom:0;background:linear-gradient(90deg,#4fd8ff,#5fd068)}
+.ach-bar span{position:relative;display:block;text-align:center;font-size:10px;font-weight:900;line-height:10px}
 .route .r-desc{font-size:13px;font-weight:700;color:var(--ink2);margin-top:5px;line-height:1.2}
 .route .stars{font-size:18px;letter-spacing:1px;color:#c9bca3;-webkit-text-stroke:1px var(--ink)}
 .route .stars .on{color:var(--yellow)}
@@ -428,7 +431,7 @@ function defaultSave() {
     seen: {},          // story / disclosure flags
     viewed: {},        // upgrade nodes the player has looked at
     tabsSeen: {},
-    stats: { coins: 0, hits: 0, perfect: 0, rings: 0, smashed: 0, pax: 0, time: 0 },
+    stats: { coins: 0, hits: 0, perfect: 0, rings: 0, smashed: 0, pax: 0, time: 0, jobs: 0, nights: 0, close: 0 },
     ach: {},
     cond: 'clear', jobs: [], avg: { coins: 8, rings: 0.6, close: 0.6, alt: 500, v: 110, total: 110, smash: 0 },
     settings: { music: true, sfx: true, shake: true },
@@ -943,7 +946,7 @@ const ROUTES = [
   { id: 'r6', to: 'Saturn Ring Spa', alt: 240000, pax: 8, reward: 28000, fare: 2400, icon: 'saturn',
     desc: 'The fanciest spa in the solar system. Ice-ring mud baths, anyone?',
     who: ['diva', 'robo', 'twin1', 'twin2', 'prof', 'cat', 'plum', 'volt'] },
-  { id: 'r7', to: 'The Starlight Gate', alt: 500000, pax: 10, reward: 60000, fare: 5000, icon: 'gate',
+  { id: 'r7', to: 'The Starlight Gate', alt: 650000, pax: 10, reward: 60000, fare: 5000, icon: 'gate',
     desc: 'A shimmering gate at the edge of the map. Nobody knows what’s beyond. Let’s find out!',
     who: ['ada', 'plum', 'volt', 'juno', 'kid', 'chef', 'diva', 'cat', 'bot', 'buckley'] },
 ];
@@ -2474,7 +2477,7 @@ function updateObstacles(dt) {
     if (!o.harmless && !o.nm && !R.crashed) {
       const dd = Math.hypot(o.x - R.x, o.py - R.py) - (o.w ? o.w * 0.45 : o.r);
       if (o.minD === undefined || dd < o.minD) o.minD = dd;
-      if (o.py < R.py - 70 && o.hitT <= 0 && !o.wasHit) { o.nm = true; if (o.minD < 34 && o.minD > -5) { const v = coinValue(R.alt) * 3; R.coins += 3; R.coinCash += v; R.nearMiss = (R.nearMiss || 0) + 1; floater(R.x, R.py + 60, `CLOSE CALL! +${fmtMoney(v)}`, '#bff8ff', 17); sfx.whoosh(); } }
+      if (o.py < R.py - 70 && o.hitT <= 0 && !o.wasHit) { o.nm = true; if (o.minD < 34 && o.minD > -5) { const v = coinValue(R.alt) * 3; R.coins += 3; R.coinCash += v; R.nearMiss = (R.nearMiss || 0) + 1; S.stats.close++; floater(R.x, R.py + 60, `CLOSE CALL! +${fmtMoney(v)}`, '#bff8ff', 17); sfx.whoosh(); } }
     }
     // collision
     if (R.crashed || o.hitT > 0) continue;
@@ -2688,6 +2691,7 @@ function computeResult() {
       if (r.id === 'r7') S.ended = true;
     }
   }
+  if (R.cond === 'night') S.stats.nights++;
   S.cond = rollCond();
   if (prevFlights === 0) S.pendingFirst = true;
   if (R.crashed && !S.seen.crash) S.pendingCrash = true;
@@ -2714,16 +2718,22 @@ function pickReview(res) {
 // ---------------------------------------------------------------- achievements
 const ACH = [
   { id: 'fly1', name: 'Liftoff', desc: 'Complete your first flight', test: () => S.flights >= 1, reward: 20 },
-  { id: 'perf5', name: 'Sharpshooter', desc: '5 perfect launches', test: () => S.stats.perfect >= 5, reward: 150 },
-  { id: 'coins500', name: 'Piggy Bank', desc: 'Collect 500 coins', test: () => S.stats.coins >= 500, reward: 300 },
-  { id: 'coins3000', name: 'Dragon Hoard', desc: 'Collect 3,000 coins', test: () => S.stats.coins >= 3000, reward: 4000 },
-  { id: 'rings20', name: 'Ring Leader', desc: 'Fly through 20 boost rings', test: () => S.stats.rings >= 20, reward: 600 },
-  { id: 'km10', name: 'Ten K Club', desc: 'Reach 10 km', test: () => S.bestAlt >= 10000, reward: 1000 },
-  { id: 'space', name: 'Astronaut', desc: 'Reach space (12 km)', test: () => S.bestAlt >= 12000, reward: 1500 },
-  { id: 'km100', name: 'Century', desc: 'Reach 100 km', test: () => S.bestAlt >= 100000, reward: 12000 },
-  { id: 'smash25', name: 'Bulldozer', desc: 'Smash 25 things', test: () => S.stats.smashed >= 25, reward: 2500 },
-  { id: 'pax50', name: 'Frequent Flyers', desc: 'Deliver 50 passengers', test: () => S.stats.pax >= 50, reward: 8000 },
-  { id: 'stars', name: 'Five-Star Line', desc: 'Get 3 stars on 5 routes', test: () => Object.values(S.routes).filter(r => r.stars >= 3).length >= 5, reward: 10000 },
+  { id: 'perf5', prog: () => [S.stats.perfect, 5], name: 'Sharpshooter', desc: '5 perfect launches', test: () => S.stats.perfect >= 5, reward: 150 },
+  { id: 'coins500', prog: () => [S.stats.coins, 500], name: 'Piggy Bank', desc: 'Collect 500 coins', test: () => S.stats.coins >= 500, reward: 300 },
+  { id: 'coins3000', prog: () => [S.stats.coins, 3000], name: 'Dragon Hoard', desc: 'Collect 3,000 coins', test: () => S.stats.coins >= 3000, reward: 4000 },
+  { id: 'rings20', prog: () => [S.stats.rings, 20], name: 'Ring Leader', desc: 'Fly through 20 boost rings', test: () => S.stats.rings >= 20, reward: 600 },
+  { id: 'km10', prog: () => [S.bestAlt / 1000, 10, ' km'], name: 'Ten K Club', desc: 'Reach 10 km', test: () => S.bestAlt >= 10000, reward: 1000 },
+  { id: 'space', prog: () => [S.bestAlt / 1000, 12, ' km'], name: 'Astronaut', desc: 'Reach space (12 km)', test: () => S.bestAlt >= 12000, reward: 1500 },
+  { id: 'km100', prog: () => [S.bestAlt / 1000, 100, ' km'], name: 'Century', desc: 'Reach 100 km', test: () => S.bestAlt >= 100000, reward: 12000 },
+  { id: 'smash25', prog: () => [S.stats.smashed, 25], name: 'Bulldozer', desc: 'Smash 25 things', test: () => S.stats.smashed >= 25, reward: 2500 },
+  { id: 'pax50', prog: () => [S.stats.pax, 50], name: 'Frequent Flyers', desc: 'Deliver 50 passengers', test: () => S.stats.pax >= 50, reward: 8000 },
+  { id: 'stars', prog: () => [Object.values(S.routes).filter(r => r.stars >= 3).length, 5], name: 'Five-Star Line', desc: 'Get 3 stars on 5 routes', test: () => Object.values(S.routes).filter(r => r.stars >= 3).length >= 5, reward: 10000 },
+  { id: 'jobs25', prog: () => [S.stats.jobs, 25], name: 'Odd Job Pro', desc: 'Finish 25 jobs from the Job Board', test: () => S.stats.jobs >= 25, reward: 6000 },
+  { id: 'close50', prog: () => [S.stats.close, 50], name: 'Daredevil', desc: 'Get 50 close calls', test: () => S.stats.close >= 50, reward: 3000 },
+  { id: 'night5', prog: () => [S.stats.nights, 5], name: 'Night Owl', desc: 'Fly 5 night flights', test: () => S.stats.nights >= 5, reward: 2500 },
+  { id: 'stars10', prog: () => [ROUTES.filter(r => (S.routes[r.id] || {}).stars >= 3).length, ROUTES.length], name: 'Perfect Line', desc: 'Get 3 stars on every route', test: () => ROUTES.every(r => (S.routes[r.id] || {}).stars >= 3), reward: 60000 },
+  { id: 'km1000', prog: () => [S.bestAlt / 1000, 1000, ' km'], name: 'Thousand Club', desc: 'Reach 1,000 km', test: () => S.bestAlt >= 1000000, reward: 100000 },
+  { id: 'km2500', prog: () => [S.bestAlt / 1000, 2500, ' km'], name: 'Beyond the Gate', desc: 'Reach 2,500 km in endless mode', test: () => S.bestAlt >= 2500000, reward: 250000 },
   { id: 'fork', name: 'Decisions!', desc: 'Pick your first fork upgrade', test: () => UPGRADES.some(u => u.fork && lvl(u.id) > 0), reward: 500 },
 ];
 function checkAchievements() {
@@ -2778,6 +2788,7 @@ function settleJobs(R, rows) {
   if (!R.jobs) return 0;
   let paid = 0;
   for (const j of R.jobs) if (j.done) { rows.push([`Job: ${jobText(j, false)}`, j.pay]); paid++; }
+  S.stats.jobs += paid;
   if (paid) { const ids = R.jobs.filter(j => j.done).map(j => j.id); S.jobs = S.jobs.filter(j => !ids.includes(j.id)); S.jobsNew = (S.jobsNew || 0) + fillJobs(); }
   S.jobSwap = false;
   return paid;
@@ -2939,7 +2950,7 @@ const BODIES = [
   { alt: 40000, kind: 'moon', x: 0.78, size: 1 },
   { alt: 110000, kind: 'mars', x: 0.22, size: 0.9 },
   { alt: 240000, kind: 'saturn', x: 0.76, size: 1.1 },
-  { alt: 500000, kind: 'gate', x: 0.3, size: 1 },
+  { alt: 650000, kind: 'gate', x: 0.3, size: 1 },
 ];
 function drawSunAndPlanets(alt) {
   // sun
@@ -3170,12 +3181,26 @@ function drawGround() {
   }
 }
 
-const ADA_TIPS = [
-  'Perfect launches pay 10% extra!', 'Tilting steers you, but costs a little lift.', 'Fuel cans can re-light a dead engine!',
-  'Fly through boost rings back to back for combos.', 'Forks can be swapped later for a refund.', 'Comfy passengers give stars. Stars unlock paint jobs!',
-  'Mission Control shows where you’ll top out.', 'Higher zones have shinier, pricier coins.', 'No air in space means no drag. Whee!',
-  'More hearts? Try Hull Plating.', 'Already-done routes still pay fares!', 'Heavier rockets need beefier engines.',
+const ADA_TIP_LIST = [
+  ['Perfect launches pay 10% extra!', () => true],
+  ['Upgrades show how much higher you’ll fly.', () => true],
+  ['Tilting steers you, but costs a little lift.', () => S.flights >= 1],
+  ['Fuel cans can re-light a dead engine!', () => S.flights >= 2],
+  ['Fly through boost rings back to back for combos.', () => S.flights >= 3],
+  ['Skim past obstacles for close-call cash!', () => S.flights >= 3],
+  ['More hearts? Try Hull Plating.', () => BRANCHES.find(b => b.id === 'hull').unlock()],
+  ['Forks can be swapped later for a refund.', () => UPGRADES.some(u => u.fork && upState(u) !== 'hidden')],
+  ['Comfy passengers give stars. Stars unlock paint jobs!', () => routeDone('r1')],
+  ['Already-done routes still pay fares!', () => routeDone('r1')],
+  ['Check the Job Board for bonus cash.', () => jobsUnlocked()],
+  ['Night flights pay more for height. Pretty, too!', () => S.flights >= 7],
+  ['Mission Control shows where you’ll top out.', () => lvl('control') > 0],
+  ['Higher zones have shinier, pricier coins.', () => S.bestAlt > 1200],
+  ['No air in space means no drag. Whee!', () => S.bestAlt > 8000],
+  ['Heavier rockets need beefier engines.', () => S.flights >= 5],
 ];
+let ADA_TIPS = ADA_TIP_LIST.map(t => t[0]);
+function refreshAdaTips() { const l = ADA_TIP_LIST.filter(t => { try { return t[1](); } catch (e) { return false; } }).map(t => t[0]); if (l.length) ADA_TIPS = l; }
 function wrapText(str, maxW) { const words = str.split(' '); const out = []; let line = ''; for (const w of words) { const t = line ? line + ' ' + w : w; if (ctx.measureText(t).width > maxW && line) { out.push(line); line = w; } else line = t; } if (line) out.push(line); return out; }
 function drawStationAndRecord() {
   const R = G.R;
@@ -3847,7 +3872,9 @@ const UI = (() => {
       const got = !!S.ach[a.id];
       const card = el('div', 'route' + (got ? '' : ' locked'));
       card.appendChild(el('div', 'r-ico', got ? ICONS.trophy : ICONS.lock));
-      card.appendChild(el('div', 'r-main', `<div class="r-name">${a.name}</div><div class="r-desc">${a.desc}</div><div class="r-meta"><span class="chip pay">${fmtMoney(a.reward)}</span>${got ? '<span class="chip ok">Earned!</span>' : ''}</div>`));
+      let pr = '';
+      if (!got && a.prog) { const [c, n, u] = a.prog(); const k = clamp(c / n, 0, 1); pr = `<div class="ach-bar"><i style="width:${Math.round(k * 100)}%"></i><span>${fmtInt(Math.min(c, n))}${u || ''} / ${fmtInt(n)}${u || ''}</span></div>`; }
+      card.appendChild(el('div', 'r-main', `<div class="r-name">${a.name}</div><div class="r-desc">${a.desc}</div>${pr}<div class="r-meta"><span class="chip pay">${fmtMoney(a.reward)}</span>${got ? '<span class="chip ok">Earned!</span>' : ''}</div>`));
       list.appendChild(card);
     }
     $('scr-map').querySelector('h2').textContent = 'Achievements';
@@ -4040,6 +4067,7 @@ function goHangar(skipFlush) {
   G.mode = 'hangar'; G.R = null; G.obs = []; G.picks = []; G.parts = []; G.banners = []; G.station = null;
   G.st = computeStats(); G.look = rocketLook();
   AudioSys.setEngine(0, false); AudioSys.setWind(0);
+  refreshAdaTips();
   UI.showScreen('hangar');
   UI.announceNew(false);
   Music.play(Music.current === 'hangar2' || Music.current === 'hangar' ? Music.current : routeDone('r2') && Math.random() < 0.5 ? 'hangar2' : 'hangar');
