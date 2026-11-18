@@ -2204,6 +2204,42 @@ function spawnCoins(x, py) {
     G.picks.push({ type: 'coin', x: px, py: yy, r: 12, seed: Math.random(), vx: 0, vy: 0 });
   }
 }
+// ---- random sky events: a short burst of loot or danger during the climb
+const SKY_EVENTS = {
+  goldrush: { name: 'GOLD RUSH!', col: '#ffd93d', sub: 'COINS EVERYWHERE', dur: 5, min: 500, w: 3 },
+  flock:    { name: 'MIGRATION!', col: '#bff8ff', sub: 'BIRDS INCOMING', dur: 6, min: 250, max: 3800, w: 2 },
+  meteors:  { name: 'METEOR SHOWER!', col: '#ff9f43', sub: 'DODGE THE HOT ROCKS', dur: 6, min: 12000, w: 2 },
+  icefall:  { name: 'ICE STORM!', col: '#bff8ff', sub: 'CRYSTALS AHEAD', dur: 6, min: 240000, w: 1.5 },
+};
+function updateSkyEvent(R, dt, viewTop) {
+  if (R.ended || R.crashed) return;
+  const vw = W / G.cam.z;
+  if (R.event) {
+    const e = R.event; e.t += dt; e.acc += dt;
+    if (e.id === 'goldrush' && e.acc > 0.32) { e.acc = 0; spawnCoins(R.x + rand(-vw * 0.3, vw * 0.3), viewTop + rand(40, 260)); }
+    if (e.id === 'meteors' && e.acc > 0.28) { e.acc = 0; const o = makeObstacle('meteor', R.x + rand(-vw * 0.55, vw * 0.55), viewTop); o.vx = e.dir * rand(60, 200); G.obs.push(o); }
+    if (e.id === 'icefall' && e.acc > 0.3) { e.acc = 0; const o = makeObstacle('ice', R.x + rand(-vw * 0.5, vw * 0.5), viewTop + rand(50, 300)); o.vy = -rand(80, 200); G.obs.push(o); }
+    if (e.id === 'flock' && e.acc > 0.55) {
+      e.acc = 0; const n = randi(3, 5), sp = rand(150, 230), y = R.py + rand(120, 520), x0 = G.cam.x - e.dir * (vw / 2 + 60);
+      for (let i = 0; i < n; i++) { const o = makeObstacle('bird', x0 - e.dir * i * 30, y + rand(-28, 28)); o.dir = e.dir; o.vx = e.dir * sp; G.obs.push(o); }
+      sfx.squawk();
+    }
+    if (e.t > e.dur) R.event = null;
+    return;
+  }
+  if (S.flights < 3 || R.time < 5 || (R.evCount || 0) >= 2) return;
+  if (!(R.fuel > 0 || R.dropFuel > 0 || R.vy > 150)) return; // only while climbing hard
+  R.evT = (R.evT || 0) + dt;
+  if (R.evT < 6 || Math.random() > dt * 0.09) return;
+  const pool = [];
+  for (const id in SKY_EVENTS) { const d = SKY_EVENTS[id]; if (R.alt >= d.min && R.alt < (d.max || Infinity)) for (let i = 0; i < d.w * 2; i++) pool.push(id); }
+  if (!pool.length) return;
+  const id = pick(pool), d = SKY_EVENTS[id];
+  R.event = { id, t: 0, dur: d.dur, acc: 0, dir: chance(0.5) ? 1 : -1 };
+  R.evCount = (R.evCount || 0) + 1; R.evT = 0;
+  banner(d.name, d.col, 2.2, d.sub);
+  if (id === 'goldrush') sfx.bigcoin(); else sfx.thunder();
+}
 function spawnChunk(y0, y1) {
   const R = G.R, st = G.st;
   const est = Math.max(R.alt, R.alt + (y0 - R.py) / pxScale(Math.max(R.vy, 40)));
@@ -2295,6 +2331,7 @@ function updateFlight(dt) {
   // --- spawn ahead
   const viewTop = G.cam.py + (H * G.cam.anchor) / G.cam.z;
   while (G.spawnY < viewTop + 700) { spawnChunk(G.spawnY, G.spawnY + 200); G.spawnY += 200; }
+  updateSkyEvent(R, dt, viewTop);
   // --- entities
   updateObstacles(dt);
   updatePickups(dt);
