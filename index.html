@@ -871,9 +871,15 @@ const ROUTES = [
   { id: 'r2', to: 'Thunderhead Station', alt: 3000, pax: 2, reward: 600, fare: 90, icon: 'storm',
     desc: 'Weather scientists need a lift to their lightning lab above the clouds.',
     who: ['volt', 'nimbus'] },
+  { id: 'r2b', to: 'Stargazer Observatory', alt: 6500, pax: 2, reward: 1000, fare: 140, icon: 'observ',
+    desc: 'An observatory perched on a wisp of cloud. A comet passes tonight and the astronomers must not miss it!',
+    who: ['orion', 'luna'] },
   { id: 'r3', to: 'Skyhook Hotel', alt: 12000, pax: 3, reward: 1800, fare: 220, icon: 'hotel',
     desc: 'A swanky hotel dangling at the edge of space. Honeymooners on board!',
     who: ['romeo', 'juno', 'bell'] },
+  { id: 'r3b', to: 'Satellite Diner', alt: 22000, pax: 3, reward: 3000, fare: 330, icon: 'diner',
+    desc: 'A greasy-spoon diner bolted to an old satellite. Best zero-G pancakes in orbit.',
+    who: ['flo', 'mike', 'kid2'] },
   { id: 'r4', to: 'Moonbase Lulu', alt: 40000, pax: 4, reward: 5000, fare: 500, icon: 'moon',
     desc: 'The Moon’s only bowling alley is opening. The league needs its players.',
     who: ['kid', 'bowler', 'nana', 'pip'] },
@@ -890,7 +896,7 @@ const ROUTES = [
 const routeById = id => ROUTES.find(r => r.id === id);
 const routeDone = id => !!(S.routes[id] && S.routes[id].done);
 function nextRoute() { return ROUTES.find(r => !routeDone(r.id)) || null; }
-function routeUnlocked(r) { const i = ROUTES.indexOf(r); return i === 0 || routeDone(ROUTES[i - 1].id); }
+function routeUnlocked(r) { const i = ROUTES.indexOf(r); return i === 0 || routeDone(ROUTES[i - 1].id) || ROUTES.slice(i).some(x => routeDone(x.id)); }
 
 // characters: portrait params
 const CHARS = {
@@ -918,6 +924,10 @@ const CHARS = {
   twin2: { name: 'Zap', skin: '#ffd9b3', hair: '#ff5a5f', style: 'wild', col: '#ff5a5f' },
   prof:  { name: 'Prof. Quark', skin: '#e0b48a', hair: '#888888', style: 'bald', glasses: true, col: '#9b5de5' },
   cat:   { name: 'Sir Whiskers', skin: '#ff9f43', hair: null, style: 'cat', col: '#ff9f43' },
+  orion: { name: 'Prof. Orion', skin: '#c68b59', hair: '#2b2240', style: 'curly', glasses: true, col: '#4d96ff' },
+  luna:  { name: 'Luna', skin: '#f5c9a5', hair: '#9b5de5', style: 'pigtails', col: '#9b5de5' },
+  flo:   { name: 'Flo', skin: '#ffd9b3', hair: '#ff5a8a', style: 'long', col: '#ff5a5f' },
+  mike:  { name: 'Trucker Mike', skin: '#e0b48a', hair: '#6b3e26', style: 'cap', mustache: true, col: '#ff9f43' },
   tourist: { name: 'Tourist', skin: '#ffd9b3', hair: '#6b3e26', style: 'short', col: '#4d96ff' },
 };
 const TOURISTS = ['tourist', 'kid', 'nimbus', 'romeo', 'juno', 'nana', 'farmer', 'kid2', 'bowler', 'twin1', 'cat', 'pip'];
@@ -949,12 +959,23 @@ const STORY = {
     ['volt', 'Dr. Volt here! My lightning lab, Thunderhead Station, needs scientists. Mind the storm clouds!'],
   ],
   r2: [
-    ['volt', 'ZAP-tastic! Our instruments are buzzing. Next stop, the edge of space?'],
-    ['ada', 'The Skyhook Hotel hangs up at 12 km. Past the jets, past the weather balloons. You’ll need real power.'],
+    ['volt', 'ZAP-tastic! Our instruments are buzzing. My old friend Prof. Orion could use a lift too.'],
+    ['orion', 'Greetings! My observatory floats at 6.5 km. A comet passes tonight and I simply MUST see it!'],
+  ],
+  r2b: [
+    ['orion', 'Magnificent! The comet! And so many stars... Luna, write this down!'],
+    ['luna', 'Already on it, Professor! Hey pilot, the Skyhook Hotel is right at the edge of space.'],
+    ['ada', 'Skyhook hangs up at 12 km. Past the jets, past the weather balloons. You’ll need real power, sweetpea.'],
   ],
   r3: [
     ['juno', 'The view! The stars! The tiny complimentary mints!'],
-    ['ada', 'We’re officially a space line, sweetpea! Next: Moonbase Lulu. Watch out for asteroids and... UFOs?'],
+    ['ada', 'We’re officially a space line, sweetpea!'],
+    ['flo', 'Hon, I run the Satellite Diner up at 22 km. Can you fly my regulars up? The pancakes are getting cold!'],
+  ],
+  r3b: [
+    ['flo', 'Order up! Pancakes in zero-G. They never quite land on the plate.'],
+    ['mike', 'Best. Pancakes. In orbit. I’d fly a thousand kilometres for these.'],
+    ['ada', 'Next: Moonbase Lulu at 40 km. Watch out for asteroids and... UFOs?'],
   ],
   r4: [
     ['kid', 'The Moon has a BOWLING ALLEY! Best. Day. Ever.'],
@@ -1854,6 +1875,31 @@ function drawStation(c, kind, t, s = 1) {
     for (const x of [-50, 50]) { c.beginPath(); c.moveTo(x, -60); c.lineTo(x, -110); c.stroke(); circ(c, x, -114, 6); fillStroke(c, '#ff5a5f'); }
     if (Math.sin(t * 4) > 0.6) { c.save(); c.strokeStyle = '#fff36b'; c.lineWidth = 4; c.beginPath(); c.moveTo(-50, -114); c.lineTo(-20, -100); c.lineTo(-30, -120); c.lineTo(50, -114); c.stroke(); c.restore(); }
     text(c, 'THUNDERHEAD', 0, 70, 20, '#fff');
+  } else if (kind === 'observ') {
+    drawCloud(c, 0, 52, 280, 62, 31, '#ffffff', '#dfe8f5', 3);
+    rr(c, -72, -12, 144, 62, 8); fillStroke(c, '#e9e4f5');
+    for (let i = 0; i < 3; i++) { circ(c, -42 + i * 42, 20, 10); fillStroke(c, Math.sin(t * 2 + i) > -0.3 ? '#ffd93d' : '#9fdcff', 2.5); }
+    c.beginPath(); c.arc(0, -12, 64, Math.PI, 0); c.closePath(); fillStroke(c, '#ffffff');
+    c.save(); c.beginPath(); c.arc(0, -12, 64, Math.PI, 0); c.clip(); c.fillStyle = INK; c.fillRect(-10, -80, 20, 70); c.restore();
+    c.save(); c.translate(0, -44); c.rotate(-0.55 + Math.sin(t * 0.6) * 0.12); rr(c, -9, -64, 18, 64, 4); fillStroke(c, '#4d96ff'); rr(c, -12, -72, 24, 13, 4); fillStroke(c, '#ffd93d'); c.restore();
+    // comet
+    c.save(); c.translate(150, -120); c.rotate(0.5); c.strokeStyle = 'rgba(255,255,255,.75)'; c.lineWidth = 6; c.beginPath(); c.moveTo(0, 0); c.lineTo(-70, 0); c.stroke(); c.lineWidth = 3; c.beginPath(); c.moveTo(0, 8); c.lineTo(-48, 10); c.stroke(); circ(c, 0, 0, 8); fillStroke(c, '#bff8ff', 3); c.restore();
+    text(c, 'STARGAZER', 0, 84, 20, '#fff');
+  } else if (kind === 'diner') {
+    for (const sx of [-1, 1]) {
+      c.beginPath(); c.moveTo(sx * 82, 0); c.lineTo(sx * 112, 0); c.lineWidth = 5; c.stroke(); c.lineWidth = 3;
+      const px = sx > 0 ? 112 : -212; rr(c, px, -28, 100, 56, 5); fillStroke(c, '#4d96ff');
+      c.beginPath(); for (let k = 1; k < 4; k++) { c.moveTo(px + k * 25, -28); c.lineTo(px + k * 25, 28); } c.moveTo(px, 0); c.lineTo(px + 100, 0); c.lineWidth = 2; c.stroke(); c.lineWidth = 3;
+    }
+    c.beginPath(); c.moveTo(-10, -42); c.lineTo(-24, -70); c.stroke(); c.beginPath(); c.ellipse(-28, -76, 22, 9, -0.4, 0, Math.PI); fillStroke(c, '#c9ced8');
+    rr(c, -82, -42, 164, 84, 32); fillStroke(c, '#fff6e5');
+    c.save(); rr(c, -82, -42, 164, 84, 32); c.clip(); c.fillStyle = '#2ec4b6'; c.fillRect(-90, 12, 180, 14); c.fillStyle = '#ff5a8a'; c.fillRect(-90, 26, 180, 20); c.restore();
+    rr(c, -82, -42, 164, 84, 32); c.stroke();
+    for (let i = 0; i < 4; i++) { rr(c, -62 + i * 32, -26, 22, 26, 6); fillStroke(c, '#9fdcff', 2.5); }
+    const on = Math.sin(t * 5) > -0.4;
+    rr(c, 30, -84, 62, 30, 8); fillStroke(c, INK); text(c, 'EAT', 61, -68, 18, on ? '#ff8fb3' : '#7a2a4a', 'center', on ? '#ff5a8a' : null, 2);
+    c.beginPath(); c.moveTo(50, -54); c.lineTo(50, -42); c.moveTo(72, -54); c.lineTo(72, -42); c.stroke();
+    text(c, 'SATELLITE DINER', 0, 70, 18, '#fff');
   } else if (kind === 'hotel') {
     c.beginPath(); c.moveTo(0, -60); c.lineTo(0, -400); c.lineWidth = 4; c.stroke();
     rr(c, -110, -60, 220, 120, 26); fillStroke(c, '#fff6e5');
@@ -1894,7 +1940,7 @@ function routeIconCanvas(kind, size = 64) {
   const c = cnv.getContext('2d'); c.scale(2, 2);
   c.save(); c.translate(size / 2, size / 2);
   rr(c, -size / 2 + 2, -size / 2 + 2, size - 4, size - 4, 14);
-  const bg = { dummy: '#bfe9ff', cafe: '#bfe9ff', storm: '#8fb8e8', hotel: '#1d3f86', moon: '#111a3a', mars: '#3a1420', saturn: '#2a1450', gate: '#123c4a' }[kind];
+  const bg = { dummy: '#bfe9ff', cafe: '#bfe9ff', storm: '#8fb8e8', observ: '#5b86d6', diner: '#16285a', hotel: '#1d3f86', moon: '#111a3a', mars: '#3a1420', saturn: '#2a1450', gate: '#123c4a' }[kind];
   c.fillStyle = bg; c.fill(); c.lineWidth = 3; c.strokeStyle = INK; c.stroke();
   c.save(); rr(c, -size / 2 + 2, -size / 2 + 2, size - 4, size - 4, 14); c.clip();
   if (kind === 'dummy') { c.translate(0, 2); drawFace(c, 'buckley', 16, 'happy', 0); }
@@ -1904,6 +1950,8 @@ function routeIconCanvas(kind, size = 64) {
   else if (kind === 'gate') { drawStation(c, 'gate', 1, 0.17); }
   else if (kind === 'hotel') { for (let i = 0; i < 12; i++) { c.fillStyle = '#fff'; circ(c, hash(i * 7) * size - size / 2, hash(i * 13) * size - size / 2, 1); c.fill(); } drawStation(c, 'hotel', 0, 0.22); }
   else if (kind === 'storm') { drawStation(c, 'storm', 0, 0.18); }
+  else if (kind === 'observ') { c.translate(0, 4); drawStation(c, 'observ', 0, 0.19); }
+  else if (kind === 'diner') { for (let i = 0; i < 10; i++) { c.fillStyle = '#fff'; circ(c, hash(i * 5) * size - size / 2, hash(i * 9) * size - size / 2, 1); c.fill(); } drawStation(c, 'diner', 0, 0.135); }
   else if (kind === 'cafe') { drawStation(c, 'cafe', 0, 0.2); }
   c.restore();
   c.restore();
@@ -2272,6 +2320,8 @@ const CHATTER = {
   r0: ['...', '!!!', '...?'],
   r1: ['My latte awaits!', 'Higher, I say!', 'Mayoral business!'],
   r2: ['Fascinating clouds!', 'Mind the lightning!', 'Data! Glorious data!'],
+  r2b: ['Comet-spotting time!', 'Twinkle twinkle!', 'Is that Venus?'],
+  r3b: ['Extra syrup!', 'Coffee, black!', 'I smell pancakes!'],
   r3: ['So romantic!', 'Room service?', 'Space honeymoon!'],
   r4: ['Strike!', 'Moon bowling!', 'Pins in space!'],
   r5: ['Extra cheese!', 'Pizza time!', 'Red planet, here we come!'],
@@ -4045,7 +4095,7 @@ requestAnimationFrame(frame);
 
 // debug / test hooks
 window.__skyhop = {
-  G, DEBUG, get S() { return S; }, computeStats, simulateFlight, UPGRADES, ROUTES, UP,
+  G, DEBUG, get S() { return S; }, computeStats, simulateFlight, UPGRADES, ROUTES, UP, art: { drawStation, routeIconCanvas, drawFace },
   set bot(v) { DEBUG.bot = v; }, set timeScale(v) { DEBUG.timeScale = v; },
   setMoney(v) { S.money = v; if (UI.current === 'hangar') UI.refresh(); },
   setLevel(id, l) { S.up[id] = l; G.look = rocketLook(); G.st = computeStats(); if (UI.current === 'hangar') UI.refresh(); },
