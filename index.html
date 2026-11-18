@@ -4313,7 +4313,11 @@ resize();
 G.st = computeStats(); G.look = rocketLook();
 G.cam.py = padRestPy(G.look); G.cam.anchor = 0.72; G.cam.z = worldZoom();
 UI.showScreen('title');
-if (S.seen.intro) { $('btn-start').textContent = 'Continue'; }
+if (S.seen.intro) {
+  $('btn-start').textContent = 'Continue';
+  const nr = nextRoute(), nDone = ROUTES.filter(r => routeDone(r.id)).length;
+  $('title-foot').innerHTML = `Welcome back! ${S.flights} flights · best <b>${fmtAlt(S.bestAlt)}</b> · ${nDone}/${ROUTES.length} routes${nr ? ` · next: <b>${nr.to}</b>` : ' · Endless mode'}`;
+}
 Music.play('title');
 requestAnimationFrame(frame);
 
