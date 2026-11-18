@@ -36,6 +36,8 @@ button{font-family:var(--font)}
 .btn.pink{background:var(--pink);color:#fff;text-shadow:0 2px 0 var(--ink)}
 .btn.ghost{background:var(--paper)}
 .btn:disabled{filter:grayscale(.85) opacity(.65);cursor:not-allowed;transform:none;box-shadow:0 5px 0 var(--ink)}
+.btn.small{font-size:15px;padding:6px 12px;border-radius:13px;flex:0 0 auto}
+.btn.off{filter:grayscale(.85) opacity(.6)}
 .icon-btn{width:46px;height:46px;border:4px solid var(--ink);border-radius:14px;background:var(--paper);box-shadow:0 4px 0 var(--ink);
   cursor:pointer;display:inline-flex;align-items:center;justify-content:center;padding:0;transition:transform .07s,box-shadow .07s}
 .icon-btn:active{transform:translateY(3px);box-shadow:0 1px 0 var(--ink)}
@@ -131,10 +133,18 @@ button{font-family:var(--font)}
 #statcard .row{display:flex;justify-content:space-between;gap:16px;line-height:1.5}
 #statcard .row span:last-child{color:var(--ink)}
 #statcard .best{margin-top:6px;padding-top:6px;border-top:3px dashed rgba(43,34,64,.25)}
+#statcard .jobs{margin-top:8px;padding-top:8px;border-top:3px dashed rgba(43,34,64,.25);cursor:pointer;max-width:250px}
+#statcard .jobs:hover h4{text-decoration:underline}
+#statcard .job{display:flex;justify-content:space-between;gap:10px;font-size:13px;line-height:1.3;margin:3px 0}
+#statcard .job b{color:var(--purple)}
+#statcard .job .jp{color:#1d9e4c;white-space:nowrap}
 @media (max-width:820px),(max-height:520px) and (max-width:1000px){
   #scr-hangar .side{left:8px;right:8px;width:auto;top:auto;bottom:8px;height:min(62%,560px)}
   #statcard{display:none}
   .money{font-size:22px}
+  .head-btns{gap:6px}
+  .head-btns .icon-btn{width:40px;height:40px;border-radius:12px}
+  .head-btns .icon-btn svg{width:22px;height:22px}
   .side-head{padding:8px 10px 4px}
   #detail{min-height:86px;padding:8px 10px;gap:8px}
   #detail h3{font-size:17px}
@@ -149,6 +159,13 @@ button{font-family:var(--font)}
   .toast{font-size:13px;padding:6px 12px}
   .rc-pre{display:none}
   .btn.big{font-size:22px;padding:10px 18px}
+}
+@media (max-width:440px){
+  .money{font-size:19px;padding:3px 10px 3px 4px;gap:5px}
+  .money .coin{width:24px;height:24px}
+  .head-btns{gap:5px}
+  .head-btns .icon-btn{width:36px;height:36px;border-width:3px;box-shadow:0 3px 0 var(--ink)}
+  .head-btns .icon-btn svg{width:20px;height:20px}
 }
 @media (max-height:520px) and (min-width:821px){
   #scr-hangar .side{top:8px;bottom:8px}
@@ -221,7 +238,7 @@ body.in-hangar #toasts{left:calc((100vw - min(580px,54vw) - 16px)/2)}
 @media (max-width:820px){body.in-hangar #toasts{left:50%}}
 #toasts{position:absolute;top:12px;left:50%;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;gap:8px;z-index:6;pointer-events:none}
 .toast{background:var(--ink);color:var(--cream);font-weight:800;font-size:15px;padding:8px 16px;border-radius:22px;text-align:center;justify-content:center;border:3px solid var(--cream);box-shadow:0 4px 0 rgba(0,0,0,.25);
-  animation:toastIn .35s cubic-bezier(.2,1.6,.4,1),toastOut .4s 3.2s forwards;display:flex;align-items:center;gap:8px;white-space:normal;max-width:min(92vw,560px)}
+  animation:toastIn .35s cubic-bezier(.2,1.6,.4,1),toastOut .4s 3.2s forwards;display:block;white-space:normal;max-width:min(92vw,560px);line-height:1.25}
 .toast b{color:var(--yellow)}
 @keyframes toastIn{from{transform:translateY(-30px) scale(.8);opacity:0}}
 @keyframes toastOut{to{transform:translateY(-20px);opacity:0}}
@@ -393,6 +410,7 @@ function defaultSave() {
     tabsSeen: {},
     stats: { coins: 0, hits: 0, perfect: 0, rings: 0, smashed: 0, pax: 0, time: 0 },
     ach: {},
+    jobs: [], avg: { coins: 8, rings: 0.6, close: 0.6, alt: 500, v: 110, total: 110, smash: 0 },
     settings: { music: true, sfx: true, shake: true },
     ended: false,
   };
@@ -407,6 +425,7 @@ function loadSave() {
       S = Object.assign(def, d);
       S.stats = Object.assign(def.stats, d.stats || {});
       S.settings = Object.assign(def.settings, d.settings || {});
+      S.avg = Object.assign(def.avg, d.avg || {});
     }
   } catch (e) { S = defaultSave(); }
 }
@@ -813,6 +832,7 @@ const ICONS = {
   star: svgI('<path d="M32 4l8 18 20 2-15 13 5 20-18-11-18 11 5-20L4 24l20-2z" fill="#ffd93d"/>'),
   people: svgI('<circle cx="22" cy="20" r="8" fill="#ffd9b3"/><circle cx="44" cy="22" r="7" fill="#c68b59"/><path d="M8 54c0-12 6-20 14-20s14 8 14 20z" fill="#4d96ff"/><path d="M32 54c0-10 5-17 12-17s12 7 12 17z" fill="#f15bb5"/>'),
   brush: svgI('<path d="M44 6l14 14-22 22-14-14z" fill="#ffd93d"/><path d="M22 28l14 14" stroke-width="3"/><path d="M20 32c-8 0-12 6-12 12 0 6-4 10-4 10 10 2 22-2 24-12z" fill="#f15bb5"/>'),
+  clip: svgI('<rect x="12" y="10" width="40" height="48" rx="6" fill="#fff6e5"/><rect x="22" y="5" width="20" height="10" rx="3" fill="#ffd93d"/><path d="M20 28l3 3 6-6M34 28h10M20 42l3 3 6-6M34 42h10" stroke-width="3"/>'),
   trophy: svgI('<path d="M18 8h28v14a14 14 0 0 1-28 0z" fill="#ffd93d"/><path d="M18 12H8c0 8 4 12 10 12M46 12h10c0 8-4 12-10 12" stroke-width="3"/><path d="M28 36h8v10h-8zM20 56h24l-2-10H22z" fill="#ffc83d"/>'),
 };
 
@@ -916,6 +936,11 @@ const STORY = {
     ['buckley', '...'],
     ['ada', 'Buckley says it was "fine". Now the town wants real rides! I’ve set up a Launch Site branch for you.'],
     ['plum', 'Ahem! Mayor Plum here. I demand a latte at the Cloud Nine Café. Immediately. Please.'],
+  ],
+  jobs: [
+    ['plum', 'Ahem! Pebbleton is buzzing about your rocket. I have pinned a Job Board in the shed.'],
+    ['plum', 'Odd jobs for daring pilots: coins, rings, close shaves. Finish them on ANY flight for extra cash!'],
+    ['ada', 'Look for the clipboard up top, sweetpea. Don’t like a job? You can swap one each visit.'],
   ],
   r1: [
     ['plum', 'Magnificent! The foam was shaped like a rocket! I shall tell everyone.'],
@@ -1938,6 +1963,7 @@ function prepareRocket() {
     recordShown: S.bestAlt <= 0, ended: false, crashed: false, endT: 0, moodT: 0, mood: 'happy', bubble: null, bubbleT: rand(3, 6),
     boosters: !!G.st.boost, drops: G.st.dropFuel > 0, visStage: 1, burnout: false, warp: 1, apogee: 0, apT: 0,
     tumble: 0, chuteY: 0, capsule: null, spaceSeen: false, startPy: 0, coinStreak: 0, coinStreakT: 0, gustVx: 0, shownEngineOut: false,
+    topV: 0, starsGot: 0, cleanAlt: 0, jobs: jobsUnlocked() && S.jobs && S.jobs.length ? S.jobs.map(j => Object.assign({}, j, { done: false, p: 0 })) : null, jobsDone: 0,
   });
   R.startPy = R.py;
   G.R = R;
@@ -2065,7 +2091,8 @@ function spawnChunk(y0, y1) {
   }
   // goodies
   if (chance(0.42 * k * 3)) spawnCoins(cx + rand(-spread * 0.8, spread * 0.8), rand(y0, y1));
-  if (chance(0.045 * k * 3 * st.canRate)) G.picks.push({ type: 'fuel', x: cx + rand(-spread * 0.7, spread * 0.7), py: rand(y0, y1), r: 16, seed: Math.random(), vx: 0, vy: 0 });
+  const canFade = clamp(1 - (R.time - 40) / 40, 0.15, 1);
+  if (chance(0.045 * k * 3 * st.canRate * canFade)) G.picks.push({ type: 'fuel', x: cx + rand(-spread * 0.7, spread * 0.7), py: rand(y0, y1), r: 16, seed: Math.random(), vx: 0, vy: 0 });
   if ((S.flights >= 2 || R.alt > 400) && chance(0.07 * k * 3)) G.picks.push({ type: 'ring', x: cx + rand(-spread * 0.6, spread * 0.6), py: rand(y0, y1), r: 46, seed: Math.random(), vx: 0, vy: 0, hit: false });
   if (chance((st.repair ? 0.03 + 0.012 * lvl('repair') : 0.012) * k * 3) && R.hp < st.hp) G.picks.push({ type: 'wrench', x: cx + rand(-spread * 0.6, spread * 0.6), py: rand(y0, y1), r: 16, seed: Math.random(), vx: 0, vy: 0 });
   if (chance(0.012 * k * 3)) G.picks.push({ type: 'star', x: cx + rand(-spread * 0.7, spread * 0.7), py: rand(y0, y1), r: 18, seed: Math.random(), vx: 0, vy: 0 });
@@ -2091,6 +2118,8 @@ function tryAfterburner() {
 function updateFlight(dt) {
   const R = G.R, st = G.st;
   R.time += dt;
+  if (R.vy > R.topV) R.topV = R.vy;
+  if (R.jobs && !R.ended) checkJobs(R);
   // --- steering
   let steer = R.stun > 0 ? Math.sin(G.t * 25) * 0.6 : steerInput();
   if (st.autododge && R.stun <= 0) steer = clamp(steer + autoDodge() * (0.35 + 0.25 * st.autododge), -1, 1);
@@ -2112,7 +2141,8 @@ function updateFlight(dt) {
   if (st.shield && !R.shieldOn) { R.shieldT += dt; if (R.shieldT >= st.shield) { R.shieldOn = true; R.shieldT = 0; sfx.shield(); } }
   if (st.repair && R.hp < st.hp && !R.crashed) { R.repairT += dt; if (R.repairT >= st.repair) { R.repairT = 0; R.hp++; sfx.repair(); floater(R.x, R.py + 40, '+1 ♥', '#5fd068'); } }
   if (st.scoop && R.alt < 12000 && R.fuel > 0) R.fuel = Math.min(R.stage === 2 ? Infinity : st.fuelCap, R.fuel + st.fuelCap * 0.005 * st.scoop * dt);
-  // --- physics (sub-stepped, warped in deep space)
+  // --- physics (sub-stepped, warped in deep space). Very long flights meet the 'solar wind' so a run never drags on forever.
+  R.kMul = R.time > 70 ? 1 + Math.pow((R.time - 70) / 12, 2) : 1;
   const warp = simWarp(R);
   R.warp = warp;
   const tiltCos = lerp(Math.cos(R.tilt), 1, st.vector / 3);
@@ -2351,6 +2381,7 @@ function hitRocket(o, lightning) {
     return;
   }
   const dmg = o.dmg || 1;
+  if (R.hits === 0) R.cleanAlt = R.maxAlt;
   R.hp -= dmg; R.hits++; S.stats.hits++;
   R.vy *= 1 - o.slow * (1 - 0.2 * st.ram);
   R.comfort = Math.max(0, R.comfort - 0.18 * (1 - 0.2 * st.comfort) * dmg);
@@ -2426,7 +2457,8 @@ function updatePickups(dt) {
         sparks(p.x, p.py, 5, ['#ffd93d', '#fff'], 120);
         if (v >= 8 || (v > 1 && R.coinStreak % 4 === 3)) floater(p.x, p.py + 16, '+' + fmtMoney(v * (v >= 8 ? 1 : 4)), '#ffd93d', 14);
       } else if (p.type === 'fuel') {
-        const add = Math.min(st.fuelCap * 0.25, st.burn * 1.4 * st.canMul);
+        const add = Math.min(st.fuelCap * 0.25, st.burn * 1.4 * st.canMul) * Math.pow(0.8, R.cans || 0);
+        R.cans = (R.cans || 0) + 1;
         const wasEmpty = R.fuel <= 0 && R.dropFuel <= 0 && R.stage2Fuel <= 0;
         R.fuel = Math.min(R.stage === 2 ? Math.max(R.fuel + add, 0) : st.fuelCap, R.fuel + add);
         if (wasEmpty) { R.shownEngineOut = false; R.peakV = Math.max(R.vy, 1); floater(R.x, R.py + 70, 'RE-IGNITION!', '#ff9f43', 20); }
@@ -2434,7 +2466,7 @@ function updatePickups(dt) {
       } else if (p.type === 'wrench') {
         R.hp = Math.min(st.hp, R.hp + 1); sfx.repair(); floater(p.x, p.py + 20, '+1 ♥', '#5fd068', 18);
       } else if (p.type === 'star') {
-        const v = coinValue(R.alt) * 25; R.coins += 25; R.coinCash += v; sfx.bigcoin(); confetti(p.x, p.py, 24);
+        const v = coinValue(R.alt) * 25; R.coins += 25; R.coinCash += v; R.starsGot++; sfx.bigcoin(); confetti(p.x, p.py, 24);
         floater(p.x, p.py + 20, `STAR! +${fmtMoney(v)}`, '#ffd93d', 22);
       }
     }
@@ -2490,7 +2522,10 @@ function computeResult() {
   const record = alt > S.bestAlt && S.flights > 0;
   if (record) rows.push(['New record bonus', Math.round(altPay * 0.25)]);
   if (st.gift) rows.push(['Gift shop sales', st.gift]);
+  const jobsPaid = settleJobs(R, rows);
   const total = rows.reduce((s, x) => s + x[1], 0);
+  const core = rows.reduce((s, x) => s + (x[0].startsWith('Job:') || x[0] === 'First delivery bonus!' ? 0 : x[1]), 0);
+  S.avg.total = S.avg.total * 0.65 + core * 0.35;
   const badges = [];
   if (R.delivered) badges.push('Delivered!');
   if (record) badges.push('New record!');
@@ -2499,6 +2534,7 @@ function computeResult() {
   if (R.rings >= 3) badges.push(`${R.rings} boost rings`);
   if (R.smashed >= 3) badges.push(`${R.smashed} smashed`);
   if ((R.nearMiss || 0) >= 3) badges.push(`${R.nearMiss} close calls`);
+  if (jobsPaid) badges.push(jobsPaid > 1 ? `${jobsPaid} jobs done` : 'Job done');
   if (R.crashed) badges.push('Kaboom');
   G.result = { rows, total, alt, crashed: R.crashed, delivered: R.delivered, route: r, firstTime, stars, record, badges, shown: false, zone: zoneAt(alt).name, time: R.time };
   // ---- apply to save immediately (so closing the tab does not lose the flight)
@@ -2543,6 +2579,55 @@ function checkAchievements() {
     S.ach[a.id] = 1; S.money += a.reward;
     (S.pendingAch = S.pendingAch || []).push(a.id);
   }
+}
+
+// ---------------------------------------------------------------- job board (side jobs)
+function nice2(x) { x = Math.max(1, x); const m = Math.pow(10, Math.max(0, Math.floor(Math.log10(x)) - 1)); return Math.round(x / m) * m; }
+const JB = s => `<b>${s}</b>`, JP = s => s;
+const JOB_TYPES = {
+  coins:   { w: 3, pay: 0.5,  txt: (j, b) => `Collect ${b(j.n)} coins`, prog: R => R.coins, make: () => nice2(Math.max(8, S.avg.coins * 1.2 + 4)) },
+  rings:   { w: 2, pay: 0.55, txt: (j, b) => `Fly through ${b(j.n)} boost rings`, prog: R => R.rings, make: () => Math.max(2, Math.round(S.avg.rings * 1.3 + 1)) },
+  close:   { w: 2, pay: 0.6,  txt: (j, b) => `Get ${b(j.n)} close calls`, prog: R => R.nearMiss || 0, make: () => Math.max(2, Math.round(S.avg.close * 1.3 + 1)) },
+  clean:   { w: 2, pay: 0.6,  txt: (j, b) => `Reach ${b(fmtAlt(j.n))} without a scratch`, prog: R => R.hits === 0 ? R.maxAlt : (R.cleanAlt || 0), make: () => nice2(Math.max(400, S.avg.alt * 0.75)), alt: true },
+  speed:   { w: 1, pay: 0.4,  txt: (j, b) => `Hit a top speed of ${b(fmtSpeed(j.n))}`, prog: R => R.topV || 0, make: () => nice2(S.avg.v * 1.08 + 10), spd: true },
+  perfect: { w: 1, pay: 0.35, txt: (j, b) => `Nail a ${b('PERFECT')} launch`, prog: R => R.launchQ > 1.4 ? 1 : 0, make: () => 1, one: true },
+  star:    { w: 1, pay: 0.6,  txt: (j, b) => `Catch a ${b('gold star')}`, prog: R => R.starsGot || 0, make: () => 1, one: true, tier: 2 },
+  smash:   { w: 2, pay: 0.6,  txt: (j, b) => `Smash ${b(j.n)} things`, prog: R => R.smashed, make: () => Math.max(3, Math.round(S.avg.smash * 1.3 + 1)), need: () => lvl('ram') > 0 },
+};
+function jobsUnlocked() { return routeDone('r1'); }
+function jobText(j, html) { return JOB_TYPES[j.t].txt(j, html ? JB : JP); }
+function makeJob(exclude) {
+  const tier = zoneIndex(S.bestAlt);
+  const pool = [];
+  for (const t in JOB_TYPES) { const d = JOB_TYPES[t]; if (exclude.includes(t) || (d.tier && tier < d.tier) || (d.need && !d.need())) continue; for (let i = 0; i < d.w; i++) pool.push(t); }
+  const t = pool[Math.floor(Math.random() * pool.length)] || 'coins';
+  const d = JOB_TYPES[t];
+  return { t, n: d.make(), pay: nice2(Math.max(40, S.avg.total) * d.pay * 0.75 * rand(0.85, 1.15)), id: Math.random().toString(36).slice(2, 8) };
+}
+function fillJobs() {
+  S.jobs = (S.jobs || []).filter(j => JOB_TYPES[j.t]);
+  let added = 0;
+  while (S.jobs.length < 3) { S.jobs.push(makeJob(S.jobs.map(j => j.t))); added++; }
+  return added;
+}
+function checkJobs(R) {
+  if (!R.jobs) return;
+  for (const j of R.jobs) {
+    if (j.done) continue;
+    const p = JOB_TYPES[j.t].prog(R);
+    j.p = p;
+    if (p >= j.n) { j.done = true; R.jobsDone = (R.jobsDone || 0) + 1; banner('JOB DONE!', '#5fd068', 1.8, `${jobText(j, false)} · +${fmtMoney(j.pay)}`); sfx.ach(); confetti(R.x, R.py + 40, 30); }
+  }
+}
+function settleJobs(R, rows) {
+  const ema = (k, v) => { S.avg[k] = S.avg[k] * 0.65 + v * 0.35; };
+  ema('coins', R.coins); ema('rings', R.rings); ema('close', R.nearMiss || 0); ema('alt', R.maxAlt); ema('v', R.topV || 0); ema('smash', R.smashed);
+  if (!R.jobs) return 0;
+  let paid = 0;
+  for (const j of R.jobs) if (j.done) { rows.push([`Job: ${jobText(j, false)}`, j.pay]); paid++; }
+  if (paid) { const ids = R.jobs.filter(j => j.done).map(j => j.id); S.jobs = S.jobs.filter(j => !ids.includes(j.id)); S.jobsNew = (S.jobsNew || 0) + fillJobs(); }
+  S.jobSwap = false;
+  return paid;
 }
 
 // ================================================================ RENDER
@@ -3071,6 +3156,8 @@ function drawHUD() {
     text(ctx, '!', 0, 3, 16, INK, 'center', null);
     ctx.restore();
   }
+  // side jobs
+  if (R.jobs && G.mode === 'flight') drawJobsHUD(R, small, pad);
   // tutorial hints on first flights
   if (G.mode === 'flight' && S.flights === 0 && R.time < 5) {
     ctx.save(); ctx.globalAlpha = clamp(R.time - 1, 0, 1) * clamp(5 - R.time, 0, 1);
@@ -3078,6 +3165,26 @@ function drawHUD() {
     ctx.restore();
   }
   if (R.stun > 0) text(ctx, 'ZAPPED!', W / 2, H * 0.3, 28, '#fff36b');
+}
+function drawJobsHUD(R, small, pad) {
+  const fs = small ? 11 : 13, lh = small ? 19 : 23, bx = fs * 1.35;
+  let y = H - pad - (R.jobs.length - 1) * lh - (small ? 6 : 8);
+  ctx.save();
+  for (const j of R.jobs) {
+    const d = JOB_TYPES[j.t], x = pad + 2;
+    const failed = j.t === 'clean' && !j.done && R.hits > 0;
+    ctx.globalAlpha = failed ? 0.55 : j.done ? 1 : 0.9;
+    rr(ctx, x, y - bx / 2, bx, bx, 4); ink(ctx, 2.5); fillStroke(ctx, j.done ? '#5fd068' : failed ? '#ff5a5f' : 'rgba(43,34,64,.55)', 2.5);
+    if (j.done || failed) text(ctx, j.done ? '✓' : '✗', x + bx / 2, y + 1, fs, '#fff', 'center', null);
+    let label = jobText(j, false);
+    if (!j.done && !failed && !d.one) {
+      const p = Math.min(j.p || 0, j.n);
+      label += (d.alt || d.spd) ? `  ${Math.floor(p / j.n * 100)}%` : `  ${fmtInt(p)}/${j.n}`;
+    }
+    text(ctx, label, x + bx + 7, y + 1, fs, j.done ? '#b8ffc2' : '#ffffff', 'left', INK, 3);
+    y += lh;
+  }
+  ctx.restore();
 }
 function drawHeart(x, y, r, full) {
   ctx.save(); ctx.translate(x, y); ink(ctx, 3);
@@ -3267,6 +3374,11 @@ const UI = (() => {
     if (PAINTS.some(p => paintUnlocked(p) && !S.seen['paint_' + p.id] && p.id !== 'classic')) paint.appendChild(el('span', 'badge-dot', '!'));
     if (routeDone('r1')) h.append(paint);
     const set = iconBtn('btn-settings', 'gear', 'Settings', () => openSettings());
+    if (jobsUnlocked()) {
+      const jb = iconBtn('btn-jobs', 'clip', 'Job board', () => openJobs());
+      if (S.jobsNew) jb.appendChild(el('span', 'badge-dot', String(S.jobsNew)));
+      h.append(jb);
+    }
     h.append(mapB, ach, set);
   }
   function branchBadge(b) { let n = 0; for (const u of UPGRADES) if (u.br === b.id && upState(u) === 'open' && upCost(u) <= S.money) n++; return n; }
@@ -3427,7 +3539,9 @@ const UI = (() => {
       ['Seats', st.seats || '—'],
       ['Est. height', '~' + fmtAlt(sim.alt)],
     ];
-    $('statcard').innerHTML = `<h4>Your rocket</h4>${rows.map(r => `<div class="row"><span>${r[0]}</span><span>${r[1]}</span></div>`).join('')}<div class="row best"><span>Best flight</span><span>${fmtAlt(S.bestAlt)}</span></div><div class="row"><span>Flights</span><span>${S.flights}</span></div>`;
+    $('statcard').innerHTML = `<h4>Your rocket</h4>${rows.map(r => `<div class="row"><span>${r[0]}</span><span>${r[1]}</span></div>`).join('')}<div class="row best"><span>Best flight</span><span>${fmtAlt(S.bestAlt)}</span></div><div class="row"><span>Flights</span><span>${S.flights}</span></div>`
+      + (jobsUnlocked() && S.jobs && S.jobs.length ? `<div class="jobs"><h4>Job board</h4>${S.jobs.map(j => `<div class="job"><span>${jobText(j, true)}</span><span class="jp">${fmtMoney(j.pay)}</span></div>`).join('')}</div>` : '');
+    const jb = $('statcard').querySelector('.jobs'); if (jb) jb.onclick = () => { sfx.click(); openJobs(); };
   }
 
   // ---------- map
@@ -3499,6 +3613,33 @@ const UI = (() => {
     $('scr-map').querySelector('h2').textContent = 'Achievements';
     list.prepend(el('div', 'small-note', `${Object.keys(S.ach).length} / ${ACH.length} earned`));
     overlay('scr-map', true);
+  }
+
+  // ---------- job board
+  function openJobs() {
+    fillJobs(); S.jobsNew = 0; saveGame();
+    const list = $('map-list'); list.innerHTML = '';
+    $('scr-map').querySelector('h2').textContent = 'Job Board';
+    list.appendChild(el('div', 'small-note', 'Finish a job on any flight to get paid. New jobs get pinned up as old ones are done.'));
+    S.jobs.forEach((j, i) => {
+      const card = el('div', 'route');
+      card.appendChild(el('div', 'r-ico', ICONS.clip));
+      const main = el('div', 'r-main', `<div class="r-name">${jobText(j, true)}</div><div class="r-meta"><span class="chip pay">+${fmtMoney(j.pay)}</span></div>`);
+      card.appendChild(main);
+      const sw = el('button', 'btn small ghost' + (S.jobSwap ? ' off' : ''), 'Swap');
+      sw.title = S.jobSwap ? 'One swap per hangar visit' : 'Swap for a different job';
+      sw.addEventListener('click', e => {
+        e.stopPropagation();
+        if (S.jobSwap) { sfx.deny(); toast('One swap per visit. Fly to get another!'); return; }
+        sfx.click(); S.jobSwap = true;
+        S.jobs[i] = makeJob(S.jobs.map(x => x.t));
+        saveGame(); openJobs();
+      });
+      card.appendChild(sw);
+      list.appendChild(card);
+    });
+    overlay('scr-map', true);
+    renderHeadBtns(); renderStatCard();
   }
 
   // ---------- ending credits
@@ -3628,6 +3769,7 @@ const UI = (() => {
     if (S.pendingCrash) { S.pendingCrash = false; S.seen.crash = 1; lines.push(...STORY.crash); }
     if (S.pendingSpace) { S.pendingSpace = false; lines.push(...STORY.space); }
     if (S.pendingFork) { S.pendingFork = false; lines.push(...STORY.fork); }
+    if (jobsUnlocked() && !S.seen.jobs) { S.seen.jobs = 1; fillJobs(); S.jobsNew = 3; lines.push(...STORY.jobs); }
     if (S.pendingAch && S.pendingAch.length) { for (const id of S.pendingAch) { const a = ACH.find(x => x.id === id); toast(`Achievement: <b>${a.name}</b> +${fmtMoney(a.reward)}`); } sfx.ach(); S.pendingAch = []; }
     saveGame();
     Dialog.play(lines, () => { refresh(); if (S.ended && !S.seen.endCredits) { S.seen.endCredits = 1; saveGame(); showCredits(); } if (then) then(); });
