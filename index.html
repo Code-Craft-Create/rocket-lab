@@ -279,10 +279,11 @@ button{font-family:var(--font)}
 .fold-bar.sheet .fold-btn + .fold-btn{border-left:3px solid rgba(43,34,64,.14);border-radius:0 10px 10px 0}
 .fold-bar .badge-dot{top:-12px;right:-12px}
 .fold-bar.edge .badge-dot{right:auto;left:-12px}
-.fold-bar.nudge{animation:foldNudge 1.6s ease-in-out infinite}
+.fold-bar.nudge{animation:foldNudge 3.6s ease-in-out infinite}
 .fold-bar.sheet.nudge{animation-name:foldNudgeY}
-@keyframes foldNudge{0%,70%,100%{margin-left:0}80%{margin-left:-6px}90%{margin-left:0}}
-@keyframes foldNudgeY{0%,70%,100%{margin-top:0}80%{margin-top:-6px}90%{margin-top:0}}
+@keyframes foldNudge{0%,84%,100%{margin-left:0}89%{margin-left:-7px}94%{margin-left:0}}
+@keyframes foldNudgeY{0%,84%,100%{margin-top:0}89%{margin-top:-7px}94%{margin-top:0}}
+@media (prefers-reduced-motion:reduce){.fold-bar.nudge,#scr-hangar .side.pop{animation:none}}
 #scr-hangar .side.folded{top:auto;height:auto}
 #scr-hangar .side.folded #tabs,#scr-hangar .side.folded #tree,#scr-hangar .side.folded #detail{display:none}
 #scr-hangar .side.full{top:46px;height:auto}
