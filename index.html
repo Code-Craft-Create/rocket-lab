@@ -44,6 +44,7 @@ button{font-family:var(--font)}
 .btn.off{filter:grayscale(.85) opacity(.6)}
 .seg{display:flex;gap:8px;justify-content:center;margin:0 0 12px;flex-wrap:wrap}
 @media (max-width:480px){.seg{gap:5px}.seg .btn.small{padding:5px 9px;font-size:13px}}
+@media (max-width:360px){.seg .btn.small{padding:4px 7px;font-size:12px}}
 .route .r-ico canvas{width:64px;height:64px;display:block}
 .icon-btn{width:46px;height:46px;border:4px solid var(--ink);border-radius:14px;background:var(--paper);box-shadow:0 4px 0 var(--ink);
   cursor:pointer;display:inline-flex;align-items:center;justify-content:center;padding:0;transition:transform .07s,box-shadow .07s}
@@ -261,6 +262,28 @@ button{font-family:var(--font)}
 /* ---------- Route map ---------- */
 #scr-map .panel{max-width:620px;height:min(92vh,820px)}
 #map-list{position:relative;padding:6px 6px 16px 6px}
+.log-tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(104px,1fr));gap:10px;margin:0 0 14px}
+.log-tile{background:#fff;border:3px solid var(--ink);border-radius:16px;padding:8px 10px 7px;box-shadow:0 3px 0 var(--ink);min-width:0}
+.log-tile b{display:block;font-size:22px;font-weight:900;line-height:1.1;white-space:nowrap}
+@media (max-width:360px){.log-tiles{gap:8px}.log-tile b{font-size:19px}}
+.log-tile span{font-size:11px;font-weight:900;color:var(--ink2);text-transform:uppercase;letter-spacing:.7px}
+.log-card{background:#fff;border:4px solid var(--ink);border-radius:18px;padding:12px 14px 10px;margin:0 0 14px;box-shadow:0 4px 0 var(--ink)}
+.log-card h3{font-size:18px;font-weight:900;margin:0 0 8px;line-height:1.1}
+.log-hint{font-size:12px;font-weight:700;color:var(--ink2);text-align:center;margin-top:4px}
+.log-chart{position:relative;max-width:470px;margin:0 auto;touch-action:pan-y}
+.log-chart svg{display:block;width:100%;height:auto;overflow:visible}
+.log-chart .lc-t{font-size:10px;font-weight:800;fill:#6b6085;font-variant-numeric:tabular-nums}
+.log-chart .lc-best{font-size:11px;font-weight:900;fill:var(--ink)}
+.log-chart .lc-bar{transition:opacity .12s}
+.log-chart svg.hov .lc-bar{opacity:.4}.log-chart svg.hov .lc-bar.on{opacity:1}
+.log-tip{position:absolute;display:none;pointer-events:none;transform:translate(-50%,-100%);background:var(--ink);color:var(--cream);font-size:12px;font-weight:800;line-height:1.3;padding:5px 10px;border-radius:10px;width:max-content;max-width:100%;box-sizing:border-box;z-index:2;text-align:center}
+.log-tip b{color:var(--yellow)}.log-tip small{display:block;font-size:11px;color:#cfc4e8}
+.log-rows{overflow:hidden}
+.log-rows .lr{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:7px 0;border-top:2px solid #f1e7d6;margin-top:-2px;font-weight:800;font-size:14px;line-height:1.2} /* the first line of each column tucks under the edge */
+.log-rows .lr small{display:block;color:#6b6085;font-weight:700;font-size:11px}
+.log-rows .lr .chip{font-size:10px;padding:1px 6px;vertical-align:1px}
+.log-rows .lr b{white-space:nowrap;font-weight:900}
+.log-rows.two{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));column-gap:20px}
 .route{display:flex;gap:12px;align-items:center;background:#fff;border:4px solid var(--ink);border-radius:18px;padding:10px 12px;margin:0 0 14px 0;position:relative;box-shadow:0 4px 0 var(--ink)}
 .route.cur{background:#fffbe0;outline:4px solid var(--yellow);outline-offset:2px}
 .route.locked{background:#e4dccd}
@@ -554,6 +577,12 @@ function fmtAlt(m) {
   return fmtInt(m / 1000) + '\u00a0km';
 }
 function fmtSpeed(v) { return fmtInt(Math.abs(v)) + '\u00a0m/s'; }
+function fmtDur(sec) {
+  sec = Math.round(sec);
+  if (sec < 60) return sec + '\u00a0s';
+  if (sec < 3600) return Math.floor(sec / 60) + '\u00a0min ' + (sec % 60) + '\u00a0s';
+  return Math.floor(sec / 3600) + '\u00a0h ' + Math.floor(sec % 3600 / 60) + '\u00a0min';
+}
 
 function hex2rgb(h) { h = h.replace('#', ''); if (h.length === 3) h = h.split('').map(c => c + c).join(''); const n = parseInt(h, 16); return [(n >> 16) & 255, (n >> 8) & 255, n & 255]; }
 function mixRGB(a, b, t) { return [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t, a[2] + (b[2] - a[2]) * t]; }
@@ -580,6 +609,8 @@ function defaultSave() {
     cond: 'clear', jobs: [], avg: { coins: 8, rings: 0.6, close: 0.6, alt: 500, v: 110, total: 110, smash: 0 },
     settings: { music: true, sfx: true, shake: true, ghost: true },
     ghosts: {},        // route id -> {alt, step, a:[alt...], x:[x...]} best run replay
+    log: [],           // last 30 flights for the logbook chart: {n, a, r, d}
+    rec: {},           // personal records: id -> {v, n}
     ended: false,
   };
 }
@@ -594,6 +625,7 @@ function loadSave() {
       S.stats = Object.assign(def.stats, d.stats || {});
       S.settings = Object.assign(def.settings, d.settings || {});
       S.avg = Object.assign(def.avg, d.avg || {});
+      if (!S.rec.alt && S.bestAlt > 0) S.rec.alt = { v: S.bestAlt, n: 0 };
       // welcome-back bonus: the gift stand keeps selling while you're away (from 1 hour, capped at 8)
       const away = S.lastSeen ? (Date.now() - S.lastSeen) / 36e5 : 0;
       if (away >= 1 && S.flights >= 3 && (S.avg.total || 0) > 0) S.pendingAway = Math.max(10, Math.round(S.avg.total * 0.25 * Math.min(away, 8)));
@@ -3886,7 +3918,7 @@ function updatePickups(dt) {
     if (p.type === 'ring') {
       if (!p.hit && Math.abs(dx) < p.r * 0.8 && Math.abs(dy) < 26) {
         p.hit = true; R.rings++; S.stats.rings++;
-        R.ringCombo = R.ringT > 0 ? R.ringCombo + 1 : 1; R.ringT = 3;
+        R.ringCombo = R.ringT > 0 ? R.ringCombo + 1 : 1; R.ringT = 3; R.bestCombo = Math.max(R.bestCombo || 0, R.ringCombo);
         // ring road rings come in long chains, so each one gives a gentler push
         const boost = p.road ? Math.max(15, Math.abs(R.vy) * 0.025) : Math.max(25, Math.abs(R.vy) * 0.1) * (1 + 0.15 * Math.min(R.ringCombo - 1, 4));
         R.vy += boost; sfx.ring(R.ringCombo);
@@ -4010,6 +4042,7 @@ function computeResult() {
   if (R.delivered) badges.push('Delivered!');
   if (dailyPaid) badges.push('Special delivered!');
   if (record) badges.push('New record!');
+  const recB = updateRecords(R, alt); if (recB) badges.push(recB);
   if (R.launchQ > 1.4) badges.push('Perfect launch');
   if (R.hits === 0 && R.time > 6) badges.push('No scratches');
   if (R.rings >= 3) badges.push(`${R.rings} boost rings`);
@@ -4024,6 +4057,8 @@ function computeResult() {
   // ---- apply to save immediately (so closing the tab does not lose the flight)
   const prevFlights = S.flights;
   S.money += total; S.earned += total; S.flights++;
+  (S.log = S.log || []).push({ n: S.flights, a: Math.round(alt), r: r ? r.id : R.daily ? 'daily' : '', d: R.delivered ? 1 : 0 });
+  if (S.log.length > 30) S.log.splice(0, S.log.length - 30);
   saveGhost(R);
   S.stats.time += R.time; S.stats.pax += R.delivered ? R.pax : 0;
   if (R.delivered && R.faces) { S.met = S.met || {}; for (const f of R.faces) if (GUESTS[f]) S.met[f] = (S.met[f] || 0) + 1; }
@@ -4145,6 +4180,29 @@ function achBadge(a) {
     <path d="M23 40l-6 20 8-4 4 7 5-20z" fill="#ff5a5f"/><path d="M41 40l6 20-8-4-4 7-5-20z" fill="#4d96ff"/>
     <circle cx="32" cy="28" r="23" fill="${tier[0]}"/><circle cx="32" cy="28" r="17.5" fill="${tier[1]}" stroke-width="2"/>
     ${ACH_SYM[a.id] || ICONS.trophy}</svg>`;
+}
+// ---- personal records (logbook)
+const RECS = [
+  { id: 'alt', name: 'Highest flight', fmt: fmtAlt },
+  { id: 'v', name: 'Top speed', v: R => R.topV || 0, fmt: fmtSpeed },
+  { id: 'coins', name: 'Most coins in a flight', v: R => R.coins, fmt: fmtInt },
+  { id: 'combo', name: 'Longest ring combo', v: R => R.bestCombo || 0, fmt: n => '\u00d7' + n, badge: 'Combo record!' },
+  { id: 'close', name: 'Most close calls in a flight', v: R => R.nearMiss || 0, fmt: fmtInt, badge: 'Close-call record!' },
+  { id: 'smash', name: 'Most smashed in a flight', v: R => R.smashed || 0, fmt: fmtInt, badge: 'Smash record!' },
+  { id: 'time', name: 'Longest flight', v: R => R.time, fmt: fmtDur },
+];
+// Saves any records this flight broke. Returns one badge for the results card: only for the skill
+// records (combo, close calls, smashing), since upgrades push height, speed and coins up every flight anyway.
+function updateRecords(R, alt) {
+  S.rec = S.rec || {};
+  let badge = '';
+  for (const k of RECS) {
+    const v = Math.round((k.v ? k.v(R) : alt) * 10) / 10, old = S.rec[k.id];
+    if (!(v > 0) || (old && v <= old.v)) continue;
+    if (!badge && k.badge && old && old.v > 0 && S.flights >= 5) badge = k.badge;
+    S.rec[k.id] = { v, n: S.flights + 1 };
+  }
+  return badge;
 }
 function achToast(id) { const a = ACH.find(x => x.id === id); if (a) toast(`<span class="tmedal">${achBadge(a)}</span>Achievement: <b>${a.name}</b> +${fmtMoney(a.reward)}`, 3600, true); }
 function checkAchievements() {
@@ -5943,7 +6001,7 @@ const UI = (() => {
   }
   function startNewLine() {
     for (const p of PAINTS) if (paintUnlocked(p)) S.seen['paintown_' + p.id] = 1;
-    const keep = { lost: S.lost, lostTries: S.lostTries, mail: S.mail, mailGot: S.mailGot, met: S.met, daily: S.daily ? Object.assign({}, S.daily, { target: 0 }) : undefined, ach: S.ach, stats: S.stats, settings: S.settings, seen: S.seen, viewed: S.viewed, tabsSeen: S.tabsSeen, paint: S.paint, trail: S.trail, earned: S.earned, flights: S.flights, avg: S.avg, line: (S.line || 1) + 1 };
+    const keep = { lost: S.lost, lostTries: S.lostTries, mail: S.mail, mailGot: S.mailGot, met: S.met, daily: S.daily ? Object.assign({}, S.daily, { target: 0 }) : undefined, ach: S.ach, stats: S.stats, rec: S.rec, log: S.log, settings: S.settings, seen: S.seen, viewed: S.viewed, tabsSeen: S.tabsSeen, paint: S.paint, trail: S.trail, earned: S.earned, flights: S.flights, avg: S.avg, line: (S.line || 1) + 1 };
     S = Object.assign(defaultSave(), keep);
     S.seen.endCredits = 0; S.pendingLine = true;
     checkAchievements(); saveGame();
@@ -5957,7 +6015,7 @@ const UI = (() => {
     const row = el('div', 'seg');
     const mk = (label, on, fn) => { const b = el('button', 'btn small ' + (on ? 'go' : 'off'), label); b.addEventListener('click', () => { sfx.tab(); fn(); }); row.appendChild(b); };
     const nn = guideNewCount();
-    mk('Trophies', active === 'ach', openAch); mk('Sky Guide' + (nn && active !== 'guide' ? ` (${nn})` : ''), active === 'guide', openGuide);
+    mk('Trophies', active === 'ach', openAch); if (S.flights > 0) mk('Logbook', active === 'log', openLog); mk('Sky Guide' + (nn && active !== 'guide' ? ` (${nn})` : ''), active === 'guide', openGuide);
     if (guestsMet()) { const gn = guestNewCount(); mk('Guests' + (gn && active !== 'guests' ? ` (${gn})` : ''), active === 'guests', openGuests); }
     if (LOST.some(lostKnown)) { const ln = lostNewCount(); mk('Lost & Found' + (ln && active !== 'lost' ? ` (${ln})` : ''), active === 'lost', openLost); }
     return row;
@@ -6052,6 +6110,75 @@ const UI = (() => {
     $('scr-map').querySelector('h2').textContent = 'Achievements';
     list.prepend(el('div', 'small-note', `${Object.keys(S.ach).length} / ${ACH.length} earned`));
     list.prepend(bookTabs('ach'));
+    $('map-list').parentElement.scrollTop = 0;
+    overlay('scr-map', true);
+  }
+
+  // ---------- logbook: totals, a chart of recent flights and personal records
+  function logRouteName(e) { if (e.r === 'daily') return 'Daily Special'; const r = ROUTES.find(x => x.id === e.r); return r ? r.to : 'Free flight'; }
+  function logChart(log) {
+    const VW = 320, VH = 172, L = 46, RP = 6, T = 24, B = 20, pw = VW - L - RP, ph = VH - T - B, base = T + ph;
+    const alts = log.map(e => Math.max(1, e.a)), best = Math.max(...alts), bi = alts.indexOf(best);
+    const lo = Math.pow(10, Math.floor(Math.log10(Math.max(10, Math.min(...alts))))), hi = Math.max(best * 1.12, lo * 10);
+    const lg = Math.log10, y = a => base - (lg(Math.max(a, lo)) - lg(lo)) / (lg(hi) - lg(lo)) * ph;
+    const tick = v => v < 1000 ? fmtInt(v) + ' m' : fmtInt(v / 1000) + ' km';
+    const ticks = [];
+    for (let v = lo; v <= hi * 1.001; v *= 10) { ticks.push(v); if (lg(hi / lo) < 1.7 && v * 3 <= hi) ticks.push(v * 3); }
+    let g = '';
+    for (const v of ticks) { const ty = y(v).toFixed(1); g += `<line x1="${L}" x2="${VW - RP}" y1="${ty}" y2="${ty}" stroke="#2b2240" stroke-opacity=".1" stroke-width="1"/><text x="${L - 6}" y="${ty}" dy="3.5" text-anchor="end" class="lc-t">${tick(v)}</text>`; }
+    const n = log.length, slot = pw / Math.max(n, 8), bw = Math.min(18, slot - 2), x0 = L + (pw - slot * n);
+    let bars = '', hits = '';
+    log.forEach((e, i) => {
+      const x = x0 + i * slot + (slot - bw) / 2, top = Math.min(base - 3, y(alts[i])), r = Math.min(4, bw / 2, base - top);
+      bars += `<path class="lc-bar" data-i="${i}" fill="${i === bi ? '#c97f00' : '#3a7be0'}" d="M${x.toFixed(1)} ${base}V${(top + r).toFixed(1)}Q${x.toFixed(1)} ${top.toFixed(1)} ${(x + r).toFixed(1)} ${top.toFixed(1)}H${(x + bw - r).toFixed(1)}Q${(x + bw).toFixed(1)} ${top.toFixed(1)} ${(x + bw).toFixed(1)} ${(top + r).toFixed(1)}V${base}Z"/>`;
+      hits += `<rect data-i="${i}" x="${(x0 + i * slot).toFixed(1)}" y="${T - 6}" width="${slot.toFixed(1)}" height="${ph + 6}" fill="transparent"/>`;
+    });
+    const bx = clamp(x0 + bi * slot + slot / 2, L + 34, VW - RP - 34);
+    const lab = `<text x="${bx.toFixed(1)}" y="${(Math.min(base - 3, y(best)) - 6).toFixed(1)}" text-anchor="middle" class="lc-best">${best >= S.bestAlt - 1 ? 'Best' : 'Recent best'} ${fmtAlt(best)}</text>`;
+    const xl = `<text x="${x0 + 1}" y="${VH - 4}" class="lc-t">#${log[0].n}</text><text x="${VW - RP}" y="${VH - 4}" text-anchor="end" class="lc-t">#${log[n - 1].n} latest</text>`;
+    const wrap = el('div', 'log-chart');
+    wrap.innerHTML = `<svg viewBox="0 0 ${VW} ${VH}" role="img" aria-label="Bar chart of the height of your last ${n} flights. Best: ${fmtAlt(best)} on flight ${log[bi].n}.">${g}<line x1="${L}" x2="${VW - RP}" y1="${base}" y2="${base}" stroke="#2b2240" stroke-opacity=".45" stroke-width="1"/>${bars}${lab}${xl}<g class="lc-hit">${hits}</g></svg><div class="log-tip"></div>`;
+    const svg = wrap.firstChild, tip = wrap.lastChild;
+    const show = i => {
+      const e = log[i]; if (!e) return;
+      svg.classList.add('hov'); svg.querySelectorAll('.lc-bar').forEach(b => b.classList.toggle('on', +b.dataset.i === i));
+      tip.innerHTML = `<b>Flight #${e.n}</b> · ${fmtAlt(e.a)}<br>${logRouteName(e)}${e.r && e.r !== 'daily' ? `<small>${e.d ? 'delivered' : 'not delivered'}</small>` : ''}`;
+      tip.style.display = 'block';
+      const k = wrap.clientWidth / VW, cx = (x0 + i * slot + slot / 2) * k, tw = tip.offsetWidth;
+      tip.style.left = clamp(cx, tw / 2, wrap.clientWidth - tw / 2) + 'px';
+      tip.style.top = (Math.min(base - 3, y(alts[i])) * k - 8) + 'px';
+    };
+    const hide = () => { svg.classList.remove('hov'); tip.style.display = 'none'; };
+    svg.addEventListener('pointermove', ev => { const t = ev.target.closest('[data-i]'); if (t) show(+t.dataset.i); });
+    svg.addEventListener('pointerdown', ev => { const t = ev.target.closest('[data-i]'); if (t) show(+t.dataset.i); });
+    svg.addEventListener('pointerleave', ev => { if (ev.pointerType === 'mouse') hide(); });
+    return wrap;
+  }
+  function openLog() {
+    const list = $('map-list'); list.innerHTML = '';
+    const st = S.stats, log = S.log || [], rec = S.rec || {};
+    const tiles = el('div', 'log-tiles');
+    for (const [v, k] of [[fmtInt(S.flights), 'Flights'], [fmtInt(st.pax), 'Passengers'], [fmtMoney(S.earned), 'Earned'], [fmtDur(st.time), 'In the air']]) tiles.appendChild(el('div', 'log-tile', `<b>${v}</b><span>${k}</span>`));
+    list.appendChild(tiles);
+    const cc = el('div', 'log-card'); cc.appendChild(el('h3', '', 'Height of your recent flights'));
+    if (log.length >= 2) { cc.appendChild(logChart(log)); cc.appendChild(el('div', 'log-hint', 'Tap a bar for the details.')); }
+    else cc.appendChild(el('div', 'log-hint', log.length ? 'One flight logged. Fly again and your chart starts to grow!' : 'Your chart starts with your next flight.'));
+    list.appendChild(cc);
+    const rc = el('div', 'log-card'); rc.appendChild(el('h3', '', 'Personal records'));
+    const rows = el('div', 'log-rows');
+    for (const k of RECS) {
+      const r = rec[k.id], fresh = r && r.n === S.flights && S.flights > 1;
+      rows.appendChild(el('div', 'lr', `<span>${k.name}${fresh ? ' <span class="chip ok">New!</span>' : ''}${r && r.n ? `<small>flight #${r.n}</small>` : ''}</span><b>${r ? k.fmt(r.v) : '–'}</b>`));
+    }
+    rc.appendChild(rows); list.appendChild(rc);
+    const tc = el('div', 'log-card'); tc.appendChild(el('h3', '', 'All-time totals'));
+    const bosses = (st.king || 0) + (st.whale || 0) + (st.pirates || 0) + (st.kraken || 0);
+    const tot = [['Coins caught', st.coins], ['Boost rings', st.rings], ['Perfect launches', st.perfect], ['Close calls', st.close], ['Things smashed', st.smashed], ['Wishes granted', st.wishes || 0], ['Side jobs done', st.jobs || 0], ['Bosses beaten', bosses], ['Rainbows', st.rainbows || 0], ['Letters opened', st.letters || 0], ['Lost items returned', lostFound()], ['Daily Specials', st.daily || 0]];
+    const trows = el('div', 'log-rows two');
+    for (const [k, v] of tot) trows.appendChild(el('div', 'lr', `<span>${k}</span><b>${fmtInt(v)}</b>`));
+    tc.appendChild(trows); list.appendChild(tc);
+    $('scr-map').querySelector('h2').textContent = 'Logbook';
+    list.prepend(bookTabs('log'));
     $('map-list').parentElement.scrollTop = 0;
     overlay('scr-map', true);
   }
