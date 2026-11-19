@@ -2442,9 +2442,11 @@ const PAINTS = [
   { id: 'tea', name: 'Tea Party', stars: 999, route: 'x1', body: '#ff9fd8', accent: '#fff6e5', pattern: 'dots' },
   { id: 'aurora', name: 'Aurora', stars: 999, route: 'x4', body: '#1d4f5c', accent: '#5fffb0', pattern: 'aurora' },
   { id: 'dragon', name: 'Dragon Scale', stars: 999, route: 'x5', body: '#7be0c0', accent: '#2a9d7f', pattern: 'scales' },
+  { id: 'plum', name: 'Mayor’s Plum', stars: 999, statue: true, body: '#c99ae8', accent: '#ffd34d', pattern: 'shine' },
+  { id: 'atlas', name: 'Star Atlas', stars: 999, atlas: true, body: '#1d2a66', accent: '#ffd93d', pattern: 'stars' },
 ];
 const totalStars = () => Object.values(S.routes).reduce((a, r) => a + (r.stars || 0), 0);
-const paintUnlocked = p => totalStars() >= p.stars || !!(p.lost && S.lost && S.lost[p.lost]) || !!S.seen['paintown_' + p.id] || (p.end && (S.ended || (S.line || 1) > 1)) || !!(p.route && routeDone(p.route));
+const paintUnlocked = p => totalStars() >= p.stars || !!(p.lost && S.lost && S.lost[p.lost]) || !!S.seen['paintown_' + p.id] || (p.end && (S.ended || (S.line || 1) > 1)) || !!(p.route && routeDone(p.route)) || !!(p.statue && lvl('statue') > 0) || !!(p.atlas && chartedN() >= STAR_CHARTS.length);
 // exhaust trails: cosmetic, unlocked by trophies
 const TRAILS = [
   { id: 'smoke', name: 'Puffy Smoke', need: 0 },
@@ -2455,6 +2457,8 @@ const TRAILS = [
   { id: 'sparks', name: 'Storm Sparks', ach: 'king', extra: 'spark', col: '#fff6a0', glow: '#fff36b' },
   { id: 'ink', name: 'Kraken Ink', ach: 'kraken', col: '#c79be0', glow: '#b05bd6' },
   { id: 'gold', name: 'Pirate Gold', ach: 'pirates', extra: 'doub', col: '#fff3b0', glow: '#ffd93d' },
+  { id: 'goo', name: 'Nebula Goo', ach: 'gobble', extra: 'goo', col: '#efd6ff', glow: '#d08cff' },
+  { id: 'cstar', name: 'Star Lines', ach: 'stargazer', extra: 'cstar', col: '#fff6c8', glow: '#ffe58a' },
 ];
 const trailUnlocked = tr => tr.ach ? !!S.ach[tr.ach] : Object.keys(S.ach).length >= tr.need;
 const curTrail = () => { const tr = TRAILS.find(x => x.id === S.trail); return tr && trailUnlocked(tr) ? tr : TRAILS[0]; };
@@ -2466,6 +2470,13 @@ function trailCol(tr, inAir, i) {
 function trailExtra(tr, x, py, vx, vy) {
   if (!tr.extra) return;
   const k = tr.extra;
+  if (k === 'cstar') { // little stars that join up behind you like a constellation
+    if (!chance(0.5)) return;
+    const p = { k, x: x + rand(-34, 34), py: py - rand(0, 24), vx: vx * 0.5 + rand(-30, 30), vy: vy * 0.72, r: rand(5, 9), life: 1.5, t: 0 }, q = G.lastCstar;
+    if (q && q.t < q.life * 0.6 && G.parts.includes(q) && Math.hypot(q.x - p.x, q.py - p.py) < 320) p.prev = q;
+    G.lastCstar = p; G.parts.push(p); return;
+  }
+  if (k === 'goo') { G.parts.push({ k, x: x + rand(-8, 8), py, vx: vx * 0.5 + rand(-50, 50), vy: vy * 0.5, r: rand(6, 10), life: rand(0.7, 1.1), t: 0, rot: rand(0, TAU), col: pick(['#d08cff', '#ff8ad0', '#b98cff']) }); return; }
   if (k === 'spark') { for (let j = 0; j < 2; j++) G.parts.push({ k: 'spark', x, py, vx: vx + rand(-90, 90), vy: vy + rand(-60, 60), r: rand(2, 4), life: 0.35, t: 0, col: pick(['#fff36b', '#ffffff']) }); return; }
   G.parts.push({ k, x: x + rand(-8, 8), py, vx: vx * 0.6 + rand(-40, 40), vy: vy * 0.6, r: k === 'bubble' ? rand(7, 12) : rand(8, 12), life: rand(0.6, 1.0), t: 0, col: k === 'heart' ? pick(['#ff5a8a', '#ff9fc0', '#f15bb5']) : k === 'star4' ? pick(['#ffd93d', '#fff3b0', '#ffffff']) : '#bfe9ff', rot: rand(-0.4, 0.4) });
 }
@@ -6539,6 +6550,13 @@ function drawParticle(p) {
   else if (p.k === 'heart') { ctx.globalAlpha = 1 - k; ctx.translate(p.x, -p.py); ctx.rotate(p.rot); const r = p.r * (1 + k * 0.4); ink(ctx, 2); ctx.beginPath(); ctx.moveTo(0, r * 0.9); ctx.bezierCurveTo(-r * 1.6, -r * 0.2, -r * 0.6, -r * 1.4, 0, -r * 0.5); ctx.bezierCurveTo(r * 0.6, -r * 1.4, r * 1.6, -r * 0.2, 0, r * 0.9); fillStroke(ctx, p.col, 2); }
   else if (p.k === 'star4') { ctx.globalAlpha = 1 - k; ctx.translate(p.x, -p.py); ctx.rotate(p.rot + k * 3); const r = p.r * (1.2 - k * 0.5); ctx.beginPath(); for (let j = 0; j < 8; j++) { const a = j / 8 * TAU, rr2 = j % 2 ? r * 0.35 : r; ctx.lineTo(Math.cos(a) * rr2, Math.sin(a) * rr2); } ctx.closePath(); ink(ctx, 1.5); fillStroke(ctx, p.col, 1.5); }
   else if (p.k === 'bubble') { ctx.globalAlpha = (1 - k) * 0.9; const r = p.r * (1 + k * 0.6); circ(ctx, p.x, -p.py, r); ctx.fillStyle = 'rgba(191,233,255,.45)'; ctx.fill(); ctx.lineWidth = 2.5; ctx.strokeStyle = '#3d8fd1'; ctx.stroke(); ctx.fillStyle = '#fff'; circ(ctx, p.x - r * 0.35, -p.py - r * 0.35, r * 0.22); ctx.fill(); }
+  else if (p.k === 'cstar') {
+    const a = 1 - clamp((k - 0.55) / 0.45, 0, 1), q = p.prev;
+    if (q && q.t < q.life) { ctx.globalAlpha = 0.75 * Math.min(a, 1 - clamp((q.t / q.life - 0.55) / 0.45, 0, 1)); ctx.strokeStyle = '#ffe58a'; ctx.lineWidth = 2; ctx.lineCap = 'round'; ctx.beginPath(); ctx.moveTo(p.x, -p.py); ctx.lineTo(q.x, -q.py); ctx.stroke(); }
+    ctx.globalAlpha = a; ctx.translate(p.x, -p.py); const r = p.r * (0.85 + 0.15 * Math.sin(p.t * 9 + p.x));
+    ctx.fillStyle = '#fff6c8'; ctx.beginPath(); ctx.moveTo(0, -r * 2); ctx.quadraticCurveTo(0, 0, r * 2, 0); ctx.quadraticCurveTo(0, 0, 0, r * 2); ctx.quadraticCurveTo(0, 0, -r * 2, 0); ctx.quadraticCurveTo(0, 0, 0, -r * 2); ctx.fill();
+  }
+  else if (p.k === 'goo') { ctx.globalAlpha = 1 - k; ctx.translate(p.x, -p.py); const r = p.r * (1 + k * 0.5), w = 1 + 0.18 * Math.sin(p.t * 12 + p.rot); ctx.scale(w, 2 - w); ink(ctx, 2); circ(ctx, 0, 0, r); fillStroke(ctx, p.col, 2); ctx.fillStyle = 'rgba(255,255,255,.75)'; circ(ctx, -r * 0.35, -r * 0.35, r * 0.25); ctx.fill(); }
   else if (p.k === 'doub') { ctx.globalAlpha = 1 - k * k; ctx.translate(p.x, -p.py); const sq = Math.abs(Math.cos(p.t * 9 + p.r)); ink(ctx, 2); ctx.beginPath(); ctx.ellipse(0, 0, p.r * Math.max(0.15, sq), p.r, 0, 0, TAU); fillStroke(ctx, '#ffd93d', 2); if (sq > 0.5) { ctx.strokeStyle = '#e0a800'; ctx.beginPath(); ctx.ellipse(0, 0, p.r * sq * 0.55, p.r * 0.55, 0, 0, TAU); ctx.stroke(); } }
   else if (p.k === 'feather') { ctx.globalAlpha = 1 - k; ctx.translate(p.x, -p.py); ctx.rotate(p.rot); ink(ctx, 2); ctx.beginPath(); ctx.ellipse(0, 0, 7, 3, 0, 0, TAU); fillStroke(ctx, p.col, 2); }
   else if (p.k === 'debris') {
@@ -6563,7 +6581,8 @@ function updateParticles(dt) {
     else if (p.k === 'spark') { p.vx *= 0.93; p.vy *= 0.93; }
     else if (p.k === 'fw') { p.vx *= 0.955; p.vy *= 0.955; p.vy -= 70 * dt; }
     else if (p.k === 'shell') { p.vy -= 260 * dt; if (p.t + dt >= p.life && !p.popped) { p.popped = 1; burst(p); } }
-    else if (p.k === 'heart' || p.k === 'star4' || p.k === 'bubble') { p.vx *= 0.95; p.vy *= 0.95; p.vy += 30 * dt; }
+    else if (p.k === 'heart' || p.k === 'star4' || p.k === 'bubble' || p.k === 'goo') { p.vx *= 0.95; p.vy *= 0.95; p.vy += 30 * dt; }
+    else if (p.k === 'cstar') { p.vx *= 0.97; p.vy *= 0.97; }
     else if (p.k === 'doub') { p.vx *= 0.95; p.vy *= 0.95; p.vy -= 60 * dt; }
   }
   G.parts = G.parts.filter(p => p.t < p.life);
@@ -7956,7 +7975,7 @@ const UI = (() => {
       const c = cnv.getContext('2d'); c.scale(2, 2); rr(c, 2, 2, 60, 60, 14); c.fillStyle = '#bfe9ff'; c.fill(); c.lineWidth = 3; c.strokeStyle = INK; c.stroke();
       c.translate(32, 34); c.scale(0.42, 0.42); const L = Object.assign(rocketLook(), { paint: p }); drawRocket(c, L, { t: 0, faces: [] });
       card.appendChild(cnv);
-      card.appendChild(el('div', 'r-main', `<div class="r-name">${p.name}</div><div class="r-meta">${ok ? '<span class="chip ok">Unlocked</span>' : `<span class="chip pay">${p.end ? 'Finish the story' : p.route ? 'Fly to ' + routeById(p.route).to : p.lost ? 'Lost & Found reward' : p.stars + ' ★'}</span>`}</div>`));
+      card.appendChild(el('div', 'r-main', `<div class="r-name">${p.name}</div><div class="r-meta">${ok ? '<span class="chip ok">Unlocked</span>' : `<span class="chip pay">${p.end ? 'Finish the story' : p.route ? 'Fly to ' + routeById(p.route).to : p.lost ? 'Lost & Found reward' : p.statue ? 'Build Ada’s statue' : p.atlas ? 'Find all 8 constellations' : p.stars + ' ★'}</span>`}</div>`));
       const act = el('div', 'r-act');
       if (ok) { const b = el('button', 'btn ' + (cur ? 'go' : 'blue'), cur ? 'Wearing' : 'Paint'); b.addEventListener('click', () => { sfx.buy(); S.paint = p.id; saveGame(); G.look = rocketLook(); G.hangarPop = 1; openPaint(); }); act.appendChild(b); }
       card.appendChild(act);
