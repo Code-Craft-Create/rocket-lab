@@ -5087,11 +5087,11 @@ function drawGround() {
     ctx.save(); ctx.translate(0, -42); drawFace(ctx, 'ada', 11, G.mode === 'launch' || G.mode === 'flight' ? 'joy' : 'happy', G.t); ctx.restore();
     const wave = Math.sin(G.t * 6) * 0.5;
     ctx.beginPath(); ctx.moveTo(8, -24); ctx.lineTo(18 + wave * 6, -44); ctx.lineWidth = 4; ctx.stroke();
-    if (G.mode === 'hangar' && G.poke.ada > 0) speechBubble(ctx, G.poke.adaLine, 30, -70, clamp(G.poke.ada * 3, 0, 1) * clamp((3 - G.poke.ada) * 6, 0, 1), 170, true);
+    if (G.mode === 'hangar' && G.poke.ada > 0) speechBubble(ctx, G.poke.adaLine, 30, -70, clamp(G.poke.ada * 3, 0, 1) * clamp((3 - G.poke.ada) * 6, 0, 1), 170, true, 96);
     else if (G.mode === 'hangar' && S.flights > 0 && !(G.poke.deco > 0)) {
       const ti = Math.floor(G.t / 7) % ADA_TIPS.length, k = (G.t % 7);
       const a = clamp(k * 3, 0, 1) * clamp((6.5 - k) * 3, 0, 1);
-      speechBubble(ctx, ADA_TIPS[ti], 30, -70, a, 170, true);
+      speechBubble(ctx, ADA_TIPS[ti], 30, -70, a, 170, true, 96); // 96: clears the launch tower
     }
     ctx.restore();
     drawSeasonDeco(-136);
@@ -5185,12 +5185,21 @@ const ADA_TIP_LIST = [
 let ADA_TIPS = ADA_TIP_LIST.map(t => t[0]);
 function refreshAdaTips() { const l = ADA_TIP_LIST.filter(t => { try { return t[1](); } catch (e) { return false; } }).map(t => t[0]); if (l.length) ADA_TIPS = l; }
 // world-space speech bubble; (x, y) is the bottom of the bubble, tail pointing down-left
-function speechBubble(c, str, x, y, a, maxW = 170, centered = false) {
+// wraps to the fewest lines, then narrows the box so lines come out even (no lonely last word)
+const _bubWrap = new Map();
+function balancedWrap(str, maxW) {
+  const key = maxW + '|' + str; let l = _bubWrap.get(key); if (l) return l;
+  l = wrapText(str, maxW);
+  if (l.length > 1) { let lo = maxW * 0.4, hi = maxW; for (let i = 0; i < 7; i++) { const m = (lo + hi) / 2; if (wrapText(str, m).length > l.length) lo = m; else hi = m; } l = wrapText(str, hi); }
+  if (_bubWrap.size > 200) _bubWrap.clear(); _bubWrap.set(key, l); return l;
+}
+// lim: optional right edge the box must not cross (it slides left, the tail stays put)
+function speechBubble(c, str, x, y, a, maxW = 170, centered = false, lim = Infinity) {
   if (a <= 0 || !str) return;
   c.save(); c.globalAlpha = a; c.font = `900 13px ${FONT}`;
-  const lines = wrapText(str, maxW);
+  const lines = balancedWrap(str, maxW);
   const bw = Math.max(...lines.map(l => c.measureText(l).width)) + 22, bh = lines.length * 17 + 14;
-  const bx = centered ? -bw / 2 + x : x - 12, by = y - bh;
+  const bx = Math.min(centered ? -bw / 2 + x : x - 12, lim - bw), by = y - bh;
   rr(c, bx, by, bw, bh, 12); ink(c, 3); fillStroke(c, '#fff', 3);
   const tx = centered ? 0 : x;
   c.beginPath(); c.moveTo(tx + 6, by + bh - 1); c.lineTo(tx, by + bh + 12); c.lineTo(tx + 18, by + bh - 1); c.fillStyle = '#fff'; c.fill(); c.stroke(); c.fillRect(tx + 7, by + bh - 4, 10, 5);
