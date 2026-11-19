@@ -306,9 +306,14 @@ button{font-family:var(--font)}
 #tree.roomy .pips{width:58px;height:13px}
 #tree.roomy .node .nlabel{font-size:15px;margin-top:12px;max-width:130px}
 #tree.roomy .node .lock{width:30px;height:30px}
-/* desktops: the tree and the details sit side by side, so the tree gets the panel's full height */
+/* desktops and tablets: the tree and the details sit side by side, so the tree gets the panel's full height */
 @media (min-width:1180px) and (min-height:600px){
-  #scr-hangar .side{width:min(880px,61vw);display:grid;grid-template-columns:minmax(0,1fr) 286px;grid-template-rows:auto auto minmax(0,1fr) auto;grid-template-areas:"head head" "tabs tabs" "tree detail" "foot foot"}
+  #scr-hangar .side{width:min(880px,61vw)}
+  html body.in-hangar #toasts{left:calc((100vw - min(880px,61vw) - 16px)/2)}
+}
+#detail .est{display:none}
+@media (min-width:1180px) and (min-height:600px),(min-width:700px) and (max-width:820px) and (min-height:900px){
+  #scr-hangar .side{display:grid;grid-template-columns:minmax(0,1fr) 286px;grid-template-rows:auto auto minmax(0,1fr) auto;grid-template-areas:"head head" "tabs tabs" "tree detail" "foot foot"}
   #scr-hangar .side.folded{display:flex}
   .side-head{grid-area:head}
   #tabs{grid-area:tabs}
@@ -319,13 +324,26 @@ button{font-family:var(--font)}
   #detail .dicon svg{width:72px;height:72px}
   #detail .dbody{text-align:center}
   #detail h3{justify-content:center;font-size:24px;gap:6px}
-  #detail p{font-size:15px;margin:8px 0}
+  #detail p{font-size:15px;margin:8px 0;display:block;-webkit-line-clamp:unset;overflow:visible}
   #detail .fx{font-size:15px}
-  #detail .note{margin-top:6px}
+  #detail .note{margin-top:6px;font-size:13px}
+  #detail .est{display:flex;flex-direction:column;gap:2px;margin:14px 4px 0;padding:8px 10px;background:#fff;border:3px solid var(--ink);border-radius:14px;box-shadow:0 3px 0 var(--ink);font-size:15px;font-weight:800}
+  #detail .est small{font-size:11px;font-weight:900;color:var(--purple);text-transform:uppercase;letter-spacing:.7px}
+  #detail .est b{color:#1d9e4c}
   #detail .dact{align-self:stretch;margin-top:auto;padding-top:8px}
   #detail .dact .btn{font-size:19px;padding:10px 14px}
   #detail .dact .btn.auto{font-size:16px;padding:6px 12px}
-  html body.in-hangar #toasts{left:calc((100vw - min(880px,61vw) - 16px)/2)}
+}
+/* laptops: a shorter details column */
+@media (min-width:1180px) and (min-height:600px) and (max-height:820px){
+  #detail{padding:12px 14px 10px;gap:6px}
+  #detail .dicon{width:78px;height:78px;border-radius:20px;margin-bottom:2px}
+  #detail .dicon svg{width:54px;height:54px}
+  #detail h3{font-size:21px}
+  #detail p{font-size:14px;margin:5px 0}
+  #detail .fx{font-size:14px}
+  #detail .est{margin-top:8px;padding:6px 8px;font-size:14px}
+  #detail .dact .btn{font-size:17px;padding:8px 12px}
 }
 
 /* ---------- Generic overlay ---------- */
@@ -7593,7 +7611,7 @@ const UI = (() => {
     const rows = Math.max(...vis.map(u => u.pos[1])) + 1;
     // columns as wide as the panel allows; on 320 px phones they pull in so the side columns don't need sideways scrolling
     const CW = compact ? clamp(Math.floor((tw - 96) / 2), 90, 104) : Math.min(roomy ? 180 : 150, Math.max(118, Math.floor((tw - 40) / 3)));
-    let RH = compact ? 90 : 112, top = compact ? 44 : 52;
+    let RH = compact ? 90 : 112, top = compact ? 44 : 56; // room for the selection ring on the top row
     // roomy trees space their rows to the panel (the same for every tab, so switching tabs doesn't jump) and sit centred
     if (roomy) { RH = clamp(Math.floor((th - 170) / 3), 126, 158); top = 64 + Math.max(0, Math.floor((th - 170 - 3 * RH) / 2)); }
     const off = roomy ? 47 : 36;
@@ -7662,6 +7680,7 @@ const UI = (() => {
     else fx.innerHTML = `${L ? u.fx(L) : (u.fx(0) === 'None' ? 'Not installed' : u.fx(0))} → <b>${u.fx(L + 1)}</b>`;
     body.appendChild(fx);
     if (s === 'locked') body.appendChild(el('div', 'note', reqText(u)));
+    if (s === 'open' && matchMedia(WIDE_MQ).matches) { const hp = heightPreview(u); if (hp) body.appendChild(el('div', 'est', `<small>Next level: est. height</small><span>~${fmtAlt(hp[0])} → <b>~${fmtAlt(hp[1])}</b></span>`)); }
     if (u.fork) { const other = UPGRADES.find(x => x.fork === u.fork && x.id !== u.id); body.appendChild(el('div', 'note', s === 'forkout' ? `You picked ${other.name}. Swap to switch paths.` : `Fork: pick this OR ${other.name}`)); }
     d.appendChild(body);
     const act = el('div', 'dact');
@@ -7684,6 +7703,16 @@ const UI = (() => {
     }
     if (autoUnlocked()) act.appendChild(autoButton());
     d.appendChild(act);
+  }
+  // what one more level would do to the estimated height (shown where the details have a column of their own)
+  const WIDE_MQ = '(min-width:1180px) and (min-height:600px),(min-width:700px) and (max-width:820px) and (min-height:900px)';
+  function estHeight() { const st = computeStats(); return simulateFlight(st, { launchQ: 1.3, pax: paxForRoute(flightRoute(), st).pax }).alt; }
+  function heightPreview(u) {
+    const L = lvl(u.id); if (L >= u.max) return null;
+    const a = estHeight(), had = u.id in S.up; let b = a;
+    S.up[u.id] = L + 1;
+    try { b = estHeight(); } finally { if (had) S.up[u.id] = L; else delete S.up[u.id]; }
+    return b - a > Math.max(30, a * 0.01) ? [a, b] : null;
   }
   // ---------- auto-upgrade: one tap buys the best upgrades you can afford (and a second tap within a few seconds undoes it)
   let autoUndo = null, autoKey = '', autoCache = [];
