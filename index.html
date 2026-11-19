@@ -5751,7 +5751,7 @@ function drawCloudLayer(alt, depth, alpha, layer) {
 // ---- background ground layers (screen space with parallax)
 function groundScreenY(depth) { return H * G.cam.anchor + G.cam.py * G.cam.z * depth; }
 // ---- Pebbleton town projects: where they stand (world x, on the hills behind the yard) and what they look like
-const TOWN_SPOTS = { statue: -185, wheel: 300, fountain: 185, observ: 95, museum: 430, port: -440 };
+const TOWN_SPOTS = { fountain: -165, statue: 195, wheel: 310, observ: 95, museum: 440, port: -445 };
 function drawTownLandmark(c, id, L, t) {
   ink(c, 3);
   if (id === 'fountain') {
@@ -5847,7 +5847,7 @@ function drawGroundLayers(alt, sx, sy) {
     ctx.lineTo(W + 10, H + 400); ctx.closePath(); fillStroke(ctx, mountain ? '#9fb7e6' : '#a8c8f0', 3);
     ctx.restore();
   }
-  if (mountain) return;
+  if (mountain && !Object.keys(TOWN_SPOTS).some(id => lvl(id) > 0)) return; // from the mountain you still see your town's hills
   // rolling hills
   const y2 = groundScreenY(0.6) + 30 * z + sy;
   if (y2 < H + 200) {
@@ -5864,13 +5864,22 @@ function drawGroundLayers(alt, sx, sy) {
     // narrow phones squeeze the skyline toward the rocket so every landmark stays in view
     const hillCol = { winter: '#eef5ff', autumn: '#b9cf6a', spooky: '#a9bf6a', spring: '#8adb7f' }[sn] || '#7fd17a';
     const squeeze = clamp((W / 2 / z - 70) / 440, 0.55, 1), ts = z * 0.72 * clamp(0.7 + W / 2400, 0.8, 1);
+    const spots = [];
     for (const id in TOWN_SPOTS) {
       const L = lvl(id); if (!L) continue;
       const x = W / 2 + (TOWN_SPOTS[id] * squeeze - G.cam.x) * z; if (x < -160 * z || x > W + 160 * z) continue;
-      const hy = y2 - (40 + Math.sin(((x + off) / z) * 0.006) * 30 + Math.sin(((x + off) / z) * 0.017) * 14) * z, lift = 58 * z;
+      const hy = y2 - (40 + Math.sin(((x + off) / z) * 0.006) * 30 + Math.sin(((x + off) / z) * 0.017) * 14) * z, lift = (58 + (1 - squeeze) * 110) * z; // higher hills on phones, above the crowd and the sign
+      spots.push({ id, L, x, hy, lift, mw: 96 * z + lift * 0.5 });
+    }
+    if (spots.length) { // each stands on its own little hill: one outline around all of them (stroke wide, then fill over)
+      ctx.save(); ctx.lineJoin = 'round'; ctx.lineWidth = 6; ctx.strokeStyle = INK;
+      ctx.beginPath(); for (const p of spots) { ctx.moveTo(p.x - p.mw, p.hy + 30 * z); ctx.bezierCurveTo(p.x - p.mw * 0.72, p.hy - p.lift, p.x + p.mw * 0.72, p.hy - p.lift, p.x + p.mw, p.hy + 30 * z); } ctx.stroke();
+      ctx.beginPath(); for (const p of spots) { ctx.moveTo(p.x - p.mw, p.hy + 30 * z); ctx.bezierCurveTo(p.x - p.mw * 0.72, p.hy - p.lift, p.x + p.mw * 0.72, p.hy - p.lift, p.x + p.mw, p.hy + 30 * z); ctx.lineTo(p.x + p.mw, p.hy + 200 * z); ctx.lineTo(p.x - p.mw, p.hy + 200 * z); ctx.closePath(); }
+      ctx.fillStyle = hillCol; ctx.fill(); ctx.restore();
+    }
+    for (const p of spots) {
+      const { id, L, x, hy, lift } = p;
       const pop = G.townPop && G.townPop.id === id ? G.townPop.t : 0, bounce = pop > 0 ? 1 + Math.sin(Math.min(1, (1.2 - pop) / 0.5) * Math.PI) * 0.12 : 1;
-      // its own little hill, so it stands above the yard
-      ctx.save(); ink(ctx, 3); ctx.beginPath(); ctx.moveTo(x - 96 * z, hy + 30 * z); ctx.bezierCurveTo(x - 70 * z, hy - lift, x + 70 * z, hy - lift, x + 96 * z, hy + 30 * z); ctx.closePath(); fillStroke(ctx, hillCol, 3); ctx.restore();
       ctx.save(); ctx.translate(x, hy - lift * 0.72); ctx.scale(ts * bounce, ts / bounce * (bounce > 1 ? 1.06 : 1));
       drawTownLandmark(ctx, id, L, G.t);
       ctx.restore();
@@ -8112,7 +8121,7 @@ const UI = (() => {
     { const rc = rivalCur(); if (rc && !S.seen['rival_' + rc.id] && lines.length < 6 && S.flights >= 2) { S.seen['rival_' + rc.id] = 1; lines.push(...rc.intro); } }
     if (frontierOpen() && !S.seen.frontier && S.seen.endCredits && !lines.length) { S.seen.frontier = 1; lines.push(...STORY.frontier); }
     if (townOpen() && !S.seen.town && !lines.length) { S.seen.town = 1; lines.push(...STORY.town); }
-    if (lvl('statue') > 0 && !S.seen.statue && !lines.length) { S.seen.statue = 1; lines.push(...STORY.statue); confetti(-185, 260, 80); }
+    if (lvl('statue') > 0 && !S.seen.statue && !lines.length) { S.seen.statue = 1; lines.push(...STORY.statue); confetti(TOWN_SPOTS.statue, 260, 80); }
     if (jobsUnlocked() && !S.seen.jobs) { S.seen.jobs = 1; fillJobs(); S.jobsNew = 3; lines.push(...STORY.jobs); }
     if (dailyUnlocked() && !S.seen.dailyIntro && !lines.length && (S.line || 1) === 1) { S.seen.dailyIntro = 1; lines.push(...STORY.daily); }
     if (S.pendingAch && S.pendingAch.length) { for (const id of S.pendingAch) achToast(id); sfx.ach(); S.pendingAch = []; }
