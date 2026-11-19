@@ -24,7 +24,7 @@ Open `index.html` in any modern browser, or enable GitHub Pages for this repo (S
 - 10 passenger routes with a little story, passenger comfort, star ratings and reviews, plus a free-flight mode and an endless run past the Starlight Gate (keep going and someone will wave).
 - Job Board side jobs (collect coins, skim obstacles, fly clean...) that scale with how you play.
 - Sky forecast before each flight: sunset, night, tailwind, coin shower or ring festival, each with its own bonus.
-- Surprise sky events mid-flight: gold rush, ring road, bird migration, meteor shower, ice storm, jelly bloom.
+- Surprise sky events mid-flight: gold rush, ring road, bird migration, meteor shower, ice storm, jelly bloom, and rainbows (steer up through the arc and coins are worth double for a while; hit the top for longer).
 - Four sky bosses with their own music: the Storm King (dodge his lightning), Big Blue the sky whale (ride its spout), Captain Calico's sky pirates (slide into the green lane before the cannons fire) and the Space Kraken (slip between its arms).
 - Ghost racer: a faded rocket replays your best run on each route.
 - Passenger wishes: riders ask for a ring, a wiggle, a close call or a calm stretch mid-flight. Grant them for comfort and coins.
@@ -38,9 +38,10 @@ Open `index.html` in any modern browser, or enable GitHub Pages for this repo (S
 - Add it to your phone's home screen and it runs full screen with its own rocket icon.
 - Seasons: the yard follows your calendar, with snow and roof lights in winter, blossoms and tulips in spring, sunflowers and fireflies in summer, falling leaves in autumn and carved pumpkins with bats at the end of October. Tap the seasonal friend next to Ada.
 - Fan mail: thank-you letters with a little gift arrive in the yard's mailbox after deliveries, boss wins and lost-item returns.
+- Scenery that changes as you climb: hills and town, the town blimp, a castle on a floating island in the High Sky, then the Moon, Mars, a ringed planet and the Gate.
 - Route Map with an illustrated panorama of the whole line, from the shed to the Starlight Gate.
 - A pokeable workshop: tap the rocket, Grandma Ada, the crowd or the shed.
-- Paint shop with paint jobs and exhaust trails (rainbow, hearts, stardust, and four earned from the bosses), 32 achievements (two of them secret), a stats panel and shareable postcards of your deliveries.
+- Paint shop with paint jobs and exhaust trails (rainbow, hearts, stardust, and four earned from the bosses), 33 achievements (two of them secret), a stats panel and shareable postcards of your deliveries.
 - After the finale, open a new line (new game plus): start over with a fresh rocket, keep your trophies and cosmetics, and earn +50% per line.
 - Relaxed mode (+2 hearts, fewer hazards), tilt steering on phones, and a calmer-screen option (less shake and flashing).
 - Save codes (Settings): copy your progress from one device and load it on another.

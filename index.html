@@ -722,6 +722,11 @@ const AudioSys = (() => {
     good() { [0, 7].forEach((s, i) => tone({ type: 'triangle', f: N(76 + s), dur: 0.2, vol: 0.16, delay: i * 0.07 })); },
     ask() { [0, 5].forEach((s, i) => tone({ type: 'sine', f: N(81 + s), dur: 0.18, vol: 0.14, delay: i * 0.11 })); },
     wish() { [0, 4, 7, 11, 14].forEach((s, i) => { tone({ type: 'sine', f: N(84 + s), dur: 0.22, vol: 0.1, delay: i * 0.05 }); tone({ type: 'triangle', f: N(72 + s), dur: 0.18, vol: 0.08, delay: i * 0.05 }); }); noise({ dur: 0.25, vol: 0.06, filter: 'highpass', f: 6000, delay: 0.2 }); },
+    rainbow(big) { // harp glissando up a pentatonic scale
+      const sc = [0, 2, 4, 7, 9, 12, 14, 16, 19, 21, 24], n = big ? sc.length : 6;
+      for (let i = 0; i < n; i++) { tone({ type: 'triangle', f: N(72 + sc[i]), dur: 0.32, vol: 0.09, delay: i * 0.045 }); tone({ type: 'sine', f: N(84 + sc[i]), dur: 0.26, vol: 0.05, delay: i * 0.045 + 0.02 }); }
+      noise({ dur: 0.4, vol: 0.05, filter: 'highpass', f: 7000, delay: n * 0.045 });
+    },
     meh() { tone({ type: 'triangle', f: N(64), f2: N(60), dur: 0.3, vol: 0.16 }); },
     buy() {
       [0, 4, 7, 12].forEach((s, i) => tone({ type: 'triangle', f: N(72 + s), dur: 0.2, vol: 0.18, delay: i * 0.045 }));
@@ -2855,7 +2860,36 @@ const SKY_EVENTS = {
   icefall:  { name: 'ICE STORM!', col: '#bff8ff', sub: 'CRYSTALS AHEAD', dur: 6, min: 240000, w: 1.5 },
   ringroad: { name: 'RING ROAD!', col: '#4fd8ff', sub: 'CHAIN THE BOOST RINGS', dur: 5, min: 1800, w: 1.5 },
   bloom:    { name: 'JELLY BLOOM!', col: '#ff8ad0', sub: 'SQUISHY, STINGY, EVERYWHERE', dur: 6, min: 480000, w: 2 },
+  rainbow:  { name: 'RAINBOW!', col: '#ffd93d', sub: 'STEER THROUGH THE ARC FOR LUCK', dur: 4, min: 400, max: 9000, w: 1.5 },
 };
+const RAINBOW = ['#ff5a5f', '#ff9f43', '#ffd93d', '#5fd068', '#4fd8ff', '#4d96ff', '#9b5de5'];
+// fly up through the arc: coins are worth double for a while (longer if you hit the top of the arc)
+function rainbowLuck(R, off) {
+  const perfect = off < 0.35;
+  R.lucky = R.luckyMax = perfect ? 12 : 8; R.rainbows = (R.rainbows || 0) + 1;
+  R.comfort = Math.min(1, R.comfort + (perfect ? 0.1 : 0.05)); R.mood = 'joy'; R.moodT = 2;
+  S.stats.rainbows = (S.stats.rainbows || 0) + 1;
+  sfx.rainbow(true); sparks(R.x, R.py, 28, RAINBOW, 340);
+  banner(perfect ? 'PERFECT RAINBOW!' : 'LUCKY!', '#ffd93d', 1.8, `COINS ×2 FOR ${R.lucky} SECONDS`);
+  if (perfect) { G.slow = 0.5; G.slowT = 0.2; }
+  spawnCoins(R.x, R.py + 300);
+}
+function drawRainbow(c, p) {
+  const n = RAINBOW.length, bw = 8, a = clamp((p.age || 0) * 2, 0, 1);
+  c.save(); c.globalAlpha *= a * 0.9; c.lineCap = 'butt';
+  c.lineWidth = n * bw + 7; c.strokeStyle = INK; c.beginPath(); c.arc(0, 0, p.r, Math.PI, TAU); c.stroke();
+  for (let i = 0; i < n; i++) { c.lineWidth = bw + 0.8; c.strokeStyle = RAINBOW[i]; c.beginPath(); c.arc(0, 0, p.r + (n / 2 - i - 0.5) * bw, Math.PI, TAU); c.stroke(); }
+  c.lineWidth = 3; c.strokeStyle = 'rgba(255,255,255,.55)'; c.beginPath(); c.arc(0, 0, p.r + n * bw / 2 - 5, Math.PI * 1.15, Math.PI * 1.45); c.stroke();
+  // twinkles along the arc
+  for (let i = 0; i < 5; i++) {
+    const ang = Math.PI + ((G.t * 0.25 + i / 5) % 1) * Math.PI, rr2 = p.r + Math.sin(i * 7.3) * n * bw * 0.35;
+    const tw = Math.max(0, Math.sin(G.t * 5 + i * 2.1));
+    if (tw > 0.2) { c.save(); c.translate(Math.cos(ang) * rr2, Math.sin(ang) * rr2); c.rotate(G.t + i); c.globalAlpha *= tw; c.fillStyle = '#fff'; c.beginPath(); for (let j = 0; j < 8; j++) { const rad = j % 2 ? 1.6 : 6; const aa = j * Math.PI / 4; c.lineTo(Math.cos(aa) * rad, Math.sin(aa) * rad); } c.fill(); c.restore(); }
+  }
+  c.globalAlpha = a;
+  for (const sd of [-1, 1]) drawCloud(c, sd * p.r, -6, 96, 40, 11 + sd, '#ffffff', '#e6f3ff', 2.5);
+  c.restore();
+}
 function updateSkyEvent(R, dt, viewTop) {
   if (R.ended || R.crashed) return;
   const vw = W / G.cam.z;
@@ -2874,18 +2908,24 @@ function updateSkyEvent(R, dt, viewTop) {
     if (e.t > e.dur) R.event = null;
     return;
   }
-  if (S.flights < 3 || R.time < 5 || (R.evCount || 0) >= 2 || R.boss) return;
-  if (!(R.fuel > 0 || R.dropFuel > 0 || R.vy > 150)) return; // only while climbing hard
-  R.evT = (R.evT || 0) + dt;
-  if (R.evT < 6 || Math.random() > dt * 0.09) return;
-  const pool = [];
-  for (const id in SKY_EVENTS) { const d = SKY_EVENTS[id]; if (R.alt >= d.min && R.alt < (d.max || Infinity)) for (let i = 0; i < d.w * 2; i++) pool.push(id); }
-  if (!pool.length) return;
-  const id = pick(pool), d = SKY_EVENTS[id];
+  let id = DEBUG.forceEvent && SKY_EVENTS[DEBUG.forceEvent] && !R.boss ? DEBUG.forceEvent : null;
+  if (id) DEBUG.forceEvent = null;
+  else {
+    if (S.flights < 3 || R.time < 5 || (R.evCount || 0) >= 2 || R.boss) return;
+    if (!(R.fuel > 0 || R.dropFuel > 0 || R.vy > 150)) return; // only while climbing hard
+    R.evT = (R.evT || 0) + dt;
+    if (R.evT < 6 || Math.random() > dt * 0.09) return;
+    const pool = [];
+    for (const k in SKY_EVENTS) { const d = SKY_EVENTS[k]; if (R.alt >= d.min && R.alt < (d.max || Infinity)) for (let i = 0; i < d.w * 2; i++) pool.push(k); }
+    if (!pool.length) return;
+    id = pick(pool);
+  }
+  const d = SKY_EVENTS[id];
   R.event = { id, t: 0, dur: d.dur, acc: 0, dir: chance(0.5) ? 1 : -1 };
   R.evCount = (R.evCount || 0) + 1; R.evT = 0;
   banner(d.name, d.col, 2.2, d.sub);
-  if (id === 'goldrush') sfx.bigcoin(); else if (id === 'ringroad') sfx.ring(3); else sfx.thunder();
+  if (id === 'rainbow') { const r = Math.min(vw * 0.3, 240); G.picks.push({ type: 'rainbow', x: clamp(R.x + R.event.dir * rand(0.1, 0.3) * vw, G.cam.x - vw / 2 + r * 0.6, G.cam.x + vw / 2 - r * 0.6), py: viewTop + 120, r, age: 0, hit: false, done: false, below: null }); }
+  if (id === 'rainbow') sfx.rainbow(false); else if (id === 'goldrush') sfx.bigcoin(); else if (id === 'ringroad') sfx.ring(3); else sfx.thunder();
 }
 // ---------------------------------------------------------------- sky bosses: big set-piece encounters at fixed heights
 // They live in screen space (so they keep pace with the climb) and scale with the world zoom.
@@ -3616,6 +3656,7 @@ function chatter() { const R = G.R; if (R.mood === 'scared') return pick(['Eek!'
 
 const TIPS = {
   bird: 'Birds! Bump one and you lose speed and a heart.',
+  rainbow: 'Rainbow! Fly up through the arc for lucky double coins. Hit the top for extra luck.',
   balloon: 'Hot-air balloons drift slowly. Steer around them!',
   kite: 'Runaway kites! Mind the tangly tails.',
   plane: 'Planes fly in from the sides. Watch the edges!',
@@ -3794,7 +3835,7 @@ function updatePickups(dt) {
   for (const p of G.picks) {
     if (p.dead) continue;
     const dx = R.x - p.x, dy = R.py - p.py, dist = Math.hypot(dx, dy);
-    if (st.magnet && p.type !== 'ring' && p.type !== 'lost' && dist < st.magnet && !R.crashed) { const pull = (1 - dist / st.magnet) * 900 + 200; p.x += dx / dist * pull * dt; p.py += dy / dist * pull * dt; }
+    if (st.magnet && p.type !== 'ring' && p.type !== 'lost' && p.type !== 'rainbow' && dist < st.magnet && !R.crashed) { const pull = (1 - dist / st.magnet) * 900 + 200; p.x += dx / dist * pull * dt; p.py += dy / dist * pull * dt; }
     if (p.py < camBottom - 200) { p.dead = true; continue; }
     if (R.crashed) continue;
     if (S.flights > 0 && p.py - R.py < 340 && p.py - R.py > 0) tipOnce(p.type);
@@ -3802,6 +3843,16 @@ function updatePickups(dt) {
       p.spotted = 1; const it = LOST.find(x => x.id === p.id); sfx.ask();
       floater(p.x, p.py + 60, 'LOST PROPERTY!', '#ffd93d', 18);
       if (R.faces && R.faces.length && !R.wish) R.bubble = { s: R.faces.includes(it.owner) ? `My ${it.short}! Grab it!` : `Isn't that ${it.name}?`, t: 0 };
+    }
+    if (p.type === 'rainbow') {
+      p.age += dt;
+      if (!p.done) {
+        const adx = Math.abs(R.x - p.x);
+        if (adx < p.r * 0.97) { const ay = p.py + Math.sqrt(p.r * p.r - adx * adx), above = R.py > ay; if (p.below === true && above) { p.done = p.hit = true; rainbowLuck(R, adx / p.r); } p.below = !above; }
+        else p.below = null;
+        if (R.py > p.py + p.r + 80) { p.done = true; if (!p.hit) floater(R.x, R.py + 50, 'Missed the rainbow!', '#ffffff', 14); }
+      }
+      continue;
     }
     if (p.type === 'ring') {
       if (!p.hit && Math.abs(dx) < p.r * 0.8 && Math.abs(dy) < 26) {
@@ -3820,7 +3871,7 @@ function updatePickups(dt) {
     if (dist < p.r + reach) {
       p.dead = true;
       if (p.type === 'coin') {
-        const v = coinValue(R.alt);
+        const v = coinValue(R.alt) * (R.lucky > 0 ? 2 : 1);
         R.coins++; R.coinCash += v; S.stats.coins++;
         R.coinStreak = R.coinStreakT > 0 ? R.coinStreak + 1 : 0; R.coinStreakT = 0.6;
         sfx.coin(R.coinStreak);
@@ -3850,6 +3901,10 @@ function updatePickups(dt) {
   }
   if (R.ringT > 0) R.ringT -= dt;
   if (R.coinStreakT > 0) R.coinStreakT -= dt;
+  if (R.lucky > 0) {
+    R.lucky -= dt;
+    if (!R.crashed && Math.random() < dt * 22) { const tail = 40 * sc; G.parts.push({ k: 'star4', x: R.x + rand(-14, 14) * sc, py: R.py - tail, vx: rand(-60, 60), vy: -rand(20, 90), r: rand(5, 9), rot: rand(0, TAU), col: pick(RAINBOW), t: 0, life: rand(0.6, 1) }); }
+  }
   G.picks = G.picks.filter(p => !p.dead);
 }
 
@@ -4014,6 +4069,7 @@ const ACH = [
   { id: 'daily', name: 'Special Courier', desc: 'Complete a Daily Special delivery', test: () => (S.stats.daily || 0) >= 1, reward: 3000 },
   { id: 'line2', name: 'Franchise', desc: 'Open a second Skyhop line after the finale', test: () => (S.line || 1) >= 2, reward: 5000 },
   { id: 'tickle', secret: true, name: 'Tickle Tank', desc: 'Poke your rocket 25 times in the workshop', test: () => (S.stats.pokes || 0) >= 25, reward: 250 },
+  { id: 'rainbow', prog: () => [S.stats.rainbows || 0, 5], name: 'Pot of Gold', desc: 'Fly up through 5 rainbows', test: () => (S.stats.rainbows || 0) >= 5, reward: 1500 },
   { id: 'fork', name: 'Decisions!', desc: 'Pick your first fork upgrade', test: () => UPGRADES.some(u => u.fork && lvl(u.id) > 0), reward: 500 },
 ];
 function checkAchievements() {
@@ -4117,8 +4173,9 @@ function render() {
   drawCondTint(alt);
   drawStationAndRecord();
   for (const p of G.parts) if (p.k === 'smoke' || p.k === 'glow' || p.k === 'line') drawParticle(p);
+  for (const p of G.picks) if (p.type === 'rainbow') drawPickup(p);
   for (const o of G.obs) drawObstacle(o);
-  for (const p of G.picks) drawPickup(p);
+  for (const p of G.picks) if (p.type !== 'rainbow') drawPickup(p);
   drawGhostRocket();
   drawRivalRocket();
   drawBoss();
@@ -4233,6 +4290,8 @@ function drawStars(alt) {
 }
 // ---- sun / moon / planets that drift past as you climb
 const BODIES = [
+  { alt: 2300, kind: 'blimp', x: 0.7, size: 0.5, fall: true }, // sky scenery: you climb past these
+  { alt: 7000, kind: 'castle', x: 0.24, size: 0.62, fall: true },
   { alt: 40000, kind: 'moon', x: 0.78, size: 1 },
   { alt: 110000, kind: 'mars', x: 0.22, size: 0.9 },
   { alt: 240000, kind: 'saturn', x: 0.76, size: 1.1 },
@@ -4266,14 +4325,71 @@ function drawSunAndPlanets(alt) {
     const vis = d < 0 ? smooth(invLerp(-1.1, -0.6, d)) : 1 - smooth(invLerp(0.2, 0.7, d));
     const grow = Math.exp(-Math.abs(d) * 1.4);
     const r = (40 + 170 * grow) * b.size * Math.min(1, W / 700 + 0.3);
-    const y = H * 0.32 - d * H * 1.1;
+    const y = H * 0.32 + (b.fall ? 1 : -1) * d * H * 1.1;
     const x = W * b.x;
     ctx.save(); ctx.globalAlpha = vis;
     drawPlanet(b.kind, x, y, r);
     ctx.restore();
   }
 }
+// a far-off castle on a floating island, drifting past in the High Sky
+function drawSkyCastle(x, y, r) {
+  const u = r / 100;
+  ctx.save(); ctx.translate(x, y + Math.sin(G.t * 0.8) * 3 * u); ctx.scale(u, u); ctx.globalAlpha *= 0.9;
+  // little waterfall off the edge
+  ctx.fillStyle = 'rgba(191,233,255,.85)'; ctx.fillRect(58, 6, 9, 60 + Math.sin(G.t * 3) * 3);
+  // island rock
+  ink(ctx, 3.5); ctx.beginPath(); ctx.moveTo(-88, 6); ctx.lineTo(88, 6); ctx.lineTo(40, 48); ctx.lineTo(14, 92); ctx.lineTo(-8, 70); ctx.lineTo(-30, 82); ctx.lineTo(-52, 40); ctx.closePath(); fillStroke(ctx, '#b9a6d6', 3.5);
+  ctx.fillStyle = 'rgba(43,34,64,.15)'; ctx.beginPath(); ctx.moveTo(10, 6); ctx.lineTo(88, 6); ctx.lineTo(40, 48); ctx.lineTo(14, 92); ctx.closePath(); ctx.fill();
+  rr(ctx, -92, -6, 184, 16, 8); fillStroke(ctx, '#8fe3a0', 3.5);
+  // towers and keep
+  const tower = (tx, w, h, roof) => {
+    rr(ctx, tx, -h, w, h, 3); fillStroke(ctx, '#fff6e5', 3.5);
+    ctx.beginPath(); ctx.moveTo(tx - 6, -h + 2); ctx.lineTo(tx + w / 2, -h - w * 1.3); ctx.lineTo(tx + w + 6, -h + 2); ctx.closePath(); fillStroke(ctx, roof, 3.5);
+    const fx = tx + w / 2, fy = -h - w * 1.3; ctx.beginPath(); ctx.moveTo(fx, fy); ctx.lineTo(fx, fy - 16); ctx.stroke();
+    const wv = Math.sin(G.t * 4 + tx) * 3; ctx.beginPath(); ctx.moveTo(fx, fy - 16); ctx.quadraticCurveTo(fx + 8, fy - 14 + wv, fx + 15, fy - 12 + wv); ctx.lineTo(fx, fy - 8); ctx.closePath(); fillStroke(ctx, '#ff5a5f', 2.5);
+    rr(ctx, tx + w / 2 - 4, -h + 14, 8, 12, 4); fillStroke(ctx, '#4d96ff', 2.5);
+  };
+  tower(-66, 24, 70, '#ff8ad0');
+  tower(42, 26, 82, '#9b5de5');
+  rr(ctx, -40, -56, 80, 56, 3); fillStroke(ctx, '#fff6e5', 3.5);
+  for (let i = 0; i < 5; i++) { rr(ctx, -40 + i * 18, -66, 10, 12, 2); fillStroke(ctx, '#fff6e5', 3); }
+  tower(-13, 26, 96, '#ffd93d');
+  ctx.beginPath(); ctx.moveTo(-11, 0); ctx.lineTo(-11, -18); ctx.arc(0, -18, 11, Math.PI, 0); ctx.lineTo(11, 0); ctx.closePath(); fillStroke(ctx, '#9b5de5', 3);
+  for (const wx of [-30, 22]) { rr(ctx, wx, -40, 9, 13, 4.5); fillStroke(ctx, '#ffd93d', 2.5); }
+  // clouds hugging the island
+  drawCloud(ctx, -66, 22, 84, 34, 5, '#ffffff', '#e6f3ff', 2.5);
+  drawCloud(ctx, 74, 30, 70, 28, 9, '#ffffff', '#e6f3ff', 2.5);
+  ctx.restore();
+}
+// the town's advertising blimp, puttering about in the Cloud Layer
+function drawBlimp(x, y, r) {
+  const u = r / 100;
+  ctx.save(); ctx.translate(x + Math.sin(G.t * 0.3) * 18 * u, y + Math.sin(G.t * 0.9) * 4 * u); ctx.scale(u, u); ctx.globalAlpha *= 0.92;
+  ink(ctx, 3.5);
+  // tail fins
+  ctx.beginPath(); ctx.moveTo(70, -6); ctx.lineTo(104, -34); ctx.lineTo(108, -4); ctx.closePath(); fillStroke(ctx, '#ff5a5f', 3.5);
+  ctx.beginPath(); ctx.moveTo(70, 6); ctx.lineTo(104, 34); ctx.lineTo(108, 4); ctx.closePath(); fillStroke(ctx, '#ff5a5f', 3.5);
+  // gondola
+  ctx.beginPath(); ctx.moveTo(-14, 30); ctx.lineTo(-10, 40); ctx.moveTo(14, 30); ctx.lineTo(10, 40); ctx.stroke();
+  rr(ctx, -22, 38, 44, 16, 6); fillStroke(ctx, '#fff6e5', 3);
+  for (let i = 0; i < 3; i++) { rr(ctx, -16 + i * 12, 42, 7, 7, 2); fillStroke(ctx, '#bfe9ff', 2); }
+  // envelope with stripes
+  ctx.beginPath(); ctx.ellipse(0, 0, 84, 34, 0, 0, TAU); fillStroke(ctx, '#ffd93d', 3.5);
+  ctx.save(); ctx.beginPath(); ctx.ellipse(0, 0, 84, 34, 0, 0, TAU); ctx.clip();
+  ctx.fillStyle = '#ff9f43'; for (const sx of [-50, 30]) ctx.fillRect(sx, -40, 14, 80);
+  ctx.fillStyle = 'rgba(255,255,255,.45)'; ctx.beginPath(); ctx.ellipse(-12, -16, 52, 9, -0.05, 0, TAU); ctx.fill();
+  ctx.restore();
+  ctx.beginPath(); ctx.ellipse(0, 0, 84, 34, 0, 0, TAU); ctx.stroke();
+  text(ctx, 'SKYHOP!', -8, 3, 20, '#ffffff', 'center', INK, 4);
+  // propeller
+  const sp = Math.sin(G.t * 30); ctx.beginPath(); ctx.moveTo(-96, 0); ctx.lineTo(-86, 0); ctx.stroke();
+  ctx.beginPath(); ctx.ellipse(-98, 0, 3, 14 * Math.abs(sp) + 2, 0, 0, TAU); fillStroke(ctx, '#c9ced8', 2.5);
+  ctx.restore();
+}
 function drawPlanet(kind, x, y, r) {
+  if (kind === 'castle') { drawSkyCastle(x, y, r); return; }
+  if (kind === 'blimp') { drawBlimp(x, y, r); return; }
   ink(ctx, 4);
   if (kind === 'moon') {
     circ(ctx, x, y, r); fillStroke(ctx, '#e8e8f0', 4);
@@ -4855,6 +4971,7 @@ function drawPickup(p) {
   else if (p.type === 'ring') drawRing(ctx, p, G.t);
   else if (p.type === 'star') drawStar(ctx, p, G.t);
   else if (p.type === 'lost') drawLostPick(ctx, p, G.t);
+  else if (p.type === 'rainbow') drawRainbow(ctx, p);
   ctx.restore();
 }
 function drawParticle(p) {
@@ -5143,9 +5260,20 @@ function drawHUD() {
   if (R.stage2Fuel > 0) { ctx.save(); ctx.globalAlpha = 0.85; text(ctx, '+ STAGE 2', fx + fw + 8, fy + fh / 2, small ? 10 : 12, '#ff9f43', 'left'); ctx.restore(); }
   void cap;
   // coins
-  const cx = W / 2;
+  const cx = W < 380 ? W / 2 + 22 : W / 2; // nudge right on very narrow phones so the altitude fits
   ctx.save(); ctx.translate(cx - 40, pad + 20); drawCoin(ctx, { r: small ? 11 : 14, seed: 0 }, G.t); ctx.restore();
   text(ctx, fmtMoney(R.coinCash), cx - 22, pad + 21, small ? 20 : 26, '#ffd93d', 'left');
+  if (R.lucky > 0) { // rainbow luck: x2 pill under the coin, flashing as it runs out
+    ctx.font = `900 ${small ? 20 : 26}px ${FONT}`;
+    const mr = cx - 22 + ctx.measureText(fmtMoney(R.coinCash)).width, over = mr + 40 > W - (small ? 64 : 84);
+    const k = R.lucky / (R.luckyMax || 8), lx = over ? mr - 17 : mr + 24, ly = over ? pad + (small ? 40 : 48) : pad + 21;
+    ctx.save(); if (R.lucky < 2 && Math.sin(G.t * 16) < 0) ctx.globalAlpha = 0.45;
+    const g = ctx.createLinearGradient(lx - 16, 0, lx + 16, 0); RAINBOW.forEach((cc, i) => g.addColorStop(i / (RAINBOW.length - 1), cc));
+    rr(ctx, lx - 17, ly - 8, 34, 16, 8); ink(ctx, 2.5); ctx.fillStyle = g; ctx.fill(); ctx.stroke();
+    text(ctx, '×2', lx, ly + 1, 11, '#fff', 'center', INK, 3);
+    ctx.fillStyle = 'rgba(255,255,255,.8)'; ctx.fillRect(lx - 13, ly + 10, 26 * k, 3);
+    ctx.restore();
+  }
   // passengers
   if (R.faces.length && !R.delivered) {
     const n = Math.min(R.faces.length, 8), fs = small ? 9 : 11;
@@ -5277,9 +5405,11 @@ function drawBanners() {
     const sIn = easeOutBack(clamp(b.t * 4, 0, 1));
     const a = 1 - clamp((k - 0.8) / 0.2, 0, 1);
     const y = yAcc + (b.sub ? 18 : 0); yAcc = y + (W < 600 ? 52 : 70);
-    ctx.save(); ctx.globalAlpha = a; ctx.translate(W / 2, y); ctx.scale(sIn, sIn); ctx.rotate(-0.04);
+    const size = W < 600 ? 34 : 50; ctx.font = `900 ${size}px ${FONT}`;
+    const fit = Math.min(1, (W - 28) / (ctx.measureText(b.text).width + size * 0.4)); // long titles shrink to fit narrow phones
+    ctx.save(); ctx.globalAlpha = a; ctx.translate(W / 2, y); ctx.scale(sIn * fit, sIn * fit); ctx.rotate(-0.04);
     if (b.sub) text(ctx, b.sub, 0, -34, W < 600 ? 14 : 18, '#ffffff');
-    text(ctx, b.text, 0, 0, W < 600 ? 34 : 50, b.col);
+    text(ctx, b.text, 0, 0, size, b.col);
     ctx.restore();
   });
 }
@@ -6348,6 +6478,7 @@ window.__skyhop = {
   start: startGame, launch(v = 0.8) { $('scr-results').classList.add('hidden'); if (G.mode !== 'launch') enterLaunch(); G.launch.v = v; doLaunch(); },
   hangar: () => goHangar(true), flush: () => UI.flushPending(), reset() { resetSave(); }, LOST, drawLostItem, mail: () => UI.openLetter(),
   daily() { return todaysDaily(); },
+  skyEvent(id) { DEBUG.forceEvent = id; },
   teleport(alt) { const R = G.R; if (!R) return; R.alt = alt; R.maxAlt = Math.max(R.maxAlt, alt); },
   save: saveGame, music: Music, audio: AudioSys, sfxTest() { const errs = []; for (const k in AudioSys.sfx) { try { AudioSys.sfx[k](); } catch (e) { errs.push(k + ':' + e.message); } } return errs; },
   candidates() { return UPGRADES.filter(u => upState(u) === 'open').map(u => ({ id: u.id, cost: upCost(u) })); },
