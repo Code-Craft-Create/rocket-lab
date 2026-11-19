@@ -5347,8 +5347,8 @@ const BODIES = [
   { alt: 110000, kind: 'mars', x: 0.22, size: 0.9 },
   { alt: 240000, kind: 'saturn', x: 0.76, size: 1.1 },
   { alt: 650000, kind: 'gate', x: 0.3, size: 1 },
-  { alt: 1000000, kind: 'teapot', x: 0.24, size: 0.55, fall: true }, // somebody had to check
-  { alt: 1500000, kind: 'pip', x: 0.7, size: 1.15 },
+  { alt: 1000000, kind: 'teapot', x: 0.16, size: 0.48, fall: true }, // somebody had to check
+  { alt: 1500000, kind: 'pip', x: 0.82, size: 1.15 },
 ];
 function drawSunAndPlanets(alt) {
   // sun
@@ -5372,7 +5372,7 @@ function drawSunAndPlanets(alt) {
     ctx.fillStyle = g; circ(ctx, W * 0.9, H * 0.1, 90); ctx.fill(); ctx.restore();
   }
   for (const b of BODIES) {
-    if (b.kind === 'teapot' && G.R && G.R.route && G.R.route.id === 'x1' && G.mode !== 'hangar') continue; // you're flying to the real one
+    if ((b.kind === 'teapot' || b.kind === 'pip') && G.R && G.R.route && G.R.route.icon === b.kind && G.mode !== 'hangar') continue; // you're flying to the real one
     const d = Math.log(Math.max(alt, 1) / b.alt);
     if (d < -1.1 || d > 0.7) continue;
     const vis = d < 0 ? smooth(invLerp(-1.1, -0.6, d)) : 1 - smooth(invLerp(0.2, 0.7, d));
