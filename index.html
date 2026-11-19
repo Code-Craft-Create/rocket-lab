@@ -5945,6 +5945,7 @@ function drawTownLandmark(c, id, L, t) {
   }
 }
 function drawGroundLayers(alt, sx, sy) {
+  G.townHit = [];
   const z = G.cam.z;
   const mountain = (G.st || computeStats()).startAlt > 0;
   // distant mountains
@@ -5981,6 +5982,7 @@ function drawGroundLayers(alt, sx, sy) {
       const hy = y2 - (40 + Math.sin(((x + off) / z) * 0.006) * 30 + Math.sin(((x + off) / z) * 0.017) * 14) * z, lift = (58 + (1 - squeeze) * 110) * z; // higher hills on phones, above the crowd and the sign
       spots.push({ id, L, x, hy, lift, mw: 96 * z + lift * 0.5 });
     }
+    G.townHit = spots.map(p => ({ id: p.id, x: p.x, base: p.hy - p.lift * 0.72, s: ts })); // tappable landmarks
     if (spots.length) { // each stands on its own little hill: one outline around all of them (stroke wide, then fill over)
       ctx.save(); ctx.lineJoin = 'round'; ctx.lineWidth = 6; ctx.strokeStyle = INK;
       ctx.beginPath(); for (const p of spots) { ctx.moveTo(p.x - p.mw, p.hy + 30 * z); ctx.bezierCurveTo(p.x - p.mw * 0.72, p.hy - p.lift, p.x + p.mw * 0.72, p.hy - p.lift, p.x + p.mw, p.hy + 30 * z); } ctx.stroke();
@@ -6345,11 +6347,33 @@ const ADA_QUIPS = [
   'If it explodes, we call it a learning flight.', 'My knitting club wants a ride. Heaven help us.', 'Don’t tell Mayor Plum, but I drew this on a napkin.',
 ];
 const ROCKET_POKES = ['Boing!', 'Hey!', 'Hee hee!', 'Stop, that tickles!', 'Are we there yet?', 'Vroom vroom!', 'Again!', '*rattle rattle*'];
+const TOWN_POKES = {
+  fountain: () => ['Plink! Another wish in the fountain.', 'Someone wished for a pony. In space.', 'Splish! Wishes pay out better here.'],
+  wheel: () => ['Wheeee! Round and round!', 'Best view of the launch pad in town!', 'The top car can see Pip’s planet. Allegedly.'],
+  museum: () => [`On display: ${S.flights} flights of history`, `Today’s exhibit: your ${fmtAlt(S.bestAlt)} record!`, 'Please do not lick the moon rock.'],
+  observ: () => chartsOpen() ? [`${chartedN()} of ${STAR_CHARTS.length} constellations found`, nextChart() ? `Next up: ${nextChart().name}` : 'The whole sky atlas, all in gold!'] : ['The telescope points at the Edge of the Map.', 'They say the stars make pictures out past the Edge…'],
+  port: () => ['Now boarding: everyone!', 'Next departure: whenever you hit LAUNCH.', 'Mind the gap between the pad and the sky.'],
+  statue: () => ['Ada’s statue gleams. Someone polished the nose.', 'A pigeon sits on the statue’s goggles. Rude.', '“There’s always further!” says the plaque.'],
+};
+const TOWN_POKE_SFX = { fountain: () => sfx.coin(2), wheel: () => sfx.whoosh(), museum: () => sfx.paper(), observ: () => sfx.chime(), port: () => sfx.honk(), statue: () => sfx.ach() };
+function pokeTown(h) {
+  const z = G.cam.z, P = G.poke;
+  if ((P.town || 0) > 0.35) return;
+  P.town = 1; G.townPop = { id: h.id, t: 1.2 };
+  TOWN_POKE_SFX[h.id] && TOWN_POKE_SFX[h.id]();
+  const lines = TOWN_POKES[h.id] ? TOWN_POKES[h.id]() : null; if (!lines) return;
+  const line = pick(lines), fs = clamp((W - 24) / (line.length * 0.6), 10, 14.5), size = fs / z, half = line.length * fs * 0.3 + 10; // keep the whole line on screen
+  const sx = clamp(h.x, Math.min(W / 2, half), Math.max(W / 2, W - half)), sy = Math.max(110, h.base - 112 * h.s);
+  floater(G.cam.x + (sx - W / 2) / z, G.cam.py + (H * G.cam.anchor - sy) / z, line, '#ffd93d', size);
+}
 function pokeHangar(sx, sy) {
   const z = G.cam.z, wx = G.cam.x + (sx - W / 2) / z, wpy = G.cam.py + (H * G.cam.anchor - sy) / z;
   const st = G.st || computeStats(), town = !(st.startAlt > 0), P = G.poke;
   const look = G.look || rocketLook(), d = rocketDims(look), rs = G.rocketScale;
   const rh = (d.BL + d.NH + d.BH) * rs;
+  let townTap = null, td = 1e9; // the nearest landmark under the finger; it wins beside the rocket's slim body
+  for (const h of G.townHit || []) { const dx = Math.abs(sx - h.x); if (dx < 46 * h.s && sy < h.base + 8 * h.s && sy > h.base - 125 * h.s && dx < td) { townTap = h; td = dx; } }
+  if (townTap && Math.abs(wx) > (d.BW / 2 + 8) * rs) { pokeTown(townTap); return true; }
   if (Math.abs(wx) < (d.BW / 2 + d.FW + 10) * rs && wpy > 0 && wpy < rh + 20) {
     P.rocket = 1; S.stats.pokes = (S.stats.pokes || 0) + 1;
     sfx.boing(); if (chance(0.3)) sfx.honk();
@@ -6358,6 +6382,7 @@ function pokeHangar(sx, sy) {
     if (S.stats.pokes === 25) { checkAchievements(); if (S.pendingAch && S.pendingAch.length) { for (const id of S.pendingAch) achToast(id); sfx.ach(); S.pendingAch = []; UI.refresh(); } saveGame(); }
     return true;
   }
+  if (townTap) { pokeTown(townTap); return true; } // Pebbleton's landmarks on the hills
   if (town && rivalLive() && Math.abs(wx - 228) < 28 && wpy > 150 && wpy < 225) {
     const rv = rivalLive(), opts = BARON_TAUNTS.concat([`Beat ${fmtAlt(rv.alt)} first, then we talk!`]);
     let line = pick(opts); if (line === P.baronLine) line = pick(opts);
@@ -6470,7 +6495,7 @@ function drawCatcher(px) {
   ctx.save(); ctx.translate(ex, ey); ctx.rotate(a); ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(4, -7); ctx.lineWidth = 4; ctx.strokeStyle = INK; ctx.stroke(); ctx.restore();
   ctx.lineWidth = 3; ctx.fillStyle = '#c9ced8'; circ(ctx, px, py, 4.5); ctx.fill(); ctx.stroke();
 }
-function updatePokes(dt) { const P = G.poke; for (const k of ['rocket', 'ada', 'crowd', 'shed', 'rocketLineT', 'mail', 'guestT', 'deco', 'baronT']) if (P[k] > 0) P[k] = Math.max(0, P[k] - dt); }
+function updatePokes(dt) { const P = G.poke; for (const k of ['rocket', 'ada', 'crowd', 'shed', 'rocketLineT', 'mail', 'guestT', 'deco', 'baronT', 'town']) if (P[k] > 0) P[k] = Math.max(0, P[k] - dt); }
 function wrapText(str, maxW) { const words = str.split(' '); const out = []; let line = ''; for (const w of words) { const t = line ? line + ' ' + w : w; if (ctx.measureText(t).width > maxW && line) { out.push(line); line = w; } else line = t; } if (line) out.push(line); return out; }
 // world markers (record line, rival tag) fade while they slide behind the top HUD, so they never run through the numbers
 function hudFade(wy) { const m = ctx.getTransform(), sy = (m.d * wy + m.f) / DPR, band = (G.hudB || 130) + 6; return 0.12 + 0.88 * clamp((sy - band) / 50, 0, 1); }
