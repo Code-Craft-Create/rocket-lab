@@ -21,7 +21,13 @@ Open `index.html` in any modern browser, or enable GitHub Pages for this repo (S
 
 - Launch timing mini-game, then dodge birds, planes, storm clouds, jets, satellites, asteroids, UFOs, comets, space jellies and black holes.
 - 33 upgrades across 6 branches (Engine, Fuel, Control, Structure, Launch Site, Cabin) that unlock progressively, with 6 either/or forks (swap any time for a partial refund).
-- 10 passenger routes with a little story, passenger comfort and star ratings, plus a free-flight mode.
+- 10 passenger routes with a little story, passenger comfort, star ratings and reviews, plus a free-flight mode and an endless run past the Starlight Gate.
+- Job Board side jobs (collect coins, skim obstacles, fly clean...) that scale with how you play.
+- Sky forecast before each flight: sunset, night, tailwind, coin shower or ring festival, each with its own bonus.
+- Surprise sky events mid-flight: gold rush, bird migration, meteor shower, ice storm.
+- Ghost racer: a faded rocket replays your best run on each route.
+- A pokeable workshop: tap the rocket, Grandma Ada, the crowd or the shed.
+- Paint shop, achievements (one of them secret), a stats panel and shareable postcards of your deliveries.
 - Your rocket visibly changes as you upgrade: nose cones, fins, boosters, drop tanks, stages, shield bubble, ram prow and more.
-- Procedural music (title, workshop, launch and space themes) and ~35 synthesized sound effects.
-- Progress is saved in your browser (localStorage).
+- Procedural music (six songs) and ~40 synthesized sound effects.
+- Plays on desktop and phones (portrait and landscape). Progress is saved in your browser (localStorage).
