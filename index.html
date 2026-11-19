@@ -73,7 +73,7 @@ button{font-family:var(--font)}
 @keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.07)}}
 
 /* ---------- Hangar ---------- */
-#scr-hangar .side{position:absolute;right:16px;top:16px;bottom:16px;width:min(580px,54vw);display:flex;flex-direction:column;overflow:hidden}
+#scr-hangar .side{position:absolute;right:16px;top:16px;bottom:16px;width:min(640px,58vw);display:flex;flex-direction:column;overflow:visible}
 .side-head{display:flex;align-items:center;justify-content:space-between;padding:10px 12px 6px 14px;gap:8px;flex:0 0 auto}
 .money{display:flex;align-items:center;gap:8px;font-weight:900;font-size:28px;background:var(--ink);color:var(--yellow);padding:4px 14px 4px 6px;border-radius:999px}
 .money .coin{width:30px;height:30px}
@@ -171,7 +171,7 @@ button{font-family:var(--font)}
 #statcard .job b{color:var(--purple)}
 #statcard .job .jp{color:#1d9e4c;white-space:nowrap}
 @media (max-width:820px) and (min-height:521px){
-  #scr-hangar .side{left:8px;right:8px;width:auto;top:auto;bottom:8px;height:min(66%,600px)}
+  #scr-hangar .side{left:8px;right:8px;width:auto;top:auto;bottom:8px;height:min(66%,780px)}
 }
 @media (max-width:820px),(max-height:520px){
   #statcard{display:none}
@@ -265,6 +265,67 @@ button{font-family:var(--font)}
   .head-btns{gap:4px}
   .head-btns .icon-btn{width:30px;height:30px}
   .head-btns .icon-btn svg{width:17px;height:17px}
+}
+
+/* the workshop menu folds away to show the yard (F key); on phones it can also open tall */
+.fold-bar{position:absolute;z-index:5;display:flex;align-items:center;justify-content:center;gap:2px;background:var(--cream);border:4px solid var(--ink);touch-action:none;user-select:none;-webkit-user-select:none}
+.fold-bar.sheet{top:-36px;left:50%;transform:translateX(-50%);height:36px;padding:0 6px;border-bottom:none;border-radius:16px 16px 0 0}
+.fold-bar.edge{left:-36px;top:50%;transform:translateY(-50%);width:36px;flex-direction:column;padding:8px 0;border-right:none;border-radius:16px 0 0 16px;box-shadow:-4px 5px 0 rgba(43,34,64,.18)}
+.fold-btn{width:44px;height:30px;border:none;background:none;display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--ink);border-radius:10px;padding:0;font:inherit}
+.fold-bar.edge .fold-btn{width:28px;height:52px}
+.fold-btn svg{width:24px;height:24px}
+.fold-btn:hover{background:rgba(43,34,64,.09)}
+.fold-btn:active{transform:translateY(2px)}
+.fold-bar.sheet .fold-btn + .fold-btn{border-left:3px solid rgba(43,34,64,.14);border-radius:0 10px 10px 0}
+.fold-bar .badge-dot{top:-12px;right:-12px}
+.fold-bar.edge .badge-dot{right:auto;left:-12px}
+.fold-bar.nudge{animation:foldNudge 1.6s ease-in-out infinite}
+.fold-bar.sheet.nudge{animation-name:foldNudgeY}
+@keyframes foldNudge{0%,70%,100%{margin-left:0}80%{margin-left:-6px}90%{margin-left:0}}
+@keyframes foldNudgeY{0%,70%,100%{margin-top:0}80%{margin-top:-6px}90%{margin-top:0}}
+#scr-hangar .side.folded{top:auto;height:auto}
+#scr-hangar .side.folded #tabs,#scr-hangar .side.folded #tree,#scr-hangar .side.folded #detail{display:none}
+#scr-hangar .side.full{top:46px;height:auto}
+#scr-hangar .side.pop{animation:sidePop .34s cubic-bezier(.2,1.4,.4,1)}
+@keyframes sidePop{0%{transform:translateY(18px) scale(.985)}100%{transform:none}}
+@media (min-width:821px),(max-height:520px){#scr-hangar .side.folded{width:min(560px,calc(100vw - 72px))}}
+@media (max-height:520px){#scr-hangar .side.folded{width:min(440px,62vw)}}
+/* narrow tab rows: all branches fit as icons instead of scrolling */
+#tabs.tight{gap:3px;padding:4px 8px 0}
+#tabs.tight .tab{flex:1 1 0;min-width:0;justify-content:center;padding:5px 2px;border-width:3px;border-radius:12px 12px 0 0;gap:4px}
+#tabs.tight .tab.active{flex:0 0 auto;padding:5px 9px 5px 7px}
+#tabs.tight .tab span:not(.badge-dot){font-size:14px}
+#tabs.tighter .tab.active{flex:1 1 0;padding:5px 2px}
+#tabs.tighter .tab.active span:not(.badge-dot){display:none}
+#tabs.tight .tab svg{width:22px;height:22px;flex:0 0 auto}
+#tabs.tight .tab .badge-dot{top:-9px;right:-3px;font-size:10px;padding:0 4px}
+/* big trees on big screens */
+#tree.roomy .node{width:100px}
+#tree.roomy .node .nbox{width:86px;height:86px;border-radius:22px;gap:5px;box-shadow:0 5px 0 var(--ink)}
+#tree.roomy .node .nbox svg{width:50px;height:50px}
+#tree.roomy .pips{width:58px;height:13px}
+#tree.roomy .node .nlabel{font-size:15px;margin-top:12px;max-width:130px}
+#tree.roomy .node .lock{width:30px;height:30px}
+/* desktops: the tree and the details sit side by side, so the tree gets the panel's full height */
+@media (min-width:1180px) and (min-height:600px){
+  #scr-hangar .side{width:min(880px,61vw);display:grid;grid-template-columns:minmax(0,1fr) 286px;grid-template-rows:auto auto minmax(0,1fr) auto;grid-template-areas:"head head" "tabs tabs" "tree detail" "foot foot"}
+  #scr-hangar .side.folded{display:flex}
+  .side-head{grid-area:head}
+  #tabs{grid-area:tabs}
+  #tree{grid-area:tree;min-height:0}
+  .side-foot{grid-area:foot}
+  #detail{grid-area:detail;flex-direction:column;align-items:stretch;gap:8px;min-height:0;overflow-y:auto;padding:18px 16px 14px;background:var(--cream);border-top:4px solid var(--ink);border-bottom:4px solid var(--ink);border-left:4px solid var(--ink)}
+  #detail .dicon{width:104px;height:104px;border-radius:26px;align-self:center;box-shadow:0 5px 0 var(--ink);margin-bottom:4px}
+  #detail .dicon svg{width:72px;height:72px}
+  #detail .dbody{text-align:center}
+  #detail h3{justify-content:center;font-size:24px;gap:6px}
+  #detail p{font-size:15px;margin:8px 0}
+  #detail .fx{font-size:15px}
+  #detail .note{margin-top:6px}
+  #detail .dact{align-self:stretch;margin-top:auto;padding-top:8px}
+  #detail .dact .btn{font-size:19px;padding:10px 14px}
+  #detail .dact .btn.auto{font-size:16px;padding:6px 12px}
+  html body.in-hangar #toasts{left:calc((100vw - min(880px,61vw) - 16px)/2)}
 }
 
 /* ---------- Generic overlay ---------- */
@@ -412,8 +473,9 @@ button{font-family:var(--font)}
 #dialog{pointer-events:auto}
 
 /* ---------- Toasts ---------- */
-body.in-hangar #toasts{left:calc((100vw - min(580px,54vw) - 16px)/2)}
+body.in-hangar #toasts{left:calc((100vw - min(640px,58vw) - 16px)/2)}
 @media (max-width:820px) and (min-height:521px){body.in-hangar #toasts{left:50%}}
+html body.in-hangar.menu-fold #toasts{left:50%;width:min(94vw,640px)}
 @media (max-width:600px){body.in-flight #toasts{top:var(--toast-top,126px)}body.in-flight .toast{font-size:12px;padding:5px 10px;max-width:78vw;border-width:2px}}
 #toasts{position:absolute;top:12px;left:50%;transform:translateX(-50%);width:min(94vw,640px);display:flex;flex-direction:column;align-items:center;gap:8px;z-index:6;pointer-events:none}
 .toast{background:var(--ink);color:var(--cream);font-weight:800;font-size:15px;padding:8px 16px;border-radius:22px;text-align:center;justify-content:center;border:3px solid var(--cream);box-shadow:0 4px 0 rgba(0,0,0,.25);
@@ -489,6 +551,7 @@ body.in-hangar #toasts{left:calc((100vw - min(580px,54vw) - 16px)/2)}
   <div id="scr-hangar" class="screen hidden">
     <div id="statcard" class="panel"></div>
     <div class="side panel">
+      <div id="fold-bar" class="fold-bar"></div>
       <div class="side-head">
         <div class="money" id="money-box"><svg class="coin" viewBox="0 0 40 40"><circle cx="20" cy="20" r="16" fill="#ffd93d" stroke="#2b2240" stroke-width="4"/><circle cx="20" cy="20" r="9" fill="none" stroke="#e0a800" stroke-width="3"/><path d="M15 14l3 2" stroke="#fff" stroke-width="3" stroke-linecap="round"/></svg><span id="money">0</span></div>
         <div class="head-btns" id="head-btns"></div>
@@ -7297,10 +7360,11 @@ function placeToasts() {
   const box = $('toasts'), sc = $('statcard'), sd = document.querySelector('#scr-hangar .side');
   box.style.left = box.style.width = box.style.top = '';
   if (!document.body.classList.contains('in-hangar') || !sc || !sc.offsetParent || !sd) return;
-  const a = sc.getBoundingClientRect(), b = sd.getBoundingClientRect(), gap = b.left - a.right - 24;
-  if (b.left < 300) return;
+  // a folded menu is a small card down in the corner: the notes can use the whole width beside the stats card
+  const a = sc.getBoundingClientRect(), right = sd.classList.contains('folded') ? W - 16 : sd.getBoundingClientRect().left, gap = right - a.right - 24;
+  if (right < 300) return;
   if (gap >= 340) { box.style.left = (a.right + 12 + gap / 2) + 'px'; box.style.width = gap + 'px'; return; }
-  box.style.top = (a.bottom + 12) + 'px'; box.style.left = (b.left / 2) + 'px'; box.style.width = (b.left - 32) + 'px';
+  box.style.top = (a.bottom + 12) + 'px'; box.style.left = (right / 2) + 'px'; box.style.width = (right - 32) + 'px';
   return 'below'; // over the yard: keep the stack short
 }
 function toast(html, ms = 3600, pri = false) {
@@ -7364,7 +7428,11 @@ const UI = (() => {
     document.body.classList.toggle('in-hangar', name === 'hangar');
     document.body.classList.toggle('in-flight', name === 'flight');
     for (const k in screens) screens[k].classList.toggle('hidden', k !== name);
-    if (name === 'hangar') refresh();
+    if (name === 'hangar') {
+      refresh();
+      // short phones: point out the bigger menu once
+      if (sheetMode() && H < 760 && S.flights >= 2 && !S.seen.menuTip && menuState() === 'open') { S.seen.menuTip = 1; saveGame(); setTimeout(() => { if (current === 'hangar') toast('<b>Tip:</b> ▴ on the menu tab makes it bigger, ▾ folds it away.', 5200); }, 1200); }
+    }
   }
   function overlay(id, on) { $(id).classList.toggle('hidden', !on); }
 
@@ -7400,13 +7468,71 @@ const UI = (() => {
   // ---------- hangar
   function refresh() {
     $('money').textContent = fmtMoney(S.money);
+    applyMenu();
     renderHeadBtns();
     renderTabs();
     renderTree();
     renderDetail();
     renderRouteChip();
     renderStatCard();
+    measurePanel();
   }
+  // ---------- the menu folds away to show the yard (F); on phones it also opens tall, so the tree is easier to browse
+  const MENU_STEPS = ['fold', 'open', 'full'];
+  function sheetMode() { return W <= 820 && H > 520; } // the same test as the CSS bottom-sheet layout
+  function menuState() { const m = S.settings.menu; return m === 'fold' ? 'fold' : m === 'full' && sheetMode() ? 'full' : 'open'; }
+  function readyCount() { let n = 0; for (const u of UPGRADES) if (upState(u) === 'open' && upCost(u) <= S.money) n++; return n; }
+  function stepMenu(d) {
+    const i = MENU_STEPS.indexOf(menuState()), to = MENU_STEPS[clamp(i + d, 0, sheetMode() ? 2 : 1)];
+    if (to === menuState()) return;
+    S.settings.menu = to; saveGame(); sfx.tab();
+    applyMenu(true); renderTabs(); renderTree(); measurePanel(); placeToasts();
+  }
+  function toggleMenu() { stepMenu(menuState() === 'fold' ? 1 : -1 - (menuState() === 'full')); }
+  function applyMenu(anim) {
+    const side = document.querySelector('#scr-hangar .side'), m = menuState();
+    side.classList.toggle('folded', m === 'fold'); side.classList.toggle('full', m === 'full');
+    document.body.classList.toggle('menu-fold', m === 'fold');
+    if (anim) { side.classList.remove('pop'); void side.offsetWidth; side.classList.add('pop'); }
+    renderFold();
+  }
+  const CHEV = { up: 'M6 15l6-6 6 6', down: 'M6 9l6 6 6-6', left: 'M15 6l-6 6 6 6', right: 'M9 6l6 6-6 6' };
+  let swipeY = null, swiped = 0;
+  function renderFold() {
+    const bar = $('fold-bar'), m = menuState(), sheet = sheetMode();
+    bar.innerHTML = ''; bar.className = 'fold-bar ' + (sheet ? 'sheet' : 'edge');
+    const btn = (dir, d, label) => {
+      const b = el('button', 'fold-btn', `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"><path d="${CHEV[dir]}"/></svg>`);
+      b.title = label + ' (F)'; b.setAttribute('aria-label', label);
+      b.addEventListener('click', e => { e.stopPropagation(); if (performance.now() < swiped) return; AudioSys.init(); stepMenu(d); });
+      bar.appendChild(b);
+    };
+    if (sheet) {
+      if (m !== 'fold') btn('down', -1, m === 'full' ? 'Smaller menu' : 'Fold the menu away');
+      if (m !== 'full') btn('up', 1, m === 'fold' ? 'Open the menu' : 'Bigger menu');
+    } else btn(m === 'fold' ? 'left' : 'right', m === 'fold' ? 1 : -1, m === 'fold' ? 'Open the menu' : 'Fold the menu away');
+    const n = m === 'fold' ? readyCount() : 0;
+    if (n) bar.appendChild(el('span', 'badge-dot', String(n)));
+    bar.classList.toggle('nudge', !!n);
+  }
+  // on phones the handle also swipes: up for a bigger menu, down to fold it
+  $('fold-bar').addEventListener('pointerdown', e => { swipeY = e.clientY; });
+  window.addEventListener('pointerup', e => {
+    if (swipeY == null) return;
+    const dy = e.clientY - swipeY; swipeY = null;
+    if (!sheetMode() || Math.abs(dy) < 24) return;
+    swiped = performance.now() + 400;
+    stepMenu(dy < 0 ? (dy < -200 ? 2 : 1) : (dy > 200 ? -2 : -1));
+  });
+  window.addEventListener('pointercancel', () => { swipeY = null; });
+  // where the panel sits, so the camera can frame the rocket in the free part of the yard
+  function measurePanel() {
+    const sd = document.querySelector('#scr-hangar .side');
+    if (!sd || !sd.offsetParent) return;
+    const sc = $('statcard');
+    G.panel = { l: sd.offsetLeft, t: sd.offsetTop, w: sd.offsetWidth, h: sd.offsetHeight, fold: sd.classList.contains('folded'), sheet: sheetMode(), sr: sc && sc.offsetParent ? sc.offsetLeft + sc.offsetWidth : 0 };
+  }
+  function relayout() { applyMenu(); renderTabs(); renderTree(); measurePanel(); }
   function renderHeadBtns() {
     const h = $('head-btns'); h.innerHTML = '';
     const mapB = iconBtn('btn-map', 'map', 'Route map', () => openMap());
@@ -7429,7 +7555,7 @@ const UI = (() => {
   function renderTabs() {
     const t = $('tabs'); t.innerHTML = '';
     const vis = BRANCHES.filter(b => b.unlock());
-    t.classList.toggle('compact', vis.length > 3 && $('tabs').clientWidth < vis.length * 130);
+    t.classList.remove('compact', 'tight', 'tighter');
     if (!vis.find(b => b.id === tab)) tab = vis[0].id;
     for (const b of vis) {
       const d = el('div', 'tab' + (b.id === tab ? ' active' : '') + (!S.tabsSeen[b.id] && b.id !== 'prop' ? ' new-tab' : ''), ICONS[b.icon] + `<span>${b.name}</span>`);
@@ -7443,7 +7569,15 @@ const UI = (() => {
       });
       t.appendChild(d);
     }
-    // keep the open branch in view when the tab row has to scroll (seven branches on a phone)
+    // names on every tab when they fit; then only the open tab's name; then icons sharing the row (no scrolling)
+    const over = () => t.scrollWidth > t.clientWidth + 1;
+    if (over()) t.classList.add('compact');
+    if (over()) {
+      t.classList.add('tight');
+      const a = t.querySelector('.tab.active');
+      if (a && a.offsetWidth + (vis.length - 1) * 35 > t.clientWidth - 14) t.classList.add('tighter');
+    }
+    // keep the open branch in view if the tab row still has to scroll
     const act = t.querySelector('.tab.active');
     if (act) { const r = act.offsetLeft + act.offsetWidth - t.clientWidth + 10; if (t.scrollLeft < r) t.scrollLeft = r; else if (act.offsetLeft - 10 < t.scrollLeft) t.scrollLeft = Math.max(0, act.offsetLeft - 10); }
   }
@@ -7453,17 +7587,22 @@ const UI = (() => {
     const ups = UPGRADES.filter(u => u.br === tab);
     const vis = ups.filter(u => upState(u) !== 'hidden');
     if (!vis.find(u => u.id === sel) && vis.length) sel = vis[0].id;
-    const compact = $('tree').clientHeight < 300;
-    $('tree').classList.toggle('compact', compact);
+    const th = $('tree').clientHeight, tw = $('tree').clientWidth;
+    const compact = th < 300, roomy = !compact && tw >= 460 && th >= 540; // roomy: big buttons on big screens
+    $('tree').classList.toggle('compact', compact); $('tree').classList.toggle('roomy', roomy);
     const rows = Math.max(...vis.map(u => u.pos[1])) + 1;
-    const CW = compact ? 104 : 118;
+    // columns as wide as the panel allows; on 320 px phones they pull in so the side columns don't need sideways scrolling
+    const CW = compact ? clamp(Math.floor((tw - 96) / 2), 90, 104) : Math.min(roomy ? 180 : 150, Math.max(118, Math.floor((tw - 40) / 3)));
     let RH = compact ? 90 : 112, top = compact ? 44 : 52;
+    // roomy trees space their rows to the panel (the same for every tab, so switching tabs doesn't jump) and sit centred
+    if (roomy) { RH = clamp(Math.floor((th - 170) / 3), 126, 158); top = 64 + Math.max(0, Math.floor((th - 170 - 3 * RH) / 2)); }
+    const off = roomy ? 47 : 36;
     // a two-row tree on a small phone: pull the rows together so the bottom labels aren't cut off by the
     // panel edge (only when that makes it fit; deeper trees keep their spacing and scroll)
     if (compact && rows === 2) { const fit = $('tree').clientHeight - 42 - 54; if (fit < RH && fit >= 74) { RH = fit; top = 42; } }
-    const wInner = Math.max(380, $('tree').clientWidth);
+    const wInner = Math.max(2 * CW + 96, tw);
     const offX = (wInner - CW * 3) / 2 + CW / 2;
-    const hInner = rows * RH + 20 + (vis.length < ups.length ? 34 : 0);
+    const hInner = (roomy ? top + (rows - 1) * RH + 100 : rows * RH + 20) + (vis.length < ups.length ? 34 : 0);
     inner.style.width = wInner + 'px'; inner.style.height = hInner + 'px';
     svg.setAttribute('viewBox', `0 0 ${wInner} ${hInner}`);
     const P = u => [offX + u.pos[0] * CW, top + u.pos[1] * RH];
@@ -7475,7 +7614,7 @@ const UI = (() => {
         const [x1, y1] = P(ru), [x2, y2] = P(u);
         const met = lvl(rid) >= (u.req.find(r => r[0] === rid)[1]);
         const my = (y1 + y2) / 2;
-        lines += `<path d="M${x1} ${y1 + 36} C ${x1} ${my}, ${x2} ${my}, ${x2} ${y2 - 36}" stroke="${met ? '#2b2240' : 'rgba(43,34,64,.3)'}" stroke-width="${met ? 5 : 4}" fill="none" stroke-linecap="round" ${met ? '' : 'stroke-dasharray="2 9"'}/>`;
+        lines += `<path d="M${x1} ${y1 + off} C ${x1} ${my}, ${x2} ${my}, ${x2} ${y2 - off}" stroke="${met ? '#2b2240' : 'rgba(43,34,64,.3)'}" stroke-width="${met ? 5 : 4}" fill="none" stroke-linecap="round" ${met ? '' : 'stroke-dasharray="2 9"'}/>`;
       }
     }
     svg.innerHTML = lines;
@@ -8168,7 +8307,7 @@ const UI = (() => {
       const lw = el('div', 'code-row'); lw.appendChild(lb);
       col.appendChild(el('div', 'small-note', `<b>Your stats</b><br>${fmtInt(S.flights)} flights · best ${fmtAlt(S.bestAlt)}. Records, totals and a chart of your flights are in the Logbook.`)); col.appendChild(lw);
     }
-    col.appendChild(el('div', 'small-note', 'Skyhop Express · every picture, sound and tune is generated by code.<br>Steer: ←&nbsp;→ / A&nbsp;D, tap sides' + (tiltSupported() ? ' or tilt' : '') + ' · Boost:&nbsp;Space' + (lvl('dash') ? ' · Dash:&nbsp;double&#8209;tap' : '') + ' · Pause:&nbsp;P' + (matchMedia('(hover: hover)').matches || PAD.idx >= 0 ? '<br>Workshop: arrow keys pick, B buys, U auto-upgrades, Q/E switch tabs, Esc closes. Game controllers work too.' : '')));
+    col.appendChild(el('div', 'small-note', 'Skyhop Express · every picture, sound and tune is generated by code.<br>Steer: ←&nbsp;→ / A&nbsp;D, tap sides' + (tiltSupported() ? ' or tilt' : '') + ' · Boost:&nbsp;Space' + (lvl('dash') ? ' · Dash:&nbsp;double&#8209;tap' : '') + ' · Pause:&nbsp;P' + (matchMedia('(hover: hover)').matches || PAD.idx >= 0 ? '<br>Workshop: arrow keys pick, B buys, U auto-upgrades, Q/E switch tabs, F folds the menu, Esc closes. Game controllers work too.' : '')));
     overlay('scr-settings', true);
   }
   function openCode(mode) {
@@ -8348,7 +8487,7 @@ const UI = (() => {
   $('btn-launch').addEventListener('click', () => { AudioSys.init(); sfx.click(); enterLaunch(); });
   soundBtns($('title-tools'));
 
-  return { openLetter, showScreen, overlay, refresh, renderTree, showResults, openMap, openPause, announceNew, flushPending, showCredits, navTree, navTab, buySel, runAuto, get current() { return current; } };
+  return { openLetter, showScreen, overlay, refresh, renderTree, relayout, toggleMenu, showResults, openMap, openPause, announceNew, flushPending, showCredits, navTree, navTab, buySel, runAuto, get current() { return current; } };
 })();
 
 function goHangar(skipFlush) {
@@ -8410,6 +8549,7 @@ window.addEventListener('keydown', e => {
     if (e.code === 'KeyQ' || e.code === 'KeyE') { UI.navTab(e.code === 'KeyQ' ? -1 : 1); return; }
     if (e.code === 'KeyB') { UI.buySel(); return; }
     if (e.code === 'KeyU') { UI.runAuto(); return; }
+    if (e.code === 'KeyF') { UI.toggleMenu(); return; }
   }
   if (e.code === 'Escape' || e.code === 'KeyP') { if (inGame) setPaused(!G.paused); return; }
   if (G.paused) return;
@@ -8456,14 +8596,14 @@ document.addEventListener('visibilitychange', () => {
   if (document.hidden) { if (G.mode === 'flight' || G.mode === 'launch') setPaused(true); AudioSys.suspend(); saveGame(); }
   else AudioSys.resume();
 });
-window.addEventListener('resize', () => { resize(); if (UI.current === 'hangar') UI.renderTree(); });
+window.addEventListener('resize', () => { resize(); if (UI.current === 'hangar') UI.relayout(); });
 
 // ---- gamepads: buttons act like keys, so every screen that takes Space or Escape works the same way
 // A = Space (launch, afterburner, next), B = Escape (close a panel, back to the workshop), X = buy,
 // Start = pause, d-pad = arrow keys (double-tap dashes; picks upgrades in the workshop),
 // bumpers dash straight away (switch tabs in the workshop), left stick steers
 const PAD = { axis: 0, side: 0, vside: 0, prev: {}, idx: -1 };
-const PAD_KEYS = { 0: 'Space', 1: 'Escape', 2: 'KeyB', 3: 'KeyU', 9: 'KeyP', 12: 'ArrowUp', 13: 'ArrowDown', 14: 'ArrowLeft', 15: 'ArrowRight' };
+const PAD_KEYS = { 0: 'Space', 1: 'Escape', 2: 'KeyB', 3: 'KeyU', 8: 'KeyF', 9: 'KeyP', 12: 'ArrowUp', 13: 'ArrowDown', 14: 'ArrowLeft', 15: 'ArrowRight' };
 const padHangar = () => G.mode === 'hangar' && UI.current === 'hangar';
 const padTap = code => { padKey(code, true); padKey(code, false); };
 function padKey(code, down) {
@@ -8526,8 +8666,16 @@ function updateIdleCamera(dt) {
   const z = G.cam.z || worldZoom();
   let tx = 0, ty = py, ta = 0.64;
   if (G.mode === 'hangar') {
-    if (H <= 520) { const panelW = Math.min(440, W * 0.54); const rsx = (W - panelW - 16) / 2; tx = -(rsx - W / 2) / z; ta = 0.78; }
-    else if (W > 820) { const panelW = Math.min(580, W * 0.54); const rsx = (W - panelW - 32) / 2 + 10; tx = -(rsx - W / 2) / z; ta = 0.6; }
+    const P = G.panel;
+    if (P && P.sheet) { ty = py * 0.95; ta = clamp((P.t - 42 - ty * z) / H, 0.04, 0.7); } // pad just above the sheet and its handle
+    else if (P) {
+      // between the stats card and the panel when there's room, so the tower doesn't hide behind the card
+      const rsx = P.fold ? W * (H <= 520 ? 0.4 : 0.45) : Math.max((P.l - 16) / 2 + 10, Math.min((P.sr + P.l) / 2, P.l - 120));
+      tx = -(rsx - W / 2) / z; ta = H <= 520 ? 0.78 : 0.6;
+      if (P.fold) ta = Math.min(ta, (P.t - 14 - ty * z) / H); // phones on their side: the pad stands just above the folded card
+    }
+    else if (H <= 520) { const panelW = Math.min(440, W * 0.54); const rsx = (W - panelW - 16) / 2; tx = -(rsx - W / 2) / z; ta = 0.78; }
+    else if (W > 820) { const panelW = Math.min(640, W * 0.58); const rsx = (W - panelW - 32) / 2 + 10; tx = -(rsx - W / 2) / z; ta = 0.6; }
     else { ta = 0.24; ty = py * 0.95; }
   } else if (G.mode === 'title') { ta = 0.72; }
   G.cam.x += (tx - G.cam.x) * Math.min(1, dt * 4);
