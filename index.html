@@ -829,7 +829,13 @@ const AudioSys = (() => {
       noise({ dur: 1.6, vol: 0.55, filter: 'lowpass', f: 300, f2: 2500, attack: 0.08 });
       tone({ type: 'sawtooth', f: 60, f2: 140, dur: 1.2, vol: 0.18, filter: 'lowpass', ff: 600 });
     },
-    boost() { noise({ dur: 0.7, vol: 0.4, filter: 'bandpass', f: 400, f2: 4000, q: 1.5 }); tone({ type: 'sawtooth', f: 110, f2: 440, dur: 0.6, vol: 0.12, filter: 'lowpass', ff: 1800 }); },
+    boost() {
+      noise({ dur: 0.9, vol: 0.45, filter: 'bandpass', f: 300, f2: 4200, q: 1.3 });
+      noise({ dur: 0.7, vol: 0.5, filter: 'lowpass', f: 1400, f2: 120, attack: 0.01 });
+      tone({ type: 'sine', f: 110, f2: 34, dur: 0.5, vol: 0.55 });
+      tone({ type: 'sawtooth', f: 110, f2: 440, dur: 0.6, vol: 0.1, filter: 'lowpass', ff: 1800 });
+      noise({ dur: 1.2, vol: 0.12, filter: 'highpass', f: 2500, delay: 0.1, attack: 0.2 });
+    },
     stage() { noise({ dur: 0.12, vol: 0.5, filter: 'lowpass', f: 1200 }); tone({ type: 'square', f: 140, f2: 60, dur: 0.12, vol: 0.2 }); this.boost(); },
     detach() { tone({ type: 'square', f: 300, f2: 120, dur: 0.1, vol: 0.12 }); noise({ dur: 0.15, vol: 0.2, filter: 'highpass', f: 1000 }); },
     clank() { tone({ type: 'square', f: 220, f2: 150, dur: 0.16, vol: 0.13, filter: 'lowpass', ff: 1600 }); tone({ type: 'triangle', f: 1320, f2: 1250, dur: 0.4, vol: 0.06, delay: 0.01 }); noise({ dur: 0.08, vol: 0.25, filter: 'highpass', f: 1800 }); },
@@ -1936,7 +1942,7 @@ function physStep(R, st, dt, ctl) {
   const hasFuel = R.dropFuel > 0 || R.fuel > 0;
   if (hasFuel) {
     thrust = st.thrust * (R.stage === 2 ? 0.9 : 1);
-    if (R.abT > 0) { thrust *= 1.8; burnMul = 1.6; }
+    if (R.abT > 0) { thrust *= 2.1; burnMul = 1.6; }
     throttle = 1;
   }
   if (R.boostT > 0) { thrust += st.boost.thrust; R.boostT -= dt; if (R.boostT <= 0) { R.boostT = 0; R.events.push('boosterSep'); } }
@@ -2305,7 +2311,8 @@ function drawRocket(c, L, opts = {}) {
 }
 function drawFlame(c, x, y, w, thr, t, L, ab) {
   const f = 0.85 + Math.sin(t * 40) * 0.08 + Math.sin(t * 23) * 0.07;
-  const len = (22 + 38 * Math.min(thr, 1.6)) * f * (ab ? 1.6 : 1);
+  const len = (22 + 38 * Math.min(thr, 1.6)) * f * (ab ? 2.15 : 1);
+  if (ab) w *= 1.3;
   let cols = ['#ff5a2b', '#ffb02e', '#fff3b0'];
   if (L.torch) cols = ['#d63af9', '#ff6ad5', '#ffe0fb'];
   if (L.ion) cols = ['#2f6bff', '#4fd8ff', '#e8fbff'];
@@ -2318,6 +2325,14 @@ function drawFlame(c, x, y, w, thr, t, L, ab) {
     c.quadraticCurveTo(x + ww * 1.1, y + ll * 0.45, x + ww, y - 2);
     c.closePath(); c.fillStyle = cols[i]; c.fill();
     if (i === 0) { c.lineWidth = 2.5; c.strokeStyle = 'rgba(43,34,64,.55)'; c.stroke(); }
+  }
+  if (ab) { // shock diamonds: the bright beads you see in a jet's afterburner
+    c.fillStyle = '#ffffff';
+    for (let i = 0; i < 4; i++) {
+      const yy = y + len * (0.16 + i * 0.17), dw = w * (0.42 - i * 0.07), dh = len * 0.055;
+      c.globalAlpha = 0.95 - i * 0.18; c.beginPath(); c.moveTo(x, yy - dh); c.lineTo(x + dw, yy); c.lineTo(x, yy + dh); c.lineTo(x - dw, yy); c.closePath(); c.fill();
+    }
+    c.globalAlpha = 1;
   }
   c.restore();
 }
@@ -3251,9 +3266,11 @@ function updateBoss(R, dt) {
         side = -side; b.lastSide = side;
         k.st = 'come'; k.gw = (S.settings.relaxed ? 150 : 100) * u + half * 2; k.y = -40 * u;
         k.gx = clamp(rx + side * rand(0.12, 0.24) * Math.min(W, 900), k.gw / 2 + 20, W - k.gw / 2 - 20);
+        k.wx = G.cam.x + (k.gx - W / 2) / u; // the gap belongs to the world: it scrolls with the camera, so steering into it keeps you in it
         k.v = (ry + 40 * u) / travel; sfx.whoosh();
       }
       if (k.st === 'come') {
+        k.gx = W / 2 + (k.wx - G.cam.x) * u;
         const py0 = k.y; k.y += k.v * dt; k.ext = Math.min(1, k.ext + dt * 2.2);
         if (py0 < ry && k.y >= ry) {
           if (rx - half < k.gx - k.gw / 2 || rx + half > k.gx + k.gw / 2) {
@@ -3690,7 +3707,14 @@ function tryAfterburner() {
   if (!st.ab || G.mode !== 'flight' || R.abT > 0 || R.abCd > 0) return;
   if (R.fuel <= 0 && R.dropFuel <= 0) { sfx.deny(); return; }
   R.abT = st.ab.dur; R.abCd = st.ab.cd + st.ab.dur;
-  sfx.boost(); G.cam.shake = Math.max(G.cam.shake, 6);
+  // a real kick in the pants: an instant shove, a shock ring off the tail, a flash and a rumble
+  const kick = Math.max(45, Math.abs(R.vy) * 0.14); R.vy += kick; R.abKick = 0.5;
+  sfx.boost(); G.cam.shake = Math.max(G.cam.shake, 13); G.cam.flash = Math.max(G.cam.flash, 0.12); G.cam.flashCol = '#ffd9a0'; buzz([30, 30, 60]);
+  const tail = (rocketDims(G.look).BL / 2 + 20) * G.rocketScale;
+  G.parts.push({ k: 'shock', x: R.x, py: R.py - tail, vx: 0, vy: -60, r: 90, life: 0.55, t: 0, col: '#fff3b0' });
+  G.parts.push({ k: 'shock', x: R.x, py: R.py - tail * 0.6, vx: 0, vy: -30, r: 60, life: 0.4, t: 0, col: '#ff9f43' });
+  sparks(R.x, R.py - tail, 22, ['#ffd93d', '#ff9f43', '#ffffff'], 380);
+  floater(R.x, R.py - tail - 10, 'BOOST!', '#ff9f43', 26);
   R.mood = 'joy'; R.moodT = 1.2;
 }
 // Dash Jets: a quick sideways zip with a barrel roll; the rocket can't be hit while it lasts
@@ -3756,13 +3780,17 @@ function updateFlight(dt) {
   for (let i = 0; i < steps; i++) physStep(R, st, simDt / steps, { tiltCos });
   handlePhysEvents();
   recordTrace(R, dt);
-  // --- visual vertical motion
-  const vpy = pxv(R.vy);
+  // --- visual vertical motion: while the afterburner roars the world rushes past nearly twice as fast
+  // (the screen speed is capped at high speeds, which is why a plain speed-up was hard to feel)
+  R.abVis = (R.abVis || 0) + ((R.abT > 0 ? 1 : 0) - (R.abVis || 0)) * Math.min(1, dt * (R.abT > 0 ? 7 : 2.2));
+  if (R.abKick > 0) R.abKick = Math.max(0, R.abKick - dt);
+  const vpy = pxv(R.vy) * (1 + 0.9 * R.abVis);
+  R.vpy = vpy;
   R.py += vpy * dt;
   if (R.py < R.startPy && R.vy <= 0 && R.alt <= R.floor + 0.01) { R.py = R.startPy; }
   // --- camera
   const speedK = clamp(Math.abs(vpy) / VCAP, 0, 1);
-  const anchorT = R.vy >= 0 ? 0.62 + 0.1 * speedK : 0.42;
+  const anchorT = R.vy >= 0 ? 0.62 + 0.1 * speedK + 0.03 * (R.abVis || 0) : 0.42;
   G.cam.anchor += (anchorT - G.cam.anchor) * Math.min(1, dt * 2);
   G.cam.py = R.py;
   G.cam.x += (R.x - G.cam.x) * Math.min(1, dt * 3.2);
@@ -3852,6 +3880,17 @@ function autoDodge() {
   const R = G.R; let push = 0;
   if (R.boss && R.boss.id === 'storm') { const rx = w2s(R.x, R.py)[0], u = G.cam.z; for (const k of R.boss.strikes) if (k.st === 'warn' && Math.abs(rx - k.x) < 70 * u) push += (rx >= k.x ? 1 : -1) * 1.5; }
   if (R.boss && R.boss.id === 'bandit') { const [rx, ry] = w2s(R.x, R.py), u = G.cam.z; for (const k of R.boss.cans) if (!k.done && k.y < ry && ry - k.y < 260 * u && Math.abs(k.x - rx) < 50 * u) push += (rx >= k.x ? 1 : -1) * 1.5; }
+  if (R.boss && R.boss.id === 'kraken') {
+    // line up with the sparkly gap in the next arm before it sweeps past: steer harder the closer it gets,
+    // aim a little ahead of where the rocket is drifting, and ease off once we're safely inside the gap
+    const [rx, ry] = w2s(R.x, R.py), u = G.cam.z, ax = rx + R.vx * u * 0.18;
+    let k = null; for (const q of R.boss.strikes) if (q.st === 'come' && q.y < ry + 6 && (!k || q.y > k.y)) k = q;
+    if (k) {
+      const off = k.gx - ax, slack = Math.max(4, k.gw / 2 - 16 * G.rocketScale * u), urg = 0.6 + 1.4 * clamp(k.y / Math.max(ry, 1), 0, 1);
+      if (Math.abs(off) > slack * 0.35) return clamp(Math.sign(off) * urg * clamp(Math.abs(off) / (slack + 30 * u), 0.35, 1) * 2.2, -1.6, 1.6);
+      return clamp(off / (60 * u), -0.3, 0.3); // centred: hold steady, ignore the small stuff
+    }
+  }
   if (R.boss && R.boss.id === 'pirates' && R.boss.lane) { const rx = w2s(R.x, R.py)[0], bs = R.boss; const k = bs.strikes.find(q => q.st === 'warn' && q.lanes); if (k) { const me = clamp(Math.floor((rx - bs.lane.l0) / bs.lane.lw), 0, 4); if (k.lanes[me]) { let best = null; for (let i = 0; i < 5; i++) if (!k.lanes[i]) { const cx = bs.lane.l0 + (i + 0.5) * bs.lane.lw; if (best == null || Math.abs(cx - rx) < Math.abs(best - rx)) best = cx; } if (best != null) push += Math.sign(best - rx) * 1.5; } } }
   for (const o of G.obs) {
     if (o.harmless || o.dead) continue;
@@ -4082,20 +4121,21 @@ function hitRocket(o, lightning) {
   }
   if (R.crashed || R.invuln > 0 || R.dashT > 0) return;
   o.hitT = 0.8; o.wasHit = true;
+  // ram prow smashes small stuff, and so does a rocket on full afterburner
+  if ((st.ram || R.abT > 0) && o.small && !lightning) {
+    o.dead = true; R.smashed++; S.stats.smashed++; sfx.smash();
+    sparks(o.x, o.py, 14, ['#ffffff', '#c9ced8', '#ffd93d']); puff(o.x, o.py, 6, '#ffffff', 120);
+    const v = coinValue(R.alt) * 3; R.coins += 3; R.coinCash += v; floater(o.x, o.py, `SMASH +${fmtMoney(v)}`, '#ffd93d', 16);
+    R.vy *= st.ram ? 0.98 : 1;
+    if (R.abT > 0) { R.boostSmash = (R.boostSmash || 0) + 1; G.cam.shake = Math.max(G.cam.shake, 7); }
+    return;
+  }
   // shield
   if (R.shieldOn) {
     R.shieldOn = false; R.shieldT = 0; sfx.shield(); R.invuln = 0.5;
     sparks(R.x, R.py, 18, ['#bfe9ff', '#ffffff', '#4d96ff']);
     if (!o.cloud) o.knock = { x: (o.x - R.x) * 6, y: 200 };
     floater(R.x, R.py + 50, 'BLOCKED!', '#bfe9ff');
-    return;
-  }
-  // ram prow smashes small stuff
-  if (st.ram && o.small && !lightning) {
-    o.dead = true; R.smashed++; S.stats.smashed++; sfx.smash();
-    sparks(o.x, o.py, 14, ['#ffffff', '#c9ced8', '#ffd93d']); puff(o.x, o.py, 6, '#ffffff', 120);
-    const v = coinValue(R.alt) * 3; R.coins += 3; R.coinCash += v; floater(o.x, o.py, `SMASH +${fmtMoney(v)}`, '#ffd93d', 16);
-    R.vy *= 0.98;
     return;
   }
   const dmg = o.dmg || 1;
@@ -4642,7 +4682,8 @@ function viewAlt() {
 
 function render() {
   const alt = viewAlt();
-  const z = G.cam.z = worldZoom();
+  const abv = G.R && G.mode === 'flight' ? (G.R.abVis || 0) : 0;
+  const z = G.cam.z = worldZoom() * (1 - 0.075 * abv + 0.03 * (G.R && G.R.abKick > 0 ? Math.sin(G.R.abKick / 0.5 * Math.PI) : 0));
   ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
   // ---- sky
   const [top, bot] = skyColors(alt);
@@ -4678,11 +4719,29 @@ function render() {
   drawCloudLayer(alt, 1.25, 0.35, 2);
   if (UI.current === 'title' && H >= 520) drawTitleRocket();
   if (G.mode === 'hangar') drawSeasonFall(1); else if ((G.mode === 'launch' || G.mode === 'flight') && alt < 2600) drawSeasonFall(clamp(1 - alt / 2600, 0, 1));
+  if (abv > 0.02) drawBoostRush(abv);
   drawWishBubble();
   if (G.mode === 'flight' || G.mode === 'ending') drawHUD();
   if (G.mode === 'launch') { drawHUD(); drawLaunchGauge(); }
   drawBanners();
   if (G.cam.flash > 0) { ctx.globalAlpha = clamp(G.cam.flash * 2, 0, S.settings.shake ? 0.8 : 0.25); ctx.fillStyle = G.cam.flashCol; ctx.fillRect(0, 0, W, H); ctx.globalAlpha = 1; }
+}
+// afterburner rush: streaks that pour past the edges of the screen, plus a warm glow at the bottom
+function drawBoostRush(k) {
+  // we're climbing, so the rush is vertical: streaks pour down the sides of the screen, thinner and fewer in the middle
+  const n = W < 600 ? 18 : 30, sp = H * 2.4;
+  ctx.save(); ctx.lineCap = 'round';
+  for (let i = 0; i < n; i++) {
+    const side = i % 2 ? 1 : -1, edge = hash(i * 13 + 1), mid = i % 5 === 0;
+    const x = mid ? W * (0.3 + 0.4 * hash(i * 17)) : (side < 0 ? edge * W * 0.24 : W - edge * W * 0.24);
+    const len = (70 + 150 * hash(i * 5 + 2)) * k * (mid ? 0.6 : 1), y = ((G.t * sp * (0.8 + hash(i * 7) * 0.6) + hash(i * 3) * (H + len)) % (H + len * 2)) - len;
+    ctx.globalAlpha = k * (mid ? 0.25 : 0.5) * (1 - edge * 0.5);
+    ctx.strokeStyle = i % 4 ? '#ffffff' : '#ffd9a0'; ctx.lineWidth = mid ? 1.5 : 2 + hash(i) * 2.5;
+    ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x, y + len); ctx.stroke();
+  }
+  const g = ctx.createLinearGradient(0, H, 0, H * 0.6); g.addColorStop(0, `rgba(255,140,60,${0.2 * k})`); g.addColorStop(1, 'rgba(255,140,60,0)');
+  ctx.globalAlpha = 1; ctx.fillStyle = g; ctx.fillRect(0, H * 0.6, W, H * 0.4);
+  ctx.restore();
 }
 function drawForecastSign(x, y) {
   const id = nextCondId(), c = CONDS[id];
@@ -4751,7 +4810,7 @@ function drawStars(alt) {
   const a = invLerp(5000, 16000, alt);
   if (a <= 0) return;
   const R = G.R;
-  const v = R && (G.mode === 'flight') ? Math.abs(pxv(R.vy)) : 0;
+  const v = R && (G.mode === 'flight') ? Math.abs(R.vpy || pxv(R.vy)) : 0;
   const streak = clamp((v - 300) * 0.06, 0, 40);
   ctx.save();
   const n = 140;
@@ -5611,7 +5670,7 @@ function drawParticle(p) {
   ctx.restore();
 }
 function updateParticles(dt) {
-  const rideV = G.R && !G.R.crashed ? pxv(G.R.vy) : 0;
+  const rideV = G.R && !G.R.crashed ? (G.R.vpy != null && G.mode === 'flight' ? G.R.vpy : pxv(G.R.vy)) : 0;
   for (const p of G.parts) {
     p.t += dt; p.x += p.vx * dt; p.py += p.vy * dt;
     if (p.ride) p.py += rideV * dt;
@@ -5969,7 +6028,7 @@ function drawHUD() {
   let spS = `${fmtSpeed(R.vy)}${R.warp > 1.05 && !R.ended ? `  ·  WARP ×${R.warp.toFixed(1)}` : ''}`, spW = ctx.measureText(spS).width;
   // a full cabin on a very narrow phone: the warp tag drops its word so the faces still fit
   if (R.warp > 1.05 && nF > 1 && pad + 2 + spW + 8 + fr + (nF - 1) * fsF * 1.5 > hi) { spS = `${fmtSpeed(R.vy)} · ×${R.warp.toFixed(1)}`; spW = ctx.measureText(spS).width; }
-  text(ctx, spS, pad + 2, pad + (small ? 44 : 58), spF, '#bff8ff', 'left');
+  text(ctx, spS, pad + 2, pad + (small ? 44 : 58), spF, R.abT > 0 ? (Math.sin(G.t * 30) > 0 ? '#ffd93d' : '#ff9f43') : '#bff8ff', 'left');
   let fCx = cxH, fGap = fsF * 2.4;
   if (nF > 1) {
     // face centres live between the end of the speed line and the pause button; squeeze closer only when the row would not fit
@@ -6118,11 +6177,16 @@ function drawProgressTrack() {
 function boostBtnPos() { const small = W < 600; return { x: W - (small ? 78 : 110), y: H - (small ? 78 : 96), r: small ? 44 : 50 }; }
 function drawBoostButton() {
   const R = G.R, st = G.st, b = boostBtnPos();
-  const ready = R.abCd <= 0 && (R.fuel > 0 || R.dropFuel > 0);
+  const ready = R.abCd <= 0 && (R.fuel > 0 || R.dropFuel > 0), on = R.abT > 0;
   ctx.save(); ink(ctx, 4);
+  if (on || ready) { // a glow: pulsing when ready, blazing while it burns
+    const gr = b.r * (on ? 1.6 + Math.sin(G.t * 30) * 0.08 : 1.35 + Math.sin(G.t * 5) * 0.06), g = ctx.createRadialGradient(b.x, b.y, b.r * 0.8, b.x, b.y, gr);
+    g.addColorStop(0, on ? 'rgba(255,190,80,.7)' : 'rgba(255,90,95,.35)'); g.addColorStop(1, 'rgba(255,120,60,0)'); ctx.fillStyle = g; circ(ctx, b.x, b.y, gr); ctx.fill();
+  }
   circ(ctx, b.x, b.y + 5, b.r); ctx.fillStyle = INK; ctx.fill();
-  circ(ctx, b.x, b.y + (G.input.boostPressed ? 4 : 0), b.r); fillStroke(ctx, ready ? '#ff5a5f' : '#8a7f9a', 4);
-  if (!ready && R.abCd > 0) { ctx.strokeStyle = '#ffd93d'; ctx.lineWidth = 6; ctx.beginPath(); ctx.arc(b.x, b.y, b.r - 8, -Math.PI / 2, -Math.PI / 2 + TAU * (1 - R.abCd / (st.ab.cd + st.ab.dur))); ctx.stroke(); }
+  circ(ctx, b.x, b.y + (G.input.boostPressed ? 4 : 0), b.r); fillStroke(ctx, on ? '#ff9f43' : ready ? '#ff5a5f' : '#8a7f9a', 4);
+  if (on) { ctx.strokeStyle = '#fff3b0'; ctx.lineWidth = 6; ctx.beginPath(); ctx.arc(b.x, b.y, b.r - 8, -Math.PI / 2, -Math.PI / 2 + TAU * (R.abT / st.ab.dur)); ctx.stroke(); }
+  else if (!ready && R.abCd > 0) { ctx.strokeStyle = '#ffd93d'; ctx.lineWidth = 6; ctx.beginPath(); ctx.arc(b.x, b.y, b.r - 8, -Math.PI / 2, -Math.PI / 2 + TAU * (1 - R.abCd / (st.ab.cd + st.ab.dur))); ctx.stroke(); }
   text(ctx, 'BOOST', b.x, b.y - 4, b.r * 0.36, '#fff');
   text(ctx, W > 700 ? 'SPACE' : '', b.x, b.y + b.r * 0.38, b.r * 0.22, '#ffd93d', 'center', INK, 3);
   ctx.restore();
