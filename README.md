@@ -24,7 +24,7 @@ Open `index.html` in any modern browser, or enable GitHub Pages for this repo (S
 - 10 passenger routes with a little story, passenger comfort, star ratings and reviews, plus a free-flight mode and an endless run past the Starlight Gate (keep going and someone will wave).
 - Job Board side jobs (collect coins, skim obstacles, fly clean...) that scale with how you play.
 - Sky forecast before each flight: sunset, night, tailwind, coin shower or ring festival, each with its own bonus.
-- Surprise sky events mid-flight: gold rush, bird migration, meteor shower, ice storm.
+- Surprise sky events mid-flight: gold rush, ring road, bird migration, meteor shower, ice storm, jelly bloom.
 - Three sky bosses with their own music: the Storm King (dodge his lightning), Big Blue the sky whale (ride its spout) and the Space Kraken (slip between its arms).
 - Ghost racer: a faded rocket replays your best run on each route.
 - Passenger wishes: riders ask for a ring, a wiggle, a close call or a calm stretch mid-flight. Grant them for comfort and coins.

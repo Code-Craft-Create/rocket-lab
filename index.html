@@ -2803,6 +2803,8 @@ const SKY_EVENTS = {
   flock:    { name: 'MIGRATION!', col: '#bff8ff', sub: 'BIRDS INCOMING', dur: 6, min: 250, max: 3800, w: 2 },
   meteors:  { name: 'METEOR SHOWER!', col: '#ff9f43', sub: 'DODGE THE HOT ROCKS', dur: 6, min: 12000, w: 2 },
   icefall:  { name: 'ICE STORM!', col: '#bff8ff', sub: 'CRYSTALS AHEAD', dur: 6, min: 240000, w: 1.5 },
+  ringroad: { name: 'RING ROAD!', col: '#4fd8ff', sub: 'CHAIN THE BOOST RINGS', dur: 5, min: 1800, w: 1.5 },
+  bloom:    { name: 'JELLY BLOOM!', col: '#ff8ad0', sub: 'SQUISHY, STINGY, EVERYWHERE', dur: 6, min: 480000, w: 2 },
 };
 function updateSkyEvent(R, dt, viewTop) {
   if (R.ended || R.crashed) return;
@@ -2812,6 +2814,8 @@ function updateSkyEvent(R, dt, viewTop) {
     if (e.id === 'goldrush' && e.acc > 0.32) { e.acc = 0; spawnCoins(R.x + rand(-vw * 0.3, vw * 0.3), viewTop + rand(40, 260)); }
     if (e.id === 'meteors' && e.acc > 0.28) { e.acc = 0; const o = makeObstacle('meteor', R.x + rand(-vw * 0.55, vw * 0.55), viewTop); o.vx = e.dir * rand(60, 200); G.obs.push(o); }
     if (e.id === 'icefall' && e.acc > 0.3) { e.acc = 0; const o = makeObstacle('ice', R.x + rand(-vw * 0.5, vw * 0.5), viewTop + rand(50, 300)); o.vy = -rand(80, 200); G.obs.push(o); }
+    if (e.id === 'ringroad' && e.acc > 0.42) { e.acc = 0; e.k = (e.k || 0) + 1; G.picks.push({ type: 'ring', x: G.cam.x + Math.sin(e.k * 0.45 + e.dir) * Math.min(vw * 0.16, 170), py: viewTop + 90, r: 46, seed: Math.random(), vx: 0, vy: 0, hit: false }); }
+    if (e.id === 'bloom' && e.acc > 0.36) { e.acc = 0; G.obs.push(makeObstacle('jelly', R.x + rand(-vw * 0.5, vw * 0.5), viewTop + rand(60, 320))); }
     if (e.id === 'flock' && e.acc > 0.55) {
       e.acc = 0; const n = randi(3, 5), sp = rand(150, 230), y = R.py + rand(120, 520), x0 = G.cam.x - e.dir * (vw / 2 + 60);
       for (let i = 0; i < n; i++) { const o = makeObstacle('bird', x0 - e.dir * i * 30, y + rand(-28, 28)); o.dir = e.dir; o.vx = e.dir * sp; G.obs.push(o); }
@@ -2831,7 +2835,7 @@ function updateSkyEvent(R, dt, viewTop) {
   R.event = { id, t: 0, dur: d.dur, acc: 0, dir: chance(0.5) ? 1 : -1 };
   R.evCount = (R.evCount || 0) + 1; R.evT = 0;
   banner(d.name, d.col, 2.2, d.sub);
-  if (id === 'goldrush') sfx.bigcoin(); else sfx.thunder();
+  if (id === 'goldrush') sfx.bigcoin(); else if (id === 'ringroad') sfx.ring(3); else sfx.thunder();
 }
 // ---------------------------------------------------------------- sky bosses: big set-piece encounters at fixed heights
 // They live in screen space (so they keep pace with the climb) and scale with the world zoom.
