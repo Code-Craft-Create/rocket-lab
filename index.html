@@ -419,6 +419,12 @@ body.in-hangar #toasts{left:calc((100vw - min(580px,54vw) - 16px)/2)}
 .switch::after{content:"";position:absolute;left:2px;top:2px;width:20px;height:20px;border-radius:50%;background:#fff;border:3px solid var(--ink);transition:left .15s}
 .switch.on{background:var(--green)}
 .switch.on::after{left:26px}
+.vol-row > span{flex:0 0 auto}
+.vol-row input.vol{flex:1 1 auto;max-width:130px;min-width:56px;margin-left:auto;margin:0 12px 0 0;-webkit-appearance:none;appearance:none;height:14px;border:3px solid var(--ink);border-radius:999px;background:linear-gradient(to right,var(--green) var(--p,100%),#ece3d2 var(--p,100%));cursor:pointer;touch-action:none}
+.vol-row input.vol.mute{filter:grayscale(1);opacity:.55}
+.vol-row input.vol::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:24px;height:24px;border-radius:50%;background:#fff;border:3px solid var(--ink);box-shadow:0 2px 0 var(--ink)}
+.vol-row input.vol::-moz-range-thumb{width:20px;height:20px;border-radius:50%;background:#fff;border:3px solid var(--ink);box-shadow:0 2px 0 var(--ink)}
+.vol-row input.vol:focus-visible{outline:3px solid var(--blue);outline-offset:3px}
 .small-note{font-size:13px;font-weight:700;color:var(--ink2);text-align:center}
 
 /* ---------- Flight touch buttons ---------- */
@@ -607,7 +613,7 @@ function defaultSave() {
     stats: { coins: 0, hits: 0, perfect: 0, rings: 0, smashed: 0, pax: 0, time: 0, jobs: 0, nights: 0, close: 0, pokes: 0, king: 0, whale: 0, kraken: 0, pirates: 0, daily: 0, wishes: 0 },
     ach: {},
     cond: 'clear', jobs: [], avg: { coins: 8, rings: 0.6, close: 0.6, alt: 500, v: 110, total: 110, smash: 0 },
-    settings: { music: true, sfx: true, shake: true, ghost: true },
+    settings: { music: true, sfx: true, shake: true, ghost: true, musVol: 1, sfxVol: 1 },
     ghosts: {},        // route id -> {alt, step, a:[alt...], x:[x...]} best run replay
     log: [],           // last 30 flights for the logbook chart: {n, a, r, d}
     rec: {},           // personal records: id -> {v, n}
@@ -648,7 +654,7 @@ function resetSave() { S = defaultSave(); saveGame(); }
 const AudioSys = (() => {
   let ac = null, master, comp, sfxBus, musBus, noiseBuf = null;
   let engNoise, engFilter, engGain, engOsc, engOscGain, windNoise, windFilter, windGain;
-  let enabledSfx = true, enabledMusic = true;
+  let enabledSfx = true, enabledMusic = true, volS = 1, volM = 1;
   const MUS_VOL = 0.32, SFX_VOL = 0.75;
 
   function init() {
@@ -660,8 +666,8 @@ const AudioSys = (() => {
     comp.threshold.value = -14; comp.knee.value = 10; comp.ratio.value = 4; comp.attack.value = 0.004; comp.release.value = 0.2;
     master = ac.createGain(); master.gain.value = 0.9;
     master.connect(comp); comp.connect(ac.destination);
-    sfxBus = ac.createGain(); sfxBus.gain.value = enabledSfx ? SFX_VOL : 0; sfxBus.connect(master);
-    musBus = ac.createGain(); musBus.gain.value = enabledMusic ? MUS_VOL : 0; musBus.connect(master);
+    sfxBus = ac.createGain(); sfxBus.gain.value = enabledSfx ? SFX_VOL * volS : 0; sfxBus.connect(master);
+    musBus = ac.createGain(); musBus.gain.value = enabledMusic ? MUS_VOL * volM : 0; musBus.connect(master);
     // noise buffer
     const len = ac.sampleRate * 2;
     noiseBuf = ac.createBuffer(1, len, ac.sampleRate);
@@ -689,8 +695,10 @@ const AudioSys = (() => {
   function suspend() { if (ac && ac.state === 'running') ac.suspend().catch(() => {}); }
   function now() { return ac ? ac.currentTime : 0; }
 
-  function setSfx(on) { enabledSfx = on; if (ac) sfxBus.gain.setTargetAtTime(on ? SFX_VOL : 0, ac.currentTime, 0.05); }
-  function setMusic(on) { enabledMusic = on; if (ac) musBus.gain.setTargetAtTime(on ? MUS_VOL : 0, ac.currentTime, 0.1); }
+  function setSfx(on) { enabledSfx = on; if (ac) sfxBus.gain.setTargetAtTime(on ? SFX_VOL * volS : 0, ac.currentTime, 0.05); }
+  function setMusic(on) { enabledMusic = on; if (ac) musBus.gain.setTargetAtTime(on ? MUS_VOL * volM : 0, ac.currentTime, 0.1); }
+  // volume sliders: v from 0 to 1, a gentle curve so the low end is usable
+  function setVol(kind, v) { v = Math.max(0, Math.min(1, v)) ** 1.6; if (kind === 'music') { volM = v; setMusic(enabledMusic); } else { volS = v; setSfx(enabledSfx); } }
 
   // generic tone with envelope
   function tone(o) {
@@ -843,7 +851,7 @@ const AudioSys = (() => {
     windFilter.frequency.setTargetAtTime(500 + amount * 1500, t, 0.2);
   }
 
-  return { init, resume, suspend, now, sfx, tone, noise, N, setEngine, setWind, setSfx, setMusic,
+  return { init, resume, suspend, now, sfx, tone, noise, N, setEngine, setWind, setSfx, setMusic, setVol,
     get ac() { return ac; }, get musBus() { return musBus; } };
 })();
 const sfx = new Proxy({}, { get: (_, k) => (...a) => { try { AudioSys.sfx[k] && AudioSys.sfx[k](...a); } catch (e) { /* ignore audio errors */ } } });
@@ -6309,8 +6317,24 @@ const UI = (() => {
       sw.addEventListener('click', () => { S.settings[key] = !S.settings[key]; sw.classList.toggle('on', S.settings[key]); apply && apply(S.settings[key], sw); sfx.click(); saveGame(); });
       r.appendChild(sw); col.appendChild(r);
     };
-    row('Music', 'music', v => AudioSys.setMusic(v));
-    row('Sound effects', 'sfx', v => AudioSys.setSfx(v));
+    // music and sound: a volume slider beside the on/off switch
+    const volRow = (label, key, volKey, kind, setOn) => {
+      const r = el('div', 'toggle-row vol-row', `<span>${label}</span>`);
+      const sl = document.createElement('input'); sl.type = 'range'; sl.min = 0; sl.max = 100; sl.step = 5; sl.className = 'vol';
+      sl.setAttribute('aria-label', label + ' volume');
+      const sw = el('div', 'switch' + (S.settings[key] ? ' on' : ''));
+      const paint = () => { sl.value = Math.round((S.settings[volKey] ?? 1) * 100); sl.style.setProperty('--p', sl.value + '%'); sl.classList.toggle('mute', !S.settings[key]); };
+      sl.addEventListener('input', () => {
+        S.settings[volKey] = sl.value / 100; AudioSys.setVol(kind, S.settings[volKey]);
+        if (!S.settings[key] && sl.value > 0) { S.settings[key] = true; sw.classList.add('on'); setOn(true); }
+        paint();
+      });
+      sl.addEventListener('change', () => { if (kind === 'sfx') sfx.coin(2); saveGame(); });
+      sw.addEventListener('click', () => { S.settings[key] = !S.settings[key]; sw.classList.toggle('on', S.settings[key]); setOn(S.settings[key]); paint(); sfx.click(); saveGame(); });
+      paint(); r.append(sl, sw); col.appendChild(r);
+    };
+    volRow('Music', 'music', 'musVol', 'music', v => AudioSys.setMusic(v));
+    volRow('Sound', 'sfx', 'sfxVol', 'sfx', v => AudioSys.setSfx(v));
     row('Shake, flashes & buzz<small>turn off for a calmer screen</small>', 'shake');
     row('Ghost of your best run', 'ghost');
     row('Relaxed mode<small>+2 hearts, fewer hazards</small>', 'relaxed', () => { G.st = computeStats(); refresh(); });
@@ -6322,8 +6346,11 @@ const UI = (() => {
     const reset = el('button', 'btn red', 'Reset progress');
     reset.addEventListener('click', () => confirmBox('Start over?', 'This wipes your rocket, money and routes. No undo!', () => { resetSave(); location.reload(); }));
     col.appendChild(reset);
-    const st = S.stats;
-    col.appendChild(el('div', 'small-note', `<b>Your stats</b><br>${S.flights} flights · best ${fmtAlt(S.bestAlt)} · ${fmtMoney(S.earned)} earned<br>${fmtInt(st.coins)} coins · ${st.rings} rings · ${st.perfect} perfect launches · ${st.pax} passengers · ${Math.round(st.time / 60)} min flying${st.daily ? ` · ${st.daily} daily special${st.daily > 1 ? 's' : ''}` : ''}${st.king + st.whale + st.kraken + (st.pirates || 0) ? ` · ${st.king + st.whale + st.kraken + (st.pirates || 0)} boss wins` : ''}${st.letters ? ` · ${st.letters} fan letter${st.letters > 1 ? 's' : ''}` : ''}`));
+    if (S.flights > 0) {
+      const lb = el('button', 'btn small', 'Open the Logbook'); lb.addEventListener('click', () => { sfx.tab(); overlay('scr-settings', false); openLog(); });
+      const lw = el('div', 'code-row'); lw.appendChild(lb);
+      col.appendChild(el('div', 'small-note', `<b>Your stats</b><br>${fmtInt(S.flights)} flights · best ${fmtAlt(S.bestAlt)}. Records, totals and a chart of your flights are in the Logbook.`)); col.appendChild(lw);
+    }
     col.appendChild(el('div', 'small-note', 'Skyhop Express · every picture, sound and tune is generated by code.<br>Steer: ← → / A D, tap sides' + (tiltSupported() ? ' or tilt' : '') + ' · Boost: Space · Pause: P'));
     overlay('scr-settings', true);
   }
@@ -6514,6 +6541,7 @@ function setPaused(p) {
 // ================================================================ INPUT
 function startGame() {
   AudioSys.init();
+  AudioSys.setVol('music', S.settings.musVol); AudioSys.setVol('sfx', S.settings.sfxVol);
   AudioSys.setMusic(S.settings.music); AudioSys.setSfx(S.settings.sfx);
   sfx.click();
   if (!S.seen.intro) {

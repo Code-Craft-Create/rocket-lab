@@ -44,7 +44,7 @@ Open `index.html` in any modern browser, or enable GitHub Pages for this repo (S
 - Paint shop with paint jobs and exhaust trails (rainbow, hearts, stardust, and four earned from the bosses), 33 achievements (two of them secret), each with its own medal, and shareable postcards of your deliveries.
 - Logbook: a chart of your recent flights' heights, personal records (top speed, most coins, longest ring combo, most close calls...) and all-time totals. Beat a skill record and the results card says so.
 - After the finale, open a new line (new game plus): start over with a fresh rocket, keep your trophies and cosmetics, and earn +50% per line.
-- Relaxed mode (+2 hearts, fewer hazards), tilt steering on phones, and a calmer-screen option (less shake and flashing).
+- Relaxed mode (+2 hearts, fewer hazards), tilt steering on phones, music and sound volume sliders, and a calmer-screen option (less shake and flashing).
 - Save codes (Settings): copy your progress from one device and load it on another.
 - Your rocket visibly changes as you upgrade: nose cones, fins, boosters, drop tanks, stages, shield bubble, ram prow and more.
 - Procedural music (seven songs) and ~40 synthesized sound effects.
