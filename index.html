@@ -4392,12 +4392,13 @@ function makePostcard(res) {
   c.globalAlpha = 1;
   if (res.alt < 12000) { drawCloud(c, 160, 580, 420, 120, 5, '#ffffff', '#d9eefc', 4); drawCloud(c, 980, 630, 460, 130, 9, '#ffffff', '#d9eefc', 4); }
   if (res.route && res.delivered) { c.save(); c.translate(870, 330); drawStation(c, res.route.icon, 1, 1.2); c.restore(); }
-  c.save(); c.translate(res.route && res.delivered ? 400 : 640, 400); c.rotate(0.18); c.scale(2.2, 2.2);
+  if (res.dailyPaid) { c.save(); c.translate(900, 300); c.scale(2.6, 2.6); ink(c, 3); c.beginPath(); c.moveTo(-14, 26); c.lineTo(-7, 50); c.moveTo(14, 26); c.lineTo(7, 50); c.stroke(); c.beginPath(); c.ellipse(0, 0, 30, 34, 0, 0, TAU); fillStroke(c, '#ff8ad0', 3); c.beginPath(); c.ellipse(0, 0, 12, 34, 0, 0, TAU); c.fillStyle = '#ffd6e6'; c.fill(); c.stroke(); c.translate(0, 64); drawParcel(c, 0.8); c.restore(); }
+  c.save(); c.translate((res.route && res.delivered) || res.dailyPaid ? 400 : 640, 400); c.rotate(0.18); c.scale(2.2, 2.2);
   drawRocket(c, G.look || rocketLook(), { t: 1, throttle: 1.2, flame: true, faces: (res.faces || []).slice(0, 3), mood: 'joy' }); c.restore();
   c.restore();
   c.lineWidth = 16; c.strokeStyle = '#fff6e5'; rr(c, 8, 8, Wc - 16, Hc - 16, 34); c.stroke();
   c.lineWidth = 6; c.strokeStyle = INK; rr(c, 3, 3, Wc - 6, Hc - 6, 38); c.stroke();
-  text(c, 'Greetings from ' + (res.route && res.delivered ? res.route.to : res.zone) + '!', 60, 80, 40, '#fff6e5', 'left', INK, 8);
+  text(c, res.dailyPaid ? `Delivered ${res.daily.cargo}!` : 'Greetings from ' + (res.route && res.delivered ? res.route.to : res.zone) + '!', 60, 80, 40, '#fff6e5', 'left', INK, 8);
   text(c, fmtAlt(res.alt), 60, 160, 92, '#ffd93d', 'left', INK, 12);
   const sub = (res.record ? 'New record! ' : '') + (res.delivered && res.stars ? '★'.repeat(res.stars) + '☆'.repeat(3 - res.stars) : '');
   if (sub) text(c, sub, 64, 232, 34, '#ffffff', 'left', INK, 7);
@@ -5075,7 +5076,7 @@ const UI = (() => {
     gEl.innerHTML = `${label}<div class="goalbar"><i></i></div>`;
     setTimeout(() => { const i = gEl.querySelector('i'); if (i) i.style.width = Math.round(clamp(k, 0, 1) * 100) + '%'; }, 400);
     const snap = $('res-snap'); snap.innerHTML = ICONS.camera;
-    snap.classList.toggle('hidden', !(res.delivered || res.record));
+    snap.classList.toggle('hidden', !(res.delivered || res.record || res.dailyPaid));
     snap.onclick = e => { e.stopPropagation(); sfx.click(); savePostcard(res); };
     const again = $('res-again'), hang = $('res-hangar');
     again.onclick = () => { sfx.click(); afterResults(() => enterLaunch()); };
