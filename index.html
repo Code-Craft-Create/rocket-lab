@@ -320,6 +320,7 @@ button{font-family:var(--font)}
 #scr-results .panel{position:relative}
 .res-title{text-align:center;font-size:34px;font-weight:900;padding:14px 10px 0;line-height:1}
 .res-sub{text-align:center;font-weight:800;color:var(--ink2);font-size:15px;margin-top:4px}
+.res-snap:not(.hidden) ~ .res-sub{padding:0 52px} /* keep the stars and zone name clear of the postcard button */
 .res-rows{padding:10px 18px 4px}
 .res-row{display:flex;justify-content:space-between;align-items:center;font-weight:800;font-size:17px;padding:5px 0;border-bottom:3px dashed rgba(43,34,64,.15);opacity:0;transform:translateX(-10px);transition:all .25s}
 .res-row.show{opacity:1;transform:none}
@@ -341,6 +342,7 @@ button{font-family:var(--font)}
   #scr-results .res-title{grid-area:title}#scr-results .res-sub{grid-area:sub}#scr-results .res-badges{grid-area:badges}#scr-results .res-review{grid-area:review;align-self:start}
   #scr-results .res-rows{grid-area:rows;align-self:stretch;overflow-y:auto;min-height:0} /* long payslips scroll instead of spilling past the top */#scr-results .res-goal{grid-area:goal;align-self:center}#scr-results .res-btns{grid-area:btns;align-self:center;justify-content:flex-start;padding-right:64px}
   #scr-results .res-snap{top:auto;bottom:14px;right:14px}
+  #scr-results .res-snap:not(.hidden) ~ .res-sub{padding:0}
   #scr-results .res-row{font-size:13px;padding:2px 0;border-bottom-width:2px}
   #scr-results .res-row.total{font-size:18px;padding-top:4px}
 }
@@ -359,12 +361,25 @@ button{font-family:var(--font)}
   .res-rows{padding:6px 14px 2px}
   .res-row{font-size:14px;padding:3px 0}
   .res-row.total{font-size:19px;padding-top:6px}
-  .res-goal{margin:4px 14px 0;font-size:12px}
+  #scr-results .res-goal{margin:4px 14px 0;font-size:12px} /* scoped: the base .res-goal rule comes later in the file */
   .res-btns{flex-wrap:nowrap;padding:10px 12px 12px}
   .res-btns .btn{font-size:16px;padding:8px 12px}
   .res-btns .btn.big{font-size:20px;padding:8px 16px}
 }
 .res-goal{margin:6px 18px 0;font-weight:800;font-size:14px;color:var(--ink2)}
+/* short phones (iPhone SE): a busy payslip still shows the "next up" bar above the sticky buttons */
+@media (max-width:600px) and (max-height:600px){
+  #scr-results .res-title{font-size:24px;padding-top:8px}
+  #scr-results .res-badges{gap:5px 6px;padding-top:6px}
+  #scr-results .res-badge{font-size:11px;padding:1px 7px;border-width:2px}
+  #scr-results .res-review{margin-top:6px;padding:3px 8px}
+  #scr-results .res-review canvas{width:30px;height:30px}
+  #scr-results .res-rows{padding-top:4px}
+  #scr-results .res-row{font-size:13px;padding:2px 0;border-bottom-width:2px}
+  #scr-results .res-row.total{font-size:18px;padding-top:4px}
+  #scr-results .res-snap{transform:scale(.85);transform-origin:top right}
+  #scr-results .res-snap:not(.hidden) ~ .res-sub{padding:0 44px}
+}
 .res-goal b{color:var(--ink)}
 .goalbar{position:relative;height:16px;border:3px solid var(--ink);border-radius:999px;background:#e9dcc4;overflow:hidden;margin-top:4px}
 .goalbar i{display:block;height:100%;width:0;background:linear-gradient(90deg,#4fd8ff,#5fd068);transition:width .9s cubic-bezier(.2,.9,.3,1)}
@@ -6734,7 +6749,7 @@ const UI = (() => {
     let label = '', k = 0;
     if (res.daily && !res.dailyDone) { label = `<b>Daily special</b>: ${fmtAlt(res.alt)} of ${fmtAlt(res.daily.target)}`; k = res.alt / res.daily.target; }
     else if (res.route && !res.delivered && !routeDone(res.route.id)) { label = `<b>${res.route.to}</b>: ${fmtAlt(res.alt)} of ${fmtAlt(res.route.alt)}`; k = res.alt / res.route.alt; }
-    else if (nr) { label = `Next up: <b>${nr.to}</b> at ${fmtAlt(nr.alt)}${nr.pax ? ` · ${nr.pax} seat${nr.pax > 1 ? 's' : ''}` : ''}`; k = S.bestAlt / nr.alt; }
+    else if (nr) { label = `Next up: <b>${nr.to}</b> at ${fmtAlt(nr.alt)}${nr.pax ? ` · ${nr.pax}\u00a0seat${nr.pax > 1 ? 's' : ''}` : ''}`; k = S.bestAlt / nr.alt; }
     else { label = `Record: <b>${fmtAlt(S.bestAlt)}</b>`; k = res.alt / Math.max(1, S.bestAlt); }
     gEl.innerHTML = `${label}<div class="goalbar"><i></i></div>`;
     setTimeout(() => { const i = gEl.querySelector('i'); if (i) i.style.width = Math.round(clamp(k, 0, 1) * 100) + '%'; }, 400);
