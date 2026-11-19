@@ -82,7 +82,7 @@ button{font-family:var(--font)}
 .head-btns{display:flex;gap:8px;position:relative}
 .head-btns .icon-btn{position:relative}
 .badge-dot{position:absolute;top:-8px;right:-8px;background:var(--red);color:#fff;font-size:11px;font-weight:900;border:3px solid var(--ink);border-radius:999px;padding:1px 5px;line-height:1.1}
-#tabs{display:flex;gap:6px;padding:4px 12px 0;overflow-x:auto;overflow-y:hidden;scrollbar-width:none;flex:0 0 auto;min-height:44px}
+#tabs{position:relative;display:flex;gap:6px;padding:4px 12px 0;overflow-x:auto;overflow-y:hidden;scrollbar-width:none;flex:0 0 auto;min-height:44px}
 #tabs::-webkit-scrollbar{display:none}
 .tab{flex:0 0 auto;display:flex;align-items:center;gap:6px;border:4px solid var(--ink);border-bottom:none;border-radius:14px 14px 0 0;padding:6px 10px 6px 8px;
   background:#e9dcc4;font-weight:800;font-size:15px;cursor:pointer;position:relative;color:var(--ink2);transform:translateY(4px)}
@@ -316,6 +316,10 @@ button{font-family:var(--font)}
 .route .stars{font-size:18px;letter-spacing:1px;color:#c9bca3;-webkit-text-stroke:1px var(--ink)}
 .route .stars .on{color:var(--yellow)}
 .route .r-act{flex:0 0 auto}
+.map-sec{margin:22px 2px 12px;padding:12px 16px;border:4px solid var(--ink);border-radius:18px;box-shadow:0 4px 0 var(--ink);background:linear-gradient(120deg,#2a1450,#0b3d3a);color:#fff6e5;position:relative;overflow:hidden}
+.map-sec .ms-t{font-size:22px;font-weight:900;letter-spacing:.5px;text-shadow:0 2px 0 var(--ink)}.map-sec .ms-s{font-size:13px;font-weight:800;opacity:.85;margin-top:2px}
+.map-sec::after{content:'';position:absolute;right:-20px;top:-30px;width:120px;height:120px;border-radius:50%;background:radial-gradient(rgba(138,255,193,.35),transparent 70%)}
+.route.fr{background:linear-gradient(135deg,#fff 55%,#e9f6ff)}.route.fr.locked{background:#ddd6e8}
 .skymap{margin:0 0 14px;line-height:0}.skymap canvas{display:block;max-width:100%;border-radius:14px;box-shadow:0 4px 0 var(--ink)}
 .route-link{position:absolute;left:44px;width:6px;height:18px;background:repeating-linear-gradient(var(--ink) 0 4px,transparent 4px 8px);top:-18px}
 .route-link{display:none} /* a lone dash between cards read as a stray mark */
@@ -886,6 +890,9 @@ const AudioSys = (() => {
     honk() { tone({ type: 'sawtooth', f: 330, dur: 0.18, vol: 0.08, filter: 'lowpass', ff: 1200 }); tone({ type: 'sawtooth', f: 262, dur: 0.22, vol: 0.08, delay: 0.17, filter: 'lowpass', ff: 1200 }); },
     squawk() { if (!gate('sq', 120)) return; tone({ type: 'sawtooth', f: rand(900, 1300), f2: rand(500, 700), dur: 0.12, vol: 0.07, filter: 'bandpass', ff: 1500, q: 3 }); },
     jelly() { tone({ type: 'sine', f: 400, f2: 900, dur: 0.25, vol: 0.12 }); },
+    chime() { [0, 7, 12, 19].forEach((s, i) => tone({ type: 'sine', f: N(84 + s), dur: 0.35, vol: 0.07, delay: i * 0.04 })); noise({ dur: 0.12, vol: 0.12, filter: 'highpass', f: 5000, q: 0.8 }); },
+    eel() { if (!gate('eel', 700)) return; tone({ type: 'square', f: 120, f2: 140, dur: 0.5, vol: 0.035, filter: 'lowpass', ff: 700 }); noise({ dur: 0.5, vol: 0.05, filter: 'bandpass', f: 3000, f2: 2000, q: 6 }); },
+    fire() { if (!gate('fire', 160)) return; noise({ dur: 0.35, vol: 0.22, filter: 'lowpass', f: 1400, f2: 300, q: 0.8 }); noise({ dur: 0.12, vol: 0.1, filter: 'bandpass', f: 2500, q: 2 }); },
     warp() { tone({ type: 'sine', f: 200, f2: 1600, dur: 0.8, vol: 0.12 }); noise({ dur: 0.8, vol: 0.15, filter: 'bandpass', f: 300, f2: 5000, q: 4 }); },
     ach() { [0, 4, 7, 12, 16].forEach((s, i) => tone({ type: 'triangle', f: N(79 + s), dur: 0.3, vol: 0.12, delay: i * 0.05 })); },
     pop2() { if (!gate('pop2', 90)) return; noise({ dur: 0.35, vol: 0.16, filter: 'lowpass', f: 900, f2: 200 }); tone({ type: 'sine', f: 180, f2: 60, dur: 0.25, vol: 0.12 }); noise({ dur: 0.6, vol: 0.05, filter: 'highpass', f: 4000, delay: 0.08 }); },
@@ -1183,6 +1190,14 @@ const ICONS = {
   b_ctrl: svgI('<circle cx="32" cy="32" r="24" fill="#fff"/><circle cx="32" cy="32" r="15" fill="#ff5a5f"/><circle cx="32" cy="32" r="6" fill="#fff"/>'),
   b_pad: svgI('<path d="M14 60V8h12v52M14 20h12M14 32h12M14 44h12M14 20l12 12M14 32l12 12" stroke-width="3"/><path d="M40 52c0-18 4-30 8-36 4 6 8 18 8 36z" fill="#fff6e5" stroke-width="3"/><path d="M6 60h54"/>'),
   b_cabin: svgI('<circle cx="32" cy="32" r="24" fill="#c9ced8"/><circle cx="32" cy="32" r="16" fill="#bfe9ff"/><circle cx="27" cy="30" r="2.5" fill="${INK}" stroke="none"/><circle cx="37" cy="30" r="2.5" fill="${INK}" stroke="none"/><path d="M26 37q6 5 12 0" stroke-width="3"/>'),
+  // frontier
+  b_front: svgI('<path d="M32 4l6 16 17 1-13 11 5 17-15-10-15 10 5-17L9 21l17-1z" fill="#2ec4b6"/><circle cx="32" cy="29" r="6" fill="#fff6e5" stroke-width="3"/>'),
+  sail: svgI('<path d="M30 6v48M14 58h34" stroke-width="4"/><path d="M34 8c14 8 20 22 18 38H34z" fill="#bff8ff"/><path d="M26 14C16 22 12 32 13 44h13z" fill="#ffd93d"/><path d="M40 20l2 5 5 2-5 2-2 5-2-5-5-2 5-2z" fill="#fff" stroke-width="2"/>'),
+  nova: svgI('<rect x="16" y="14" width="32" height="42" rx="10" fill="#bfe9ff"/><path d="M20 10h24v6H20z" fill="#c9ced8"/><circle cx="32" cy="36" r="10" fill="#ffd93d"/><circle cx="32" cy="36" r="4.5" fill="#fff" stroke-width="2.5"/><path d="M32 20v4M32 48v4M18 36h4M42 36h4" stroke="#ff9f43" stroke-width="3"/>'),
+  cometice: svgI('<rect x="18" y="10" width="28" height="46" rx="11" fill="#9fe3ff"/><path d="M24 24l8-6 8 6v14l-8 6-8-6z" fill="#fff" stroke-width="3"/><path d="M12 8l6 6M8 18h6M50 52l6 4" stroke="#bff8ff" stroke-width="3"/>'),
+  hyper: svgI('<path d="M10 32h18M6 22h16M6 42h16" stroke="#4fd8ff" stroke-width="4"/><path d="M28 18c12 0 26 6 30 14-4 8-18 14-30 14z" fill="#9b5de5"/><circle cx="44" cy="32" r="5" fill="#fff" stroke-width="3"/>'),
+  chart: svgI('<path d="M8 12l16-6 16 6 16-6v44l-16 6-16-6-16 6z" fill="#fff6e5"/><path d="M24 6v44M40 12v44" stroke-width="3"/><path d="M14 22l3 6 6 1-5 4 2 6-6-3-5 3 2-6-5-4 6-1z" fill="#ffd93d" stroke-width="2"/><circle cx="46" cy="38" r="5" fill="#2ec4b6" stroke-width="2.5"/>'),
+  lantern: svgI('<path d="M24 14h16l4 8v24l-4 8H24l-4-8V22z" fill="#ffd93d"/><path d="M26 6h12v8H26z" fill="#c9ced8"/><path d="M20 22h24M20 46h24" stroke-width="3"/><circle cx="32" cy="34" r="5" fill="#fff" stroke-width="3"/>'),
   // misc
   wand: svgI('<path d="M12 54L38 28" stroke-width="9" stroke-linecap="round"/><path d="M12 54L38 28" stroke="#9b5de5" stroke-width="4" stroke-linecap="round"/><path d="M44 6l3 9 9 3-9 3-3 9-3-9-9-3 9-3z" fill="#ffd93d"/><path d="M54 32l1.6 4.4 4.4 1.6-4.4 1.6-1.6 4.4-1.6-4.4-4.4-1.6 4.4-1.6z" fill="#fff6e5" stroke-width="2"/><path d="M24 10l1.4 3.6 3.6 1.4-3.6 1.4-1.4 3.6-1.4-3.6-3.6-1.4 3.6-1.4z" fill="#fff6e5" stroke-width="2"/>'),
   lock: svgI('<rect x="12" y="28" width="40" height="30" rx="7" fill="#ffd93d"/><path d="M20 28v-8a12 12 0 0 1 24 0v8"/><circle cx="32" cy="42" r="4" fill="${INK}"/>'),
@@ -1219,6 +1234,15 @@ const ZONES = [
     spawn: { ice: 2.0, comet: 0.8, ufo: 0.3 } },
   { id: 'z7', name: 'Starlight Deep', alt: 500000, sky: ['#02101a', '#123c4a'], coin: 400,
     spawn: { jelly: 1.5, comet: 0.9, blackhole: 0.18, ice: 0.5 } },
+  // ---- the frontier, beyond the Starlight Gate
+  { id: 'z8', name: 'Nebula Shallows', alt: 900000, sky: ['#1a0b33', '#4a1f66'], coin: 700, fr: true,
+    spawn: { crystal: 1.7, jelly: 0.6, comet: 0.6 } },
+  { id: 'z9', name: 'Aurora Reach', alt: 2600000, sky: ['#021417', '#0b3d3a'], coin: 1200, fr: true,
+    spawn: { eel: 1.25, crystal: 0.7, comet: 0.6, blackhole: 0.12 } },
+  { id: 'z10', name: 'Edge of the Map', alt: 8000000, sky: ['#241638', '#6e4a36'], coin: 2000, fr: true,
+    spawn: { dragonling: 1.1, eel: 0.6, crystal: 0.6, blackhole: 0.14 } },
+  { id: 'z11', name: 'Uncharted Sky', alt: 14000000, sky: ['#2e2440', '#a88866'], coin: 3000, fr: true,
+    spawn: { dragonling: 1.3, eel: 0.7, crystal: 0.7, blackhole: 0.2, comet: 0.5 } },
 ];
 function zoneAt(alt) { let z = ZONES[0]; for (const zz of ZONES) if (alt >= zz.alt) z = zz; return z; }
 function zoneIndex(alt) { let i = 0; for (let k = 0; k < ZONES.length; k++) if (alt >= ZONES[k].alt) i = k; return i; }
@@ -1255,7 +1279,25 @@ const ROUTES = [
   { id: 'r7', to: 'The Starlight Gate', alt: 650000, pax: 10, reward: 60000, fare: 5000, icon: 'gate',
     desc: 'A shimmering gate at the edge of the map. Nobody knows what’s beyond. Let’s find out!',
     who: ['ada', 'plum', 'volt', 'juno', 'kid', 'chef', 'diva', 'cat', 'bot', 'buckley'] },
+  // ---- Beyond the Gate: the frontier chapter (fr), opened by delivering to the Starlight Gate
+  { id: 'x1', fr: true, to: 'Teapot Tea Room', alt: 1000000, pax: 10, reward: 150000, fare: 4000, icon: 'teapot',
+    desc: 'That giant polka-dot teapot past the Gate? It’s a tea room! The Earl of Grey has scones waiting, and he hates cold tea.',
+    who: ['earl', 'nana', 'plum', 'juno', 'romeo', 'gran2', 'flo', 'bell', 'cat', 'luna'] },
+  { id: 'x2', fr: true, to: 'Pip’s Home Planet', alt: 1500000, pax: 12, reward: 250000, fare: 5000, icon: 'pip',
+    desc: 'Pip’s family is throwing a welcome party for the pilot who brought Pip home. Bring friends, and snacks (theirs are purple).',
+    who: ['pip', 'kid', 'kid2', 'bowler', 'mike', 'orion', 'nimbus', 'twin1', 'twin2', 'bot', 'volt', 'farmer'] },
+  { id: 'x3', fr: true, to: 'Comet Carnival', alt: 3000000, pax: 12, reward: 400000, fare: 6500, icon: 'carnival',
+    desc: 'A funfair riding on the tail of a comet! Ringmaster Ringo needs his performers there before the big top opens.',
+    who: ['ringo', 'diva', 'chef', 'chef2', 'twin1', 'twin2', 'robo', 'kid', 'bowler', 'cat', 'tourist', 'prof'] },
+  { id: 'x4', fr: true, to: 'Aurora Lighthouse', alt: 5500000, pax: 12, reward: 650000, fare: 8000, icon: 'lighthouse',
+    desc: 'Keeper Lumen’s lighthouse guides lost starships through the Aurora Reach, and its lamp has gone dark. Fly up the repair crew!',
+    who: ['lumen', 'volt', 'prof', 'bot', 'robo', 'nimbus', 'orion', 'luna', 'mike', 'gran2', 'ada', 'nana'] },
+  { id: 'x5', fr: true, to: 'The Edge of the Map', alt: 10000000, pax: 12, reward: 1200000, fare: 10000, icon: 'edge',
+    desc: 'Every old map says “Here be dragons” at the edge. Ada wants to see if it’s true. Everyone you’ve ever flown wants a seat.',
+    who: ['ada', 'buckley', 'earl', 'ringo', 'lumen', 'pip', 'plum', 'baron', 'kid', 'diva', 'cat', 'volt'] },
 ];
+const MAIN_ROUTES = ROUTES.filter(r => !r.fr), FRONT_ROUTES = ROUTES.filter(r => r.fr);
+const frontierOpen = () => routeDone('r7');
 const routeById = id => ROUTES.find(r => r.id === id);
 const routeDone = id => !!(S.routes[id] && S.routes[id].done);
 function nextRoute() { return ROUTES.find(r => !routeDone(r.id)) || null; }
@@ -1293,6 +1335,11 @@ const CHARS = {
   flo:   { name: 'Flo', skin: '#ffd9b3', hair: '#ff5a8a', style: 'long', col: '#ff5a5f' },
   mike:  { name: 'Trucker Mike', skin: '#e0b48a', hair: '#6b3e26', style: 'cap', mustache: true, col: '#ff9f43' },
   tourist: { name: 'Tourist', skin: '#ffd9b3', hair: '#6b3e26', style: 'short', col: '#4d96ff' },
+  // frontier folk
+  earl:  { name: 'Earl of Grey', skin: '#f2d2b6', hair: '#c9ced8', style: 'tophat', mustache: true, monocle: true, col: '#ff8ad0', fr: true },
+  ringo: { name: 'Ringo', skin: '#e0b48a', hair: '#2b2240', style: 'tophat', mustache: true, col: '#ff5a5f', fr: true },
+  lumen: { name: 'Keeper Lumen', skin: '#c68b59', hair: '#ffd93d', style: 'cap', glasses: true, col: '#2ec4b6', fr: true },
+  ember: { name: 'Ember', skin: '#7be0c0', hair: '#ff9f43', style: 'dragon', col: '#ff9f43', fr: true },
 };
 const TOURISTS = ['tourist', 'kid', 'nimbus', 'romeo', 'juno', 'nana', 'farmer', 'kid2', 'bowler', 'twin1', 'cat', 'pip'];
 // ---- Guestbook: everyone you've flown, with a little bio
@@ -1327,8 +1374,12 @@ const GUESTS = {
   cat: 'A cat. Bought a ticket somehow. Nobody asks questions.',
   ada: 'Built the shed, the rocket and the dream. Came along for the last trip.',
   tourist: 'Takes photos of everything, including the safety card.',
+  earl: 'Runs the Teapot Tea Room past the Gate. Has opinions about milk first. Strong ones.',
+  ringo: 'Ringmaster of the Comet Carnival. His moustache does tricks too.',
+  lumen: 'Keeps the Aurora Lighthouse lit for lost starships. Knows every star by its first name.',
+  ember: 'A little star dragon from the edge of the map. Guards it, mostly by napping on it.',
 };
-function guestHint(id) { const r = ROUTES.find(x => x.who.includes(id)); if (r) return `Rides to ${r.to}.`; return TOURISTS.includes(id) ? 'Books seats on your regular routes.' : 'Somewhere out there...'; }
+function guestHint(id) { if (id === 'ember') return 'Lives where the map runs out.'; const r = ROUTES.find(x => x.who.includes(id)); if (r) return `Rides to ${r.to}.`; return TOURISTS.includes(id) ? 'Books seats on your regular routes.' : 'Somewhere out there...'; }
 const guestsMet = () => Object.keys(GUESTS).filter(id => S.met && S.met[id]).length;
 const guestNewCount = () => Object.keys(GUESTS).filter(id => S.met && S.met[id] && !S.seen['guest_' + id]).length;
 // ---- Fan mail: thank-you letters (with a little gift) arrive in the yard's mailbox
@@ -1357,6 +1408,16 @@ const MAIL = [
     text: 'Dear friend,\nI got home! Through the Gate. It is a long story. Mom says thank you for the ride, and that you are welcome for dinner any time (bring snacks, ours are purple).\n\nEnclosed: one shiny space pebble. Here it is worth a LOT.' },
   { id: 'pipwave', from: 'pip', gift: 30000, when: () => !!S.seen.pipPlanet,
     text: 'We saw you fly past our planet! Everyone waved. Did you see us waving? We were the ones waving.\n\nGrandma Pip says you fly very well for someone with only two eyes. Enclosed: the family savings (three pebbles).' },
+  { id: 'x1', from: 'earl', stamp: 'teapot', gift: 30000, when: () => routeDone('x1'),
+    text: 'My dear pilot,\nTen guests, and not a single drop spilled. The Teapot Tea Room has never been so full. We have named a blend after you: strong, hot, and slightly too fast.\n\nEnclosed: a tip, and a tin of Pilot’s Blend. Also, a pink paint job, in the Paint Shop.', sign: '— The Earl of Grey' },
+  { id: 'x2', from: 'pip', stamp: 'pip', gift: 50000, when: () => routeDone('x2'),
+    text: 'BEEP! Thank you for coming to the party! Grandma Pip says you are welcome on our planet forever. Little cousin Pop wants to be a pilot now. He has drawn your rocket 41 times.\n\nEnclosed: the family savings (seven pebbles, very shiny).' },
+  { id: 'x3', from: 'ringo', stamp: 'carnival', gift: 80000, when: () => routeDone('x3'),
+    text: 'Esteemed aviator!\nThe show went off with a BANG (the cannon act, mostly). The crowd chanted your name! Well, they chanted “ROCKET”. Close enough!\n\nEnclosed: your share of the ticket sales, and a lifetime pass for the Ferris wheel.', sign: '— Ringo, Ringmaster' },
+  { id: 'x4', from: 'lumen', stamp: 'lighthouse', gift: 120000, when: () => routeDone('x4'),
+    text: 'Dear friend,\nThe lamp is burning brighter than ever. Last night three starships found their way home by it, and one of them was full of puppies. I’ve sent you the colours of the aurora for your rocket (see the Paint Shop).\n\nKeep your light on.', sign: '— Keeper Lumen' },
+  { id: 'x5', from: 'ember', stamp: 'edge', gift: 250000, when: () => routeDone('x5'),
+    text: 'Dear Pilot,\nThe shed is SO cozy. The boiler is my favourite thing. Ada says I can’t sleep IN the boiler. I have painted your rocket in my scales (look in the Paint Shop!).\n\nEnclosed: the dragon hoard. It was mostly buttons, but there was a lot of gold under them.', sign: '— Ember (rawr)' },
   { id: 'king', from: 'nimbus', stamp: 'storm', gift: 250, when: () => S.stats.king > 0,
     text: 'That was the Storm King! Thirty years I’ve been forecasting him and you just... flew past. The lab took up a collection.\n\nP.S. Dr. Volt would like his hair to lie flat again. Any tips?' },
   { id: 'whale', from: 'luna', stamp: 'observ', gift: 900, when: () => S.stats.whale > 0,
@@ -1398,6 +1459,12 @@ const LOST = [
     text: 'My slice! Still warm-ish! Tony says it was HIS slice. It was MY slice. Enclosed: a tip, and a coupon for one whole pizza (Mars delivery not included).' },
   { id: 'mic', owner: 'diva', name: 'Stella’s microphone', short: 'microphone', min: 220000, max: 400000, hint: 'Dropped during a sound check near Saturn.', gift: 10000,
     reward: 'the Pop Star paint job', text: 'Darling, my microphone! The tour is saved! I’ll dedicate the first song to you. Enclosed: a reward, a signed photo of me looking surprised, and my stage colours for your rocket (see the Paint Shop).' },
+  { id: 'monocle', owner: 'earl', name: 'The Earl’s golden monocle', short: 'monocle', min: 1100000, max: 2500000, hint: 'Popped out in surprise when the tea was poured too early.', gift: 25000,
+    text: 'My monocle! I have been squinting at the scones for weeks. One of them turned out to be a cat. Please accept this reward, and a standing invitation for second breakfast.', sign: '— The Earl of Grey (seeing clearly)' },
+  { id: 'pin', owner: 'ringo', name: 'Ringo’s juggling pin', short: 'juggling pin', min: 3200000, max: 5400000, hint: 'Thrown a touch too high during rehearsals on the comet.', gift: 45000,
+    text: 'You caught it! That pin went up during the big finale and never came down. The audience has been looking up ever since. Enclosed: a bonus, and a tiny bow from the whole troupe.', sign: '— Ringo' },
+  { id: 'lens', owner: 'lumen', name: 'Lumen’s spare lamp lens', short: 'lens', min: 5700000, max: 9500000, hint: 'Rolled off the gallery while the lamp was being polished.', gift: 70000,
+    text: 'My spare lens! Without it the next repair would have taken a month. You have the eyes of a lighthouse keeper. Here is something for your trouble.', sign: '— Keeper Lumen' },
   { id: 'yarn', owner: 'cat', name: 'Sir Whiskers’ ball of yarn', short: 'yarn', min: 400000, max: 640000, hint: 'Rolled all the way out to the edge of the map.', gift: 16000,
     text: 'Meow!!! MRRROW. Purr purr purr purr purr.\n\n(He is very happy. He has already lost it again, under the sofa.)', sign: '— Sir Whiskers, and his human' },
 ];
@@ -1483,6 +1550,21 @@ function drawLostItem(c, id, t = 0) {
       circ(c, 0, 0, 18); fillStroke(c, '#ff8ad0', 3);
       c.lineWidth = 2; c.beginPath(); c.arc(-10, 4, 16, -1.2, 0.6); c.moveTo(-8, -14); c.quadraticCurveTo(6, -4, 4, 16); c.moveTo(-17, -4); c.quadraticCurveTo(0, -8, 14, -12); c.stroke();
       break;
+    case 'monocle':
+      c.strokeStyle = '#d4a017'; c.lineWidth = 2.5; c.beginPath(); c.moveTo(12, 10); c.bezierCurveTo(20, 20, 8, 26, 18, 30); c.stroke(); ink(c, 3);
+      circ(c, 0, 0, 16); fillStroke(c, 'rgba(191,233,255,.6)', 6); circ(c, 0, 0, 16); c.strokeStyle = '#ffd93d'; c.lineWidth = 3; c.stroke();
+      c.strokeStyle = 'rgba(255,255,255,.85)'; c.lineWidth = 3; c.beginPath(); c.arc(0, 0, 10, -2.6, -1.6); c.stroke();
+      break;
+    case 'pin':
+      c.save(); c.rotate(0.5 + Math.sin(t * 3) * 0.2);
+      c.beginPath(); c.moveTo(0, -24); c.bezierCurveTo(8, -24, 7, -10, 4, -6); c.bezierCurveTo(14, 2, 12, 22, 0, 24); c.bezierCurveTo(-12, 22, -14, 2, -4, -6); c.bezierCurveTo(-7, -10, -8, -24, 0, -24); fillStroke(c, '#fff6e5', 3);
+      c.fillStyle = '#ff5a5f'; c.fillRect(-6, -10, 12, 4); c.fillStyle = '#4d96ff'; c.fillRect(-9, 6, 18, 4); c.restore();
+      break;
+    case 'lens':
+      c.beginPath(); for (let i = 0; i < 8; i++) { const a = i * TAU / 8 + Math.PI / 8; c.lineTo(Math.cos(a) * 22, Math.sin(a) * 22); } c.closePath(); fillStroke(c, '#c9ced8', 3);
+      circ(c, 0, 0, 15); fillStroke(c, '#fff6a0', 3); circ(c, 0, 0, 9); c.lineWidth = 2; c.stroke();
+      c.fillStyle = 'rgba(255,255,255,.85)'; c.beginPath(); c.ellipse(-5, -6, 4, 2, -0.6, 0, TAU); c.fill();
+      break;
   }
   c.restore();
 }
@@ -1509,6 +1591,7 @@ const FAN_LINES = {
   farmer: 'Potatoes and pizza: a match made in space.', bot: 'BEEP. HAPPY BEEP.', gran2: 'Not bad! Ada’s landings still need work, mind.', diva: 'Darling, you’re a star!',
   robo: 'You look shiny already. Polish anyway?', twin1: 'I’m Zip! I cheered first!', twin2: 'I’m Zap! I cheered LOUDER!', prof: 'Rings are just space jewellery, really.',
   cat: 'Mrrrp.', tourist: 'Say cheese! *click*',
+  earl: 'Marvellous launch. Milk first, naturally.', ringo: 'Laaadies and gentlemen... LIFTOFF!', lumen: 'Keep your light on up there.', ember: 'Rawr! That means “good luck”.',
 };
 const GUEST_SLOTS = [1, 3, 5, 7, 8];
 // your favourite passengers come back to watch launches from the front row
@@ -1679,7 +1762,40 @@ const STORY = {
     ['ada', 'From a backyard shed to the edge of everything. I’m so proud of you, sweetpea.'],
     ['buckley', '... !!!'],
     ['ada', 'I had the boys paint you a Solid Gold rocket. It’s waiting in the Paint Shop.'],
-    ['ada', 'Keep flying as far as you like. There’s always further! Endless mode is unlocked.'],
+    ['ada', 'Keep flying as far as you like, sweetpea. There’s always further!'],
+  ],
+  frontier: [
+    ['pip', 'Beep! Pilot! Did you see what is past the Gate? A tea room! My planet! A whole carnival on a comet!'],
+    ['ada', 'Well I never. The map goes on, sweetpea! Five new stops, all the way out to the Edge of the Map.'],
+    ['ada', 'Our old rocket won’t get that far on its own. I’ve opened a Frontier workshop: star sails, a captured nova, comet-ice tanks. Pricey, but look where it leads!'],
+  ],
+  x1: [
+    ['earl', 'Splendid! Ten guests, and the tea is still hot. You may call me Earl. Everyone does.'],
+    ['ada', 'Scones in deep space. I could get used to this.'],
+    ['pip', 'Beep! My family wants to say thank you for bringing me home. Will you come to the party? It is at 1,500 km!'],
+  ],
+  x2: [
+    ['pip', 'Welcome to my planet! Mom made purple snacks. Grandma Pip made MORE purple snacks.'],
+    ['kid', 'Everything here is purple. Best. Party. EVER.'],
+    ['ringo', 'Ahoy, flying friend! Ringo, ringmaster of the Comet Carnival! My performers are stuck, and my comet is out at 3,000 km. Can you help?'],
+  ],
+  x3: [
+    ['ringo', 'Laaadies and gentlemen! The show can go on! Thanks to the fastest rocket in the sky!'],
+    ['diva', 'Darling, the acoustics on a comet are simply divine.'],
+    ['lumen', 'Hello? Is this the famous pilot? It’s Keeper Lumen at the Aurora Lighthouse. My lamp went dark and ships are getting lost. I need a repair crew at 5,500 km.'],
+  ],
+  x4: [
+    ['lumen', 'Light! Glorious light! Every starship in the Reach can find its way home again.'],
+    ['volt', 'A new bulb, a little lightning, and a lot of polish. ZAP-tastic!'],
+    ['ada', 'Sweetpea... there’s only one place left. The very Edge of the Map. The old charts say “here be dragons”. Shall we find out?'],
+  ],
+  x5: [
+    ['ada', 'The edge of the map... it just stops, like the last page of a book.'],
+    ['ember', 'Rawr! I mean... hello. Nobody ever visits the edge. I’m Ember. I guard it. Mostly I nap on it.'],
+    ['pip', 'Beep! A real dragon! She is small. And very warm.'],
+    ['ada', 'Ember, dear, would you like to come and live in the shed? There’s a cozy spot by the boiler.'],
+    ['ember', 'A shed?! With a BOILER?! I’ll paint your rocket in my scales as a thank-you!'],
+    ['ada', 'From a backyard shed to past the edge of everything. I couldn’t be prouder. The rest of the sky is yours, sweetpea. Draw your own map!'],
   ],
   fork: [
     ['ada', 'Ooh, a fork in the road! You can only fit one of these. Choose what fits your style.'],
@@ -1706,6 +1822,7 @@ const BRANCHES = [
   { id: 'hull', name: 'Structure', icon: 'b_hull', col: '#4d96ff', unlock: () => S.flights >= 3 || S.seen.crash || S.pendingCrash },
   { id: 'pad', name: 'Launch Site', icon: 'b_pad', col: '#9b5de5', unlock: () => routeDone('r0') },
   { id: 'cabin', name: 'Cabin', icon: 'b_cabin', col: '#f15bb5', unlock: () => routeDone('r1') },
+  { id: 'front', name: 'Frontier', icon: 'b_front', col: '#2ec4b6', unlock: () => frontierOpen() },
 ];
 
 const UPGRADES = [
@@ -1718,7 +1835,7 @@ const UPGRADES = [
     fx: l => l ? `+${Math.round(STAT.boostPct(l) * 100)}% thrust for ${STAT.boostTime(l).toFixed(1)}s` : 'None' },
   { id: 'afterburner', br: 'prop', name: 'Afterburner', icon: 'afterburner', pos: [2, 1], max: 4, base: 800, g: 2.4, req: [['engine', 4]],
     desc: 'Press SPACE (or the BOOST button) for a fiery burst of speed. Recharges over time.',
-    fx: l => l ? `Boost ×1.8 for ${STAT.abDur(l).toFixed(1)}s, recharge ${STAT.abCd(l).toFixed(0)}s` : 'None' },
+    fx: l => l ? `Boost ×2.1 for ${STAT.abDur(l).toFixed(1)}s, recharge ${STAT.abCd(l).toFixed(0)}s` : 'None' },
   { id: 'torch', br: 'prop', name: 'Plasma Torch', icon: 'torch', pos: [0.5, 2], max: 4, base: 3000, g: 2.6, req: [['engine', 6]], fork: 'drive',
     desc: 'FORK: Raw, screaming power. Much more thrust, but it gulps fuel.',
     fx: l => `Thrust ×${(1 + 0.32 * l).toFixed(2)}, fuel use ×${(1 + 0.14 * l).toFixed(2)}` },
@@ -1825,6 +1942,26 @@ const UPGRADES = [
   { id: 'cargo', br: 'cabin', name: 'Cargo Pod', icon: 'cargo', pos: [1.5, 2], max: 3, base: 4000, g: 2.6, req: [['seats', 4]], fork: 'cabinfork',
     desc: 'FORK: Deliver parcels too. Every flight pays a cargo bonus based on altitude.',
     fx: l => `Altitude pay ×${(1 + 0.25 * l).toFixed(2)}` },
+
+  // ---- frontier (opens after the Starlight Gate): big-ticket parts for the five stops beyond it
+  { id: 'sail', br: 'front', name: 'Star Sail', icon: 'sail', pos: [1, 0], max: 4, base: 150000, g: 2.2,
+    desc: 'A shimmering sail that rides the starlight. Starlight pushes you along while you coast, and the solar wind holds off for longer.',
+    fx: l => `Solar wind after ${70 + STAT.sail(l)}s, space drag ×${STAT.sailDrag(l).toFixed(2)}` },
+  { id: 'nova', br: 'front', name: 'Nova Core', icon: 'nova', pos: [0, 1], max: 4, base: 250000, g: 2.2, req: [['sail', 1]],
+    desc: 'A tiny captured star in a jar. Enormous thrust, surprisingly polite.',
+    fx: l => `Thrust ×${(1 + 0.13 * l).toFixed(2)}` },
+  { id: 'cometice', br: 'front', name: 'Comet Ice Tanks', icon: 'cometice', pos: [2, 1], max: 4, base: 250000, g: 2.2, req: [['sail', 1]],
+    desc: 'Frozen comet slush makes fantastic fuel, and it packs down small, so the rocket doesn’t get any heavier.',
+    fx: l => `Fuel ×${(1 + 0.15 * l).toFixed(2)}, same weight` },
+  { id: 'hyper', br: 'front', name: 'Hyperdrive', icon: 'hyper', pos: [1, 2], max: 4, base: 500000, g: 2.3, req: [['nova', 2], ['cometice', 2]],
+    desc: 'Makes the Warp Coil sing. You hardly slow down at all while coasting through deep space.',
+    fx: l => `Space drag ×${STAT.hyper(l).toFixed(2)}` },
+  { id: 'chart', br: 'front', name: 'Star Charts', icon: 'chart', pos: [0.5, 3], max: 3, base: 800000, g: 2.4, req: [['hyper', 1]], fork: 'frontfork',
+    desc: 'FORK: Pip’s family maps of the frontier. Every coin past the Starlight Gate is worth much more.',
+    fx: l => `Coins past the Gate ×${(1 + 0.4 * l).toFixed(1)}` },
+  { id: 'lantern', br: 'front', name: 'Guardian Lantern', icon: 'lantern', pos: [1.5, 3], max: 3, base: 800000, g: 2.4, req: [['hyper', 1]], fork: 'frontfork',
+    desc: 'FORK: A lighthouse lamp on your nose. Hazards keep their distance, and the warm glow gives you extra hearts.',
+    fx: l => `Hazards −${l * 15}%, +${l} heart${l > 1 ? 's' : ''}` },
 ];
 const UP = Object.fromEntries(UPGRADES.map(u => [u.id, u]));
 const lvl = id => S.up[id] || 0;
@@ -1852,6 +1989,9 @@ const STAT = {
   gift: l => l ? Math.round(15 * Math.pow(3, l - 1) * (1 + Math.pow(S.bestAlt, 0.7) / 200)) : 0,
   recover: l => l ? Math.round(60 * Math.pow(2.6, l - 1) * (1 + Math.pow(S.bestAlt, 0.7) / 200)) : 0,
   seats: l => [1, 2, 3, 4, 6, 8, 10, 12][l],
+  sail: l => 8 * l,
+  sailDrag: l => Math.pow(0.94, l),
+  hyper: l => Math.pow(0.85, l),
 };
 
 const autoUnlocked = () => S.flights >= 3 || (S.line || 1) > 1;
@@ -1893,8 +2033,9 @@ function computeStats() {
   st.burn = STAT.burnRate(L('engine'));
   if (L('torch')) { st.thrust *= 1 + 0.32 * L('torch'); st.burn *= 1 + 0.14 * L('torch'); }
   if (L('ion')) { st.thrust *= 1 + 0.07 * L('ion'); st.burn *= 1 - 0.15 * L('ion'); }
+  if (L('nova')) st.thrust *= 1 + 0.13 * L('nova');
   st.burn *= Math.pow(0.92, L('injectors'));
-  st.fuelCap = STAT.fuelCap(L('tank'));
+  st.fuelCap = STAT.fuelCap(L('tank')) * (1 + 0.15 * L('cometice'));
   st.dropFuel = st.fuelCap * 0.25 * L('droptanks');
   st.dropMass = L('droptanks') ? 0.12 + 0.05 * L('droptanks') : 0;
   st.scoop = L('scoop');
@@ -1905,8 +2046,11 @@ function computeStats() {
   st.dash = L('dash') ? STAT.dashCd(L('dash')) : 0;
   st.stage2 = L('stage2') ? st.fuelCap * STAT.stage2Pct(L('stage2')) : 0;
   st.stage1Mass = 0.35;
-  st.spaceK = 0.07 * STAT.warpDrag(L('warp'));
-  st.hp = STAT.hp(L('hull')) + (S.settings.relaxed ? 2 : 0);
+  st.spaceK = 0.07 * STAT.warpDrag(L('warp')) * STAT.sailDrag(L('sail')) * STAT.hyper(L('hyper'));
+  st.windT = 70 + STAT.sail(L('sail'));
+  st.chart = L('chart'); st.lantern = L('lantern');
+  if (st.lantern) st.hazMul = 1 - 0.15 * st.lantern;
+  st.hp = STAT.hp(L('hull')) + (S.settings.relaxed ? 2 : 0) + L('lantern');
   st.cd = 0.0011 * STAT.drag(L('nose'));
   st.repair = L('repair') ? STAT.repair(L('repair')) : 0;
   st.shield = L('shield') ? STAT.shieldCd(L('shield')) : 0;
@@ -1931,15 +2075,16 @@ function computeStats() {
   st.catcher = L('catcher');
   // masses (tons)
   st.dry = 1.0 + 0.045 * L('engine') + 0.07 * L('hull') + 0.02 * L('tank') + (st.seats || 0) * 0.03 + (L('ram') ? 0.1 : 0) + (L('cargo') ? 0.15 : 0);
-  st.fuelMass = 0.0045;   // tons per litre
+  st.fuelMass = 0.0045 / (1 + 0.15 * L('cometice'));   // tons per litre (comet ice packs down small)
   st.paxMass = 0.07;
   return st;
 }
 
 // ---------------------------------------------------------- economy
-const ECON = { payK: 0.9, payExp: 0.75, coinBase: [1, 2, 4, 8, 12, 20, 32, 50] };
+const ECON = { payK: 0.9, payExp: 0.75, coinBase: [1, 2, 4, 8, 12, 20, 32, 50, 80, 130, 200, 300] };
 const altitudePay = (alt) => ECON.payK * Math.pow(Math.max(0, alt), ECON.payExp);
-const coinValue = alt => ECON.coinBase[zoneIndex(alt)];
+const GATE_ALT = 650000;
+const coinValue = alt => ECON.coinBase[zoneIndex(alt)] * (alt >= GATE_ALT && G.st && G.st.chart ? 1 + 0.4 * G.st.chart : 1); // Star Charts: coins past the Gate are worth more
 
 // ---------------------------------------------------------- physics
 const PHYS = { g0: 15, Rg: 30000, H: 6500 };
@@ -1998,9 +2143,10 @@ const flightOver = R => (R.fuel <= 0 && R.dropFuel <= 0 && R.stage2Fuel <= 0) &&
 function simulateFlight(st, opts = {}) {
   const R = newRocketState(st, opts);
   R.vy = st.kick * (opts.launchQ || 1);
-  let t = 0; const dt = opts.dt || 1 / 30;
+  let t = 0; const dt = opts.dt || 1 / 30, windT = st.windT || 70;
   while (t < 600) {
     R.events.length = 0;
+    R.kMul = t > windT ? 1 + Math.pow((t - windT) / 12, 2) : 1; // the solar wind, same as a real flight
     const warp = simWarp(R);
     physStep(R, st, dt * warp, { tiltCos: opts.tiltCos || 0.97 });
     t += dt;
@@ -2022,6 +2168,7 @@ function simWarp(R) {
 const AUTO_W = { // what a level is worth besides height, as if it added this much height (fraction)
   hull: 0.06, nose: 0, repair: 0.05, shield: 0.06, ram: 0.05, fins: 0.04, magnet: 0.04, radar: 0.035, autododge: 0.05, vector: 0.03, dash: 0.035,
   afterburner: 0.07, finder: 0.04, scoop: 0.03, control: 0.07, giftshop: 0.05, weather: 0.03, catcher: 0.04, seats: 0.05, comfort: 0.03, snack: 0.04, lounge: 0.06, cargo: 0.05,
+  chart: 0.08, lantern: 0.08,
 };
 function autoPlan(budget = S.money, maxBuys = 160) {
   const realUp = S.up, plan = [];
@@ -2135,11 +2282,20 @@ function drawFace(c, ch, r, mood = 'happy', t = 0) {
     c.beginPath(); c.moveTo(-r * 0.9, -r * 0.3); c.lineTo(-r * 0.75, -r * 1.25); c.lineTo(-r * 0.15, -r * 0.85); fillStroke(c, C.skin, lw);
     c.beginPath(); c.moveTo(r * 0.9, -r * 0.3); c.lineTo(r * 0.75, -r * 1.25); c.lineTo(r * 0.15, -r * 0.85); fillStroke(c, C.skin, lw);
   }
+  if (st === 'dragon') { // ear frills and little golden horns
+    for (const sd of [-1, 1]) { c.beginPath(); c.moveTo(sd * r * 0.85, -r * 0.35); c.lineTo(sd * r * 1.45, -r * 0.6); c.lineTo(sd * r * 1.2, -r * 0.2); c.lineTo(sd * r * 1.42, r * 0.05); c.lineTo(sd * r * 0.9, r * 0.12); c.closePath(); fillStroke(c, C.hair, lw); }
+    for (const sd of [-1, 1]) { c.beginPath(); c.moveTo(sd * r * 0.28, -r * 0.88); c.quadraticCurveTo(sd * r * 0.42, -r * 1.45, sd * r * 0.72, -r * 1.5); c.quadraticCurveTo(sd * r * 0.55, -r * 1.2, sd * r * 0.62, -r * 0.72); c.closePath(); fillStroke(c, '#ffd93d', lw); }
+  }
   if (st === 'alien') { c.beginPath(); c.moveTo(-r * 0.4, -r * 0.8); c.lineTo(-r * 0.6, -r * 1.4); c.moveTo(r * 0.4, -r * 0.8); c.lineTo(r * 0.6, -r * 1.4); c.stroke(); circ(c, -r * 0.6, -r * 1.45, r * 0.15); fillStroke(c, '#ff5a5f', lw); circ(c, r * 0.6, -r * 1.45, r * 0.15); fillStroke(c, '#ff5a5f', lw); }
   // head
   if (st === 'robot') { rr(c, -r * 0.95, -r * 0.9, r * 1.9, r * 1.8, r * 0.35); fillStroke(c, C.skin, lw); c.beginPath(); c.moveTo(0, -r * 0.9); c.lineTo(0, -r * 1.3); c.stroke(); circ(c, 0, -r * 1.38, r * 0.14); fillStroke(c, '#ff5a5f', lw); }
   else if (st === 'dummy') { circ(c, 0, 0, r); fillStroke(c, C.skin, lw); c.save(); circ(c, 0, 0, r); c.clip(); c.fillStyle = INK; c.fillRect(-r, -r, r, r); c.fillRect(0, 0, r, r); c.restore(); circ(c, 0, 0, r); c.stroke(); }
   else { c.beginPath(); c.ellipse(0, 0, r, r * 1.02, 0, 0, TAU); fillStroke(c, C.skin, lw); }
+  if (st === 'dragon') { // crest spikes and a round snout
+    for (const x of [-0.3, 0, 0.3]) { c.beginPath(); c.moveTo((x - 0.13) * r, -r * 0.97 + Math.abs(x) * r * 0.2); c.lineTo(x * r, -r * 1.25 + Math.abs(x) * r * 0.25); c.lineTo((x + 0.13) * r, -r * 0.97 + Math.abs(x) * r * 0.2); fillStroke(c, C.hair, lw * 0.8); }
+    c.beginPath(); c.ellipse(0, r * 0.42, r * 0.62, r * 0.4, 0, 0, TAU); fillStroke(c, '#a8f0d8', lw);
+    c.fillStyle = INK; circ(c, -r * 0.18, r * 0.3, r * 0.06); c.fill(); circ(c, r * 0.18, r * 0.3, r * 0.06); c.fill();
+  }
   // eyes
   const blink = (Math.sin(t * 1.3 + r) > 0.985);
   const ey = -r * 0.1, ex = r * 0.38;
@@ -2209,9 +2365,12 @@ const PAINTS = [
   { id: 'knit', name: 'Nana’s Knit', stars: 999, lost: 'scarf', body: '#ff5a5f', accent: '#fff6e5', pattern: 'stripes' },
   { id: 'pop', name: 'Pop Star', stars: 999, lost: 'mic', body: '#7b3fc4', accent: '#ff8ad0', pattern: 'stars' },
   { id: 'gold', name: 'Solid Gold', stars: 24, end: true, body: '#ffd34d', accent: '#ff9f43', pattern: 'shine' },
+  { id: 'tea', name: 'Tea Party', stars: 999, route: 'x1', body: '#ff9fd8', accent: '#fff6e5', pattern: 'dots' },
+  { id: 'aurora', name: 'Aurora', stars: 999, route: 'x4', body: '#1d4f5c', accent: '#5fffb0', pattern: 'aurora' },
+  { id: 'dragon', name: 'Dragon Scale', stars: 999, route: 'x5', body: '#7be0c0', accent: '#2a9d7f', pattern: 'scales' },
 ];
 const totalStars = () => Object.values(S.routes).reduce((a, r) => a + (r.stars || 0), 0);
-const paintUnlocked = p => totalStars() >= p.stars || !!(p.lost && S.lost && S.lost[p.lost]) || !!S.seen['paintown_' + p.id] || (p.end && (S.ended || (S.line || 1) > 1));
+const paintUnlocked = p => totalStars() >= p.stars || !!(p.lost && S.lost && S.lost[p.lost]) || !!S.seen['paintown_' + p.id] || (p.end && (S.ended || (S.line || 1) > 1)) || !!(p.route && routeDone(p.route));
 // exhaust trails: cosmetic, unlocked by trophies
 const TRAILS = [
   { id: 'smoke', name: 'Puffy Smoke', need: 0 },
@@ -2316,6 +2475,8 @@ function drawRocket(c, L, opts = {}) {
   else if (P.pattern === 'tiger') { c.fillStyle = accent; for (let yy = top + 8; yy < bodyBot - 18; yy += 14) for (const sd of [-1, 1]) { c.beginPath(); c.moveTo(sd * hw, yy); c.lineTo(sd * hw * 0.25, yy + 4); c.lineTo(sd * hw, yy + 7); c.fill(); } }
   else if (P.pattern === 'dots') { c.fillStyle = accent; c.globalAlpha = 0.7; for (let i = 0; i < 9; i++) { circ(c, (hash(i * 3) - 0.5) * BW * 0.9, top + 6 + hash(i * 7) * (bodyBot - top - 24), 2 + hash(i) * 3.5); c.fill(); } c.globalAlpha = 1; }
   else if (P.pattern === 'stars') { c.fillStyle = '#fff'; for (let i = 0; i < 14; i++) { circ(c, (hash(i * 5) - 0.5) * BW * 0.9, top + 4 + hash(i * 11) * (bodyBot - top - 20), 0.8 + hash(i * 2) * 1.2); c.fill(); } }
+  else if (P.pattern === 'scales') { c.strokeStyle = accent; c.lineWidth = 2; for (let r2 = 0, yy = top + 6; yy < bodyBot - 8; yy += 7, r2++) for (let xx = -hw + (r2 % 2 ? 4 : 0); xx < hw + 6; xx += 8) { c.beginPath(); c.arc(xx, yy, 4, 0.15, Math.PI - 0.15); c.stroke(); } c.lineWidth = 3; c.strokeStyle = INK; }
+  else if (P.pattern === 'aurora') { c.globalAlpha = 0.6; ['#5fffb0', '#4fd8ff', '#ff8ad0'].forEach((col, i) => { c.fillStyle = col; c.beginPath(); const y0 = top + 14 + i * (BL * 0.22); c.moveTo(-hw, y0); for (let xx = -hw; xx <= hw; xx += 3) c.lineTo(xx, y0 + Math.sin(xx * 0.35 + G.t * 2 + i) * 3); for (let xx = hw; xx >= -hw; xx -= 3) c.lineTo(xx, y0 + 7 + Math.sin(xx * 0.35 + G.t * 2 + i + 1) * 3); c.closePath(); c.fill(); }); c.globalAlpha = 1; }
   else if (P.pattern === 'shine') { c.fillStyle = 'rgba(255,255,255,.55)'; const sy2 = top + ((G.t * 60) % (BL + 60)) - 30; c.beginPath(); c.moveTo(-hw, sy2); c.lineTo(hw, sy2 - 14); c.lineTo(hw, sy2 - 6); c.lineTo(-hw, sy2 + 8); c.fill(); }
   c.restore();
   // rivets for hull upgrades
@@ -2602,6 +2763,83 @@ function drawBlackHole(c, o, t) {
   c.restore();
 }
 
+// ---- frontier hazards
+function drawCrystal(c, o, t) {
+  const r = o.r, rgb = hex2rgb(o.hue || '#c9a6ff'), light = rgbStr(mixRGB(rgb, [255, 255, 255], 0.4)), dark = rgbStr(mixRGB(rgb, [43, 34, 64], 0.2));
+  c.save();
+  const tw = 0.75 + 0.25 * Math.sin(t * 3 + o.seed * 9);
+  const g = c.createRadialGradient(0, 0, r * 0.2, 0, 0, r * 1.9); g.addColorStop(0, rgbStr(rgb, 0.42 * tw)); g.addColorStop(1, rgbStr(rgb, 0));
+  c.fillStyle = g; circ(c, 0, 0, r * 1.9); c.fill();
+  c.rotate(o.rot * 0.35); ink(c, 3);
+  const shard = (x, y, w, h, ang) => { // a long gem seen from the side: a light face, a dark face and a glint
+    c.save(); c.translate(x, y); c.rotate(ang);
+    const path = () => { c.beginPath(); c.moveTo(0, -h); c.lineTo(w, -h * 0.45); c.lineTo(w, h * 0.55); c.lineTo(0, h); c.lineTo(-w, h * 0.55); c.lineTo(-w, -h * 0.45); c.closePath(); };
+    path(); c.fillStyle = light; c.fill();
+    c.fillStyle = dark; c.beginPath(); c.moveTo(0, -h); c.lineTo(w, -h * 0.45); c.lineTo(w, h * 0.55); c.lineTo(0, h); c.closePath(); c.fill();
+    c.fillStyle = 'rgba(255,255,255,.75)'; c.beginPath(); c.moveTo(-w * 0.62, -h * 0.32); c.lineTo(-w * 0.22, -h * 0.66); c.lineTo(-w * 0.22, h * 0.1); c.lineTo(-w * 0.62, h * 0.3); c.closePath(); c.fill();
+    path(); c.stroke(); c.lineWidth = 2; c.beginPath(); c.moveTo(0, -h); c.lineTo(0, h); c.stroke(); c.lineWidth = 3;
+    c.restore();
+  };
+  shard(-r * 0.52, r * 0.28, r * 0.26, r * 0.55, -0.55);
+  shard(r * 0.55, r * 0.32, r * 0.22, r * 0.46, 0.6);
+  shard(0, 0, r * 0.36, r * 0.95, 0);
+  const s = Math.max(0, Math.sin(t * 2.2 + o.seed * 13));
+  if (s > 0.3) { c.save(); c.translate(-r * 0.12, -r * 0.62); c.rotate(t); c.globalAlpha *= s; c.fillStyle = '#fff'; c.beginPath(); for (let j = 0; j < 8; j++) { const rad = j % 2 ? 2 : r * 0.34, a = j * Math.PI / 4; c.lineTo(Math.cos(a) * rad, Math.sin(a) * rad); } c.fill(); c.restore(); }
+  c.restore();
+}
+function drawEel(c, o, t) {
+  const d = o.dir || 1, L = 52, n = 15, ph = t * 7 + o.seed * 10, pts = [];
+  for (let i = 0; i < n; i++) { const k = i / (n - 1); pts.push([d * (L * 0.5 - k * L * 1.3), Math.sin(ph - k * 4.2) * (2 + 9 * k), (1 - k * 0.7) * o.r]); }
+  const cols = [[95, 255, 200], [79, 216, 255], [192, 138, 255]], colAt = k => k < 0.5 ? mixRGB(cols[0], cols[1], k * 2) : mixRGB(cols[1], cols[2], (k - 0.5) * 2);
+  c.save();
+  c.save(); c.scale(2.6, 1); const g = c.createRadialGradient(-d * 4, 0, 4, -d * 4, 0, 36); g.addColorStop(0, 'rgba(120,255,210,.35)'); g.addColorStop(1, 'rgba(120,255,210,0)'); c.fillStyle = g; circ(c, -d * 4, 0, 36); c.fill(); c.restore();
+  // tail fin
+  const tp = pts[n - 1], tq = pts[n - 3];
+  ink(c, 3); c.beginPath(); c.moveTo(tq[0], tq[1]); c.lineTo(tp[0] - d * 14, tp[1] - 11); c.lineTo(tp[0] - d * 9, tp[1]); c.lineTo(tp[0] - d * 14, tp[1] + 11); c.closePath(); fillStroke(c, rgbStr(cols[2]), 3);
+  c.fillStyle = INK; for (const p of pts) { circ(c, p[0], p[1], p[2] + 3); c.fill(); }
+  for (let i = n - 1; i >= 0; i--) { const p = pts[i]; c.fillStyle = rgbStr(colAt(i / (n - 1))); circ(c, p[0], p[1], p[2]); c.fill(); }
+  c.fillStyle = 'rgba(255,255,255,.45)'; for (let i = 1; i < n - 2; i++) { const p = pts[i]; circ(c, p[0], p[1] - p[2] * 0.4, p[2] * 0.35); c.fill(); }
+  for (let i = 2; i < n - 1; i += 3) { const p = pts[i], on = Math.sin(t * 6 - i) > 0; c.fillStyle = on ? '#ffffff' : 'rgba(43,34,64,.35)'; circ(c, p[0], p[1] + p[2] * 0.2, p[2] * 0.22); c.fill(); }
+  // head
+  const h = pts[0]; ink(c, 3);
+  c.beginPath(); c.moveTo(h[0] - d * 2, h[1] - o.r * 0.8); c.quadraticCurveTo(h[0] + d * 4, h[1] - o.r * 1.9, h[0] + d * 12, h[1] - o.r * 1.7); c.stroke();
+  circ(c, h[0] + d * 12, h[1] - o.r * 1.7, 3.5); fillStroke(c, Math.sin(t * 8) > 0 ? '#fff6a0' : '#8affc1', 2.5);
+  c.fillStyle = '#fff'; circ(c, h[0] + d * 5, h[1] - 4, 5); c.fill(); c.stroke(); c.fillStyle = INK; circ(c, h[0] + d * 6.5, h[1] - 4, 2.4); c.fill();
+  c.beginPath(); c.arc(h[0] + d * 6, h[1] + 3, 5, d > 0 ? 0.2 : Math.PI - 1.2, d > 0 ? 1.2 : Math.PI - 0.2); c.lineWidth = 2.5; c.stroke();
+  if (Math.sin(t * 9 + o.seed * 20) > 0.7) { c.strokeStyle = '#fff6a0'; c.lineWidth = 2.5; c.beginPath(); const zx = rand(-30, 20), zy = -o.r - 6; c.moveTo(zx, zy); c.lineTo(zx + 6, zy - 8); c.lineTo(zx + 2, zy - 9); c.lineTo(zx + 9, zy - 18); c.stroke(); }
+  c.restore();
+}
+function drawDragonling(c, o, t) {
+  const d = o.dir || 1, flap = Math.sin(t * 11 + o.seed * 9), col = o.col || '#7be0c0', dark = rgbStr(mixRGB(hex2rgb(col), [43, 34, 64], 0.28));
+  c.save(); c.scale(d, 1); c.translate(0, Math.sin(t * 3 + o.seed * 5) * 3); ink(c, 3);
+  const wing = (fill, ang) => { c.save(); c.translate(-2, -6); c.rotate(ang); c.beginPath(); c.moveTo(0, 0); c.quadraticCurveTo(-6, -26, -26, -34); c.quadraticCurveTo(-22, -24, -27, -16); c.quadraticCurveTo(-19, -15, -18, -8); c.quadraticCurveTo(-10, -9, 0, 0); c.closePath(); fillStroke(c, fill, 3); c.restore(); };
+  wing(dark, 0.25 - flap * 0.45);
+  // tail with a little arrow tip
+  c.beginPath(); c.moveTo(-12, 10); c.quadraticCurveTo(-30, 18, -36, 4); c.lineWidth = 7; c.stroke(); c.strokeStyle = col; c.lineWidth = 3.5; c.stroke(); ink(c, 3);
+  c.beginPath(); c.moveTo(-36, -4); c.lineTo(-42, 6); c.lineTo(-31, 6); c.closePath(); fillStroke(c, '#ffd93d', 2.5);
+  // body and belly
+  c.beginPath(); c.ellipse(0, 5, 17, 14, 0, 0, TAU); fillStroke(c, col, 3);
+  c.beginPath(); c.ellipse(5, 9, 9, 8, 0, 0, TAU); c.fillStyle = '#fff6c8'; c.fill(); c.lineWidth = 2; c.stroke(); c.lineWidth = 3;
+  for (const [x, y] of [[-12, -6], [-5, -9], [2, -9]]) { c.beginPath(); c.moveTo(x - 3, y + 2); c.lineTo(x, y - 5); c.lineTo(x + 3, y + 2); fillStroke(c, '#ffd93d', 2); }
+  c.beginPath(); c.moveTo(-6, 17); c.lineTo(-7, 23); c.moveTo(6, 18); c.lineTo(6, 23); c.stroke();
+  // head
+  c.beginPath(); c.moveTo(13, -16); c.lineTo(10, -26); c.lineTo(17, -19); c.closePath(); fillStroke(c, '#ffd93d', 2.5);
+  circ(c, 16, -9, 11); fillStroke(c, col, 3);
+  c.beginPath(); c.ellipse(26, -6, 8, 6, 0, 0, TAU); fillStroke(c, col, 3);
+  c.fillStyle = INK; circ(c, 30, -8, 1.5); c.fill();
+  c.fillStyle = '#fff'; circ(c, 17, -12, 4.5); c.fill(); c.stroke(); c.fillStyle = INK; circ(c, 18.5, -12, 2.2); c.fill();
+  c.fillStyle = 'rgba(255,90,95,.4)'; circ(c, 20, -3, 2.8); c.fill();
+  wing(col, -0.15 + flap * 0.55);
+  if (o.fireWarn > 0) { const k = 1 - o.fireWarn / 0.5; c.globalAlpha *= 0.85; c.fillStyle = '#c9ced8'; circ(c, 36 + k * 6, -8 - k * 6, 3 + k * 4); c.fill(); circ(c, 34 + k * 3, -12 - k * 10, 2 + k * 3); c.fill(); c.globalAlpha = 1; c.fillStyle = '#ff9f43'; circ(c, 34, -5, 2 + k * 3); c.fill(); }
+  c.restore();
+}
+function drawFireball(c, o, t) {
+  c.save(); c.rotate(Math.atan2(-o.vy, o.vx) + Math.PI);
+  for (let i = 0; i < 3; i++) { c.fillStyle = ['rgba(255,90,40,.55)', 'rgba(255,159,67,.75)', 'rgba(255,236,140,.9)'][i]; const L = 50 - i * 13; c.beginPath(); c.moveTo(0, -o.r * (1 - i * 0.25)); c.quadraticCurveTo(L * 0.6, -o.r * 0.8 + Math.sin(t * 22 + i) * 3, L, Math.sin(t * 17 + i) * 3); c.quadraticCurveTo(L * 0.6, o.r * 0.8, 0, o.r * (1 - i * 0.25)); c.fill(); }
+  c.restore();
+  ink(c, 3); circ(c, 0, 0, o.r); fillStroke(c, '#ff9f43'); c.fillStyle = '#ffe680'; circ(c, -o.r * 0.22, -o.r * 0.22, o.r * 0.55); c.fill();
+}
+
 // --------------------------------------------------------- pickups
 function drawCoin(c, p, t) {
   const sx = Math.cos(t * 4 + p.seed * 5);
@@ -2722,19 +2960,110 @@ function drawStation(c, kind, t, s = 1) {
     for (let i = 0; i < 6; i++) { c.save(); c.rotate(t * (0.3 + i * 0.1) * (i % 2 ? 1 : -1)); c.strokeStyle = ['#ff5a5f', '#ff9f43', '#ffd93d', '#5fd068', '#4d96ff', '#9b5de5'][i]; c.lineWidth = 10; c.globalAlpha = 0.85; c.beginPath(); c.arc(0, 0, 150 - i * 12, 0, TAU * 0.8); c.stroke(); c.restore(); }
     const gg = c.createRadialGradient(0, 0, 10, 0, 0, 90); gg.addColorStop(0, '#ffffff'); gg.addColorStop(1, 'rgba(255,255,255,0)'); c.fillStyle = gg; circ(c, 0, 0, 90); c.fill();
     text(c, 'STARLIGHT GATE', 0, 175, 20, '#fff');
+  } else if (kind === 'teapot') { // the Teapot Tea Room, a giant polka-dot teapot on a saucer
+    c.beginPath(); c.ellipse(0, 54, 172, 26, 0, 0, TAU); fillStroke(c, '#fff6e5', 3.5);
+    c.strokeStyle = '#ff8ad0'; c.lineWidth = 5; c.beginPath(); c.ellipse(0, 54, 150, 18, 0, 0.15, Math.PI - 0.15); c.stroke(); ink(c, 3);
+    c.save(); c.strokeStyle = 'rgba(255,255,255,.75)'; c.lineWidth = 7; c.lineCap = 'round';
+    for (let i = 0; i < 3; i++) { const k = (t * 0.45 + i / 3) % 1; c.globalAlpha = 0.8 * (1 - k); const bx = 152 + Math.sin(k * 6 + i) * 8, by = -90 - k * 90; c.beginPath(); c.moveTo(bx, by); c.bezierCurveTo(bx + 16, by - 14, bx - 16, by - 26, bx, by - 40); c.stroke(); }
+    c.restore(); ink(c, 3);
+    c.lineWidth = 24; c.beginPath(); c.arc(-100, -26, 38, Math.PI * 0.5, Math.PI * 1.5); c.stroke(); c.strokeStyle = '#ff8ad0'; c.lineWidth = 14; c.stroke(); ink(c, 3.5);
+    c.beginPath(); c.moveTo(80, -32); c.quadraticCurveTo(132, -28, 144, -84); c.lineTo(160, -80); c.quadraticCurveTo(148, -12, 86, 10); c.closePath(); fillStroke(c, '#ff8ad0', 3.5);
+    c.beginPath(); c.ellipse(0, -22, 106, 72, 0, 0, TAU); fillStroke(c, '#ff8ad0', 3.5);
+    c.save(); c.beginPath(); c.ellipse(0, -22, 104, 70, 0, 0, TAU); c.clip(); c.fillStyle = '#fff6e5';
+    for (const [dx, dy, dr] of [[-62, -60, 11], [58, -66, 9], [80, -18, 12], [-84, -4, 10], [-40, 30, 9], [44, 34, 10], [6, -78, 7]]) { circ(c, dx, dy, dr); c.fill(); }
+    c.fillStyle = 'rgba(255,255,255,.35)'; c.beginPath(); c.ellipse(-30, -66, 46, 12, -0.2, 0, TAU); c.fill(); c.restore();
+    c.beginPath(); c.ellipse(0, -22, 106, 72, 0, 0, TAU); c.stroke();
+    c.beginPath(); c.moveTo(-58, -86); c.quadraticCurveTo(0, -116, 58, -86); c.closePath(); fillStroke(c, '#ff8ad0', 3.5);
+    circ(c, 0, -110, 11); fillStroke(c, '#ffd93d', 3.5);
+    rr(c, -76, -58, 152, 22, 11); fillStroke(c, '#9b5de5', 3); text(c, 'TEA ROOM', 0, -46, 15, '#fff6e5', 'center', null);
+    for (const wx of [-62, 62]) { circ(c, wx, -12, 14); fillStroke(c, Math.sin(t * 2 + wx) > -0.6 ? '#ffd93d' : '#ffe9a8', 3); c.beginPath(); c.moveTo(wx - 14, -12); c.lineTo(wx + 14, -12); c.moveTo(wx, -26); c.lineTo(wx, 2); c.lineWidth = 2; c.stroke(); c.lineWidth = 3; }
+    rr(c, -20, -4, 40, 50, 20); fillStroke(c, '#6b3e26', 3); circ(c, 11, 22, 2.8); fillStroke(c, '#ffd93d', 2);
+    c.beginPath(); c.moveTo(-30, -10); c.lineTo(30, -10); c.lineTo(24, 2); c.lineTo(-24, 2); c.closePath(); fillStroke(c, '#5fd068', 3);
+    c.fillStyle = '#fff6e5'; for (let i = -2; i <= 2; i += 2) c.fillRect(i * 6 - 3, -9, 6, 10);
+  } else if (kind === 'pip') { // Pip's home planet: purple grass, mushroom houses and the whole family waving
+    c.beginPath(); c.ellipse(0, 34, 182, 44, 0, 0, TAU); fillStroke(c, '#8be07a', 3.5);
+    c.save(); c.beginPath(); c.ellipse(0, 34, 180, 42, 0, 0, TAU); c.clip(); c.fillStyle = '#6cc35a'; for (let i = 0; i < 7; i++) { c.beginPath(); c.ellipse(-150 + i * 50, 48 + (i % 2) * 12, 16, 6, 0, 0, TAU); c.fill(); } c.restore();
+    c.strokeStyle = '#9b5de5'; c.lineWidth = 3; for (let i = 0; i < 16; i++) { const gx = -160 + i * 21, gy = 6 + Math.abs(gx) * Math.abs(gx) / 5200; c.beginPath(); c.moveTo(gx, gy); c.quadraticCurveTo(gx - 3, gy - 8, gx - 1 + Math.sin(t * 2 + i) * 2, gy - 13); c.stroke(); }
+    ink(c, 3);
+    const house = (x, y, sz, cap) => { rr(c, x - sz * 0.38, y - sz * 0.9, sz * 0.76, sz * 0.9, sz * 0.16); fillStroke(c, '#fff6e5', 3); c.beginPath(); c.ellipse(x, y - sz * 0.9, sz * 0.75, sz * 0.5, 0, Math.PI, 0); c.closePath(); fillStroke(c, cap, 3); c.fillStyle = 'rgba(255,255,255,.7)'; for (const [dx, dy] of [[-0.35, -1.1], [0.2, -1.22], [0.45, -0.98]]) { circ(c, x + dx * sz, y + dy * sz, sz * 0.09); c.fill(); } circ(c, x, y - sz * 0.42, sz * 0.15); fillStroke(c, '#ffd93d', 2.5); };
+    house(-118, 14, 62, '#c9a6ff'); house(124, 14, 54, '#ff8ad0'); house(-62, 4, 40, '#ff9f43');
+    for (const px of [-36, 36]) { c.beginPath(); c.moveTo(px * 2.2, 2); c.lineTo(px * 2.2, -70); c.lineWidth = 4; c.stroke(); c.lineWidth = 3; }
+    c.beginPath(); c.moveTo(-79, -66); c.quadraticCurveTo(0, -50, 79, -66); c.lineTo(79, -40); c.quadraticCurveTo(0, -24, -79, -40); c.closePath(); fillStroke(c, '#ffd93d', 3);
+    text(c, 'WELCOME!', 0, -46, 17, '#9b5de5', 'center', null);
+    for (const [fx, fr2, ph] of [[-22, 13, 0], [8, 16, 1.4], [40, 11, 2.7]]) { c.save(); c.translate(fx, -4 + Math.abs(Math.sin(t * 5 + ph)) * -5); drawFace(c, 'pip', fr2, 'joy', t + ph); c.restore(); c.save(); c.translate(fx + fr2, -6); c.rotate(-0.6 + Math.sin(t * 8 + ph) * 0.5); c.beginPath(); c.moveTo(0, 0); c.lineTo(0, -fr2 * 1.1); c.lineWidth = 3; c.stroke(); circ(c, 0, -fr2 * 1.2, 3.2); fillStroke(c, '#9fe0a0', 2.5); c.restore(); }
+  } else if (kind === 'carnival') { // a funfair riding on a comet: big top, Ferris wheel and a streaming tail
+    c.save(); for (let i = 0; i < 3; i++) { const tg = c.createLinearGradient(-60, 0, -330, 0); tg.addColorStop(0, ['rgba(140,240,255,.8)', 'rgba(220,180,255,.6)', 'rgba(255,255,255,.8)'][i]); tg.addColorStop(1, 'rgba(140,240,255,0)'); c.fillStyle = tg; c.beginPath(); c.moveTo(-40, 6 - 40 * (1 - i * 0.3)); c.quadraticCurveTo(-200, -30 + i * 14 + Math.sin(t * 2 + i) * 8, -340 + i * 40, 30 + i * 16); c.quadraticCurveTo(-200, 60 - i * 8, -40, 50 - i * 6); c.fill(); } c.restore();
+    ink(c, 3.5); c.beginPath(); c.moveTo(-150, 20); c.bezierCurveTo(-150, -8, 150, -16, 168, 14); c.bezierCurveTo(176, 44, 110, 70, 0, 66); c.bezierCurveTo(-110, 64, -152, 46, -150, 20); c.closePath(); fillStroke(c, '#cdeeff', 3.5);
+    c.fillStyle = 'rgba(255,255,255,.7)'; c.beginPath(); c.ellipse(-30, 18, 70, 8, -0.05, 0, TAU); c.fill(); c.fillStyle = 'rgba(77,150,255,.25)'; for (const [cx2, cy2, cr2] of [[60, 40, 10], [-80, 44, 8], [110, 26, 6]]) { circ(c, cx2, cy2, cr2); c.fill(); }
+    c.save(); c.translate(84, -50); const fw = t * 0.5; c.beginPath(); c.moveTo(-26, 58); c.lineTo(0, 0); c.lineTo(26, 58); c.lineWidth = 4; c.stroke(); c.lineWidth = 3;
+    circ(c, 0, 0, 46); c.lineWidth = 4; c.strokeStyle = INK; c.stroke(); c.strokeStyle = '#ff5a5f'; c.lineWidth = 2; c.stroke(); ink(c, 3);
+    for (let i = 0; i < 8; i++) { const a = fw + i * TAU / 8; c.beginPath(); c.moveTo(0, 0); c.lineTo(Math.cos(a) * 46, Math.sin(a) * 46); c.lineWidth = 2; c.stroke(); }
+    c.lineWidth = 2.5; for (let i = 0; i < 8; i++) { const a = fw + i * TAU / 8, gx = Math.cos(a) * 46, gy = Math.sin(a) * 46; rr(c, gx - 7, gy, 14, 11, 4); fillStroke(c, ['#ffd93d', '#4d96ff', '#5fd068', '#f15bb5'][i % 4], 2.5); }
+    circ(c, 0, 0, 7); fillStroke(c, '#ffd93d', 3); c.restore(); ink(c, 3);
+    c.beginPath(); c.moveTo(-120, 12); c.lineTo(-104, -50); c.lineTo(-54, -82); c.lineTo(-4, -50); c.lineTo(12, 12); c.closePath(); fillStroke(c, '#fff6e5', 3.5);
+    c.save(); c.clip(); c.fillStyle = '#ff5a5f'; for (let i = -6; i < 6; i++) { c.beginPath(); c.moveTo(-54, -82); c.lineTo(-54 + i * 22, 20); c.lineTo(-54 + i * 22 + 11, 20); c.closePath(); c.fill(); } c.restore();
+    c.beginPath(); c.moveTo(-120, 12); c.lineTo(-104, -50); c.lineTo(-54, -82); c.lineTo(-4, -50); c.lineTo(12, 12); c.closePath(); c.stroke();
+    c.beginPath(); c.moveTo(-104, -50); c.quadraticCurveTo(-54, -36, -4, -50); c.stroke();
+    c.beginPath(); c.moveTo(-54, -82); c.lineTo(-54, -110); c.stroke(); c.beginPath(); c.moveTo(-54, -110); c.quadraticCurveTo(-42, -106 + Math.sin(t * 5) * 3, -30, -104); c.lineTo(-54, -98); c.closePath(); fillStroke(c, '#ffd93d', 2.5);
+    c.beginPath(); c.moveTo(-66, 12); c.lineTo(-66, -12); c.quadraticCurveTo(-54, -26, -42, -12); c.lineTo(-42, 12); c.closePath(); fillStroke(c, '#2b2240', 3);
+    for (let i = 0; i < 9; i++) { const lx = -140 + i * 34, ly = -2 + Math.sin(i * 1.3) * 3; circ(c, lx, ly - 4, 3.5); c.fillStyle = Math.sin(t * 6 + i) > 0 ? ['#ffd93d', '#ff8ad0', '#7fdcff'][i % 3] : '#fff6e5'; c.fill(); }
+    text(c, 'COMET CARNIVAL', 0, 96, 19, '#fff');
+  } else if (kind === 'lighthouse') { // a lighthouse on a floating rock, sweeping its beam through the aurora
+    const ba = Math.sin(t * 0.9) * 1.0;
+    c.save(); c.translate(0, -150); c.rotate(ba); const lg = c.createLinearGradient(0, 0, 420, 0); lg.addColorStop(0, 'rgba(255,246,160,.75)'); lg.addColorStop(1, 'rgba(255,246,160,0)'); c.fillStyle = lg; c.beginPath(); c.moveTo(0, -8); c.lineTo(420, -70); c.lineTo(420, 70); c.lineTo(0, 8); c.closePath(); c.fill();
+    c.scale(-1, 1); c.fillStyle = lg; c.beginPath(); c.moveTo(0, -8); c.lineTo(420, -70); c.lineTo(420, 70); c.lineTo(0, 8); c.closePath(); c.fill(); c.restore();
+    ink(c, 3.5); c.beginPath(); c.moveTo(-140, 20); c.lineTo(140, 20); c.lineTo(80, 60); c.lineTo(30, 104); c.lineTo(0, 82); c.lineTo(-34, 98); c.lineTo(-90, 56); c.closePath(); fillStroke(c, '#8e7fb0', 3.5);
+    c.fillStyle = 'rgba(43,34,64,.18)'; c.beginPath(); c.moveTo(20, 20); c.lineTo(140, 20); c.lineTo(80, 60); c.lineTo(30, 104); c.closePath(); c.fill();
+    rr(c, -146, 8, 292, 18, 9); fillStroke(c, '#8fe3a0', 3.5);
+    rr(c, 44, -26, 70, 36, 4); fillStroke(c, '#fff6e5', 3); c.beginPath(); c.moveTo(38, -24); c.lineTo(79, -52); c.lineTo(120, -24); c.closePath(); fillStroke(c, '#2ec4b6', 3);
+    rr(c, 58, -14, 14, 14, 3); fillStroke(c, '#ffd93d', 2.5); rr(c, 86, -14, 14, 24, 3); fillStroke(c, '#6b3e26', 2.5);
+    c.beginPath(); c.moveTo(-34, 12); c.lineTo(-22, -128); c.lineTo(22, -128); c.lineTo(34, 12); c.closePath(); fillStroke(c, '#fff6e5', 3.5);
+    c.save(); c.clip(); c.fillStyle = '#ff5a5f'; for (const y0 of [-110, -60, -10]) c.fillRect(-40, y0, 80, 24); c.restore();
+    c.beginPath(); c.moveTo(-34, 12); c.lineTo(-22, -128); c.lineTo(22, -128); c.lineTo(34, 12); c.closePath(); c.stroke();
+    rr(c, -8, -12, 16, 24, 7); fillStroke(c, '#6b3e26', 2.5);
+    rr(c, -32, -136, 64, 10, 4); fillStroke(c, '#2b2240', 3);
+    rr(c, -20, -166, 40, 30, 6); fillStroke(c, '#fff6a0', 3); c.beginPath(); c.moveTo(-6, -166); c.lineTo(-6, -136); c.moveTo(6, -166); c.lineTo(6, -136); c.lineWidth = 2; c.stroke(); c.lineWidth = 3;
+    const gl = c.createRadialGradient(0, -150, 4, 0, -150, 46); gl.addColorStop(0, 'rgba(255,255,220,.95)'); gl.addColorStop(1, 'rgba(255,246,160,0)'); c.fillStyle = gl; circ(c, 0, -150, 46); c.fill();
+    c.beginPath(); c.moveTo(-26, -166); c.quadraticCurveTo(0, -196, 26, -166); c.closePath(); fillStroke(c, '#ff5a5f', 3); circ(c, 0, -190, 5); fillStroke(c, '#ffd93d', 2.5);
+    text(c, 'AURORA LIGHTHOUSE', 0, 128, 18, '#fff');
+  } else if (kind === 'edge') { // the edge of the map: the last scroll of parchment, and a little dragon asleep on it
+    const pw = 210;
+    c.save(); c.beginPath(); c.moveTo(-pw, 70); c.lineTo(-pw, -6);
+    for (let i = 0; i <= 28; i++) { const x = -pw + i * (pw * 2 / 28); c.lineTo(x, -14 + ((i * 7) % 5) * 3 + (i % 2 ? 6 : 0)); }
+    c.lineTo(pw, 70); c.closePath(); ink(c, 3.5); fillStroke(c, '#f3e2b3', 3.5);
+    c.clip(); c.fillStyle = 'rgba(160,110,60,.18)'; for (let i = 0; i < 8; i++) { circ(c, -180 + i * 52, 30 + (i % 3) * 10, 20 + (i % 2) * 10); c.fill(); }
+    c.setLineDash([4, 6]); c.strokeStyle = 'rgba(110,74,54,.6)'; c.lineWidth = 2; c.beginPath(); c.moveTo(-200, 44); c.bezierCurveTo(-120, 10, -40, 70, 60, 30); c.stroke(); c.setLineDash([]);
+    c.restore(); ink(c, 3);
+    for (const sd of [-1, 1]) { c.beginPath(); c.ellipse(sd * pw, 32, 14, 40, 0, 0, TAU); fillStroke(c, '#e6cf98', 3); c.beginPath(); c.ellipse(sd * pw, 32, 6, 22, 0, 0, TAU); fillStroke(c, '#c9a96a', 2.5); }
+    c.save(); c.translate(140, 34); c.rotate(t * 0.2); for (let i = 0; i < 4; i++) { c.rotate(Math.PI / 2); c.beginPath(); c.moveTo(0, 0); c.lineTo(5, -6); c.lineTo(0, -24); c.lineTo(-5, -6); c.closePath(); fillStroke(c, i % 2 ? '#c94f3d' : '#6e4a36', 2); } circ(c, 0, 0, 3.5); fillStroke(c, '#ffd93d', 2); c.restore();
+    c.font = `italic 900 17px ${FONT}`; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillStyle = '#6e4a36'; c.fillText('Here be Dragons', -40, 48);
+    c.save(); c.translate(-20, -12); c.scale(1.6, 1.6); const br = Math.sin(t * 1.6);
+    c.beginPath(); c.ellipse(0, 0, 34, 20 + br, 0, Math.PI, 0); c.closePath(); fillStroke(c, '#7be0c0', 3);
+    c.beginPath(); c.moveTo(26, 0); c.quadraticCurveTo(54, 4, 56, -12); c.lineWidth = 7; c.stroke(); c.strokeStyle = '#7be0c0'; c.lineWidth = 3.5; c.stroke(); ink(c, 3);
+    c.beginPath(); c.moveTo(52, -16); c.lineTo(62, -10); c.lineTo(54, -6); c.closePath(); fillStroke(c, '#ffd93d', 2.5);
+    for (const x of [-16, -4, 8]) { c.beginPath(); c.moveTo(x - 4, -18 - br); c.lineTo(x, -27 - br); c.lineTo(x + 4, -18 - br); fillStroke(c, '#ffd93d', 2); }
+    c.beginPath(); c.moveTo(-30, -6); c.quadraticCurveTo(-44, -28, -18, -26); c.quadraticCurveTo(-8, -22, -16, -10); c.closePath(); fillStroke(c, '#5cc9a8', 3);
+    circ(c, -34, -4, 13); fillStroke(c, '#7be0c0', 3); c.beginPath(); c.ellipse(-46, 0, 8, 6, 0, 0, TAU); fillStroke(c, '#7be0c0', 3);
+    c.beginPath(); c.moveTo(-28, -15); c.lineTo(-24, -26); c.lineTo(-20, -14); fillStroke(c, '#ffd93d', 2.5);
+    c.beginPath(); c.moveTo(-40, -6); c.quadraticCurveTo(-36, -3, -32, -6); c.lineWidth = 2.5; c.stroke();
+    c.fillStyle = 'rgba(255,90,95,.4)'; circ(c, -38, 2, 2.6); c.fill();
+    const zk = (t * 0.6) % 1; c.globalAlpha = 1 - zk; text(c, 'z', -50 - zk * 10, -26 - zk * 30, 12 + zk * 8, '#fff6e5', 'center', INK, 3); c.globalAlpha = 1;
+    c.restore();
+    text(c, 'THE EDGE OF THE MAP', 0, 104, 19, '#fff');
   }
   c.restore();
 }
 
 // tiny route icons for the map (drawn to small canvases)
 // A little panorama of the whole line: ground on the left, the Starlight Gate on the right (log scale)
-function skyMapCanvas(wCss, hCss) {
+function skyMapCanvas(wCss, hCss, fr = false) {
   const cnv = document.createElement('canvas'); cnv.width = wCss * 2; cnv.height = hCss * 2;
   cnv.style.width = wCss + 'px'; cnv.style.height = hCss + 'px';
   const c = cnv.getContext('2d'); c.scale(2, 2);
-  const pad = wCss < 420 ? 16 : 30, N = ROUTES.length, alts = [250].concat(ROUTES.map(r => r.alt));
+  const LIST = fr ? FRONT_ROUTES : MAIN_ROUTES, base = fr ? GATE_ALT : 250; // the frontier map starts at the Starlight Gate
+  const pad = wCss < 420 ? 16 : 30, N = LIST.length, alts = [base].concat(LIST.map(r => r.alt));
   const xi = i => pad + (wCss - pad * 2) * (i / N);          // i = 0 is the shed, i = k is route k-1
-  const X = alt => { alt = Math.max(250, alt); for (let i = 0; i < N; i++) if (alt <= alts[i + 1]) return lerp(xi(i), xi(i + 1), (Math.log10(alt) - Math.log10(alts[i])) / (Math.log10(alts[i + 1]) - Math.log10(alts[i]))); return xi(N) + 8; };
+  const X = alt => { alt = Math.max(base, alt); for (let i = 0; i < N; i++) if (alt <= alts[i + 1]) return lerp(xi(i), xi(i + 1), (Math.log10(alt) - Math.log10(alts[i])) / (Math.log10(alts[i + 1]) - Math.log10(alts[i]))); return xi(N) + 8; };
   const altAtX = x => { const f = clamp((x - pad) / (wCss - pad * 2) * N, 0, N - 0.001), i = Math.floor(f); return Math.pow(10, lerp(Math.log10(alts[i]), Math.log10(alts[i + 1]), f - i)); };
   const Y = x => hCss * 0.56 + Math.sin(x / wCss * TAU * 1.5) * hCss * 0.16;
   c.save(); rr(c, 0, 0, wCss, hCss, 14); c.clip();
@@ -2742,21 +3071,27 @@ function skyMapCanvas(wCss, hCss) {
   for (let k = 0; k <= 20; k++) { const x = wCss * k / 20, [top, bot] = skyColorsBase(altAtX(x)); hg.addColorStop(k / 20, rgbStr(mixRGB(top, bot, 0.45))); }
   c.fillStyle = hg; c.fillRect(0, 0, wCss, hCss);
   const vg = c.createLinearGradient(0, 0, 0, hCss); vg.addColorStop(0, 'rgba(0,0,30,.18)'); vg.addColorStop(1, 'rgba(255,255,255,.12)'); c.fillStyle = vg; c.fillRect(0, 0, wCss, hCss);
-  for (let i = 0; i < 70; i++) { const x = wCss * (0.45 + hash(i * 7) * 0.55); c.globalAlpha = clamp((x / wCss - 0.42) * 3, 0, 1) * (0.4 + hash(i) * 0.6); c.fillStyle = '#fff'; c.beginPath(); c.arc(x, hash(i * 13) * hCss, 0.6 + hash(i * 3) * 1.1, 0, TAU); c.fill(); }
+  for (let i = 0; i < 70; i++) { const x = wCss * (fr ? hash(i * 7) : 0.45 + hash(i * 7) * 0.55); c.globalAlpha = (fr ? 1 : clamp((x / wCss - 0.42) * 3, 0, 1)) * (0.4 + hash(i) * 0.6); c.fillStyle = '#fff'; c.beginPath(); c.arc(x, hash(i * 13) * hCss, 0.6 + hash(i * 3) * 1.1, 0, TAU); c.fill(); }
   c.globalAlpha = 1;
-  // ground and the shed on the far left
-  c.fillStyle = '#6cc35a'; c.beginPath(); c.moveTo(0, hCss); c.lineTo(0, hCss * 0.78); c.quadraticCurveTo(pad * 1.4, hCss * 0.7, pad * 2.4, hCss); c.fill();
-  c.fillStyle = '#d9534f'; c.fillRect(6, hCss * 0.66, 14, 12); c.beginPath(); c.moveTo(4, hCss * 0.66); c.lineTo(13, hCss * 0.58); c.lineTo(22, hCss * 0.66); c.fill();
+  if (fr) { // the Starlight Gate where the frontier begins: little rainbow rings
+    const gx = xi(0), gy = Y(xi(0)), gr = Math.min(hCss * 0.2, 22);
+    const gg = c.createRadialGradient(gx, gy, 2, gx, gy, gr * 1.1); gg.addColorStop(0, '#ffffff'); gg.addColorStop(1, 'rgba(255,255,255,0)'); c.fillStyle = gg; circ(c, gx, gy, gr * 1.1); c.fill();
+    ['#ff5a5f', '#ffd93d', '#5fd068', '#4d96ff', '#9b5de5'].forEach((col, i) => { c.strokeStyle = col; c.lineWidth = 2.5; c.beginPath(); c.arc(gx, gy, gr - i * 3, 0.3 + i, 0.3 + i + TAU * 0.8); c.stroke(); });
+  }
+  else { // ground and the shed on the far left
+    c.fillStyle = '#6cc35a'; c.beginPath(); c.moveTo(0, hCss); c.lineTo(0, hCss * 0.78); c.quadraticCurveTo(pad * 1.4, hCss * 0.7, pad * 2.4, hCss); c.fill();
+    c.fillStyle = '#d9534f'; c.fillRect(6, hCss * 0.66, 14, 12); c.beginPath(); c.moveTo(4, hCss * 0.66); c.lineTo(13, hCss * 0.58); c.lineTo(22, hCss * 0.66); c.fill();
+  }
   // dotted path
   c.setLineDash([3, 5]); c.lineWidth = 2.5; c.strokeStyle = 'rgba(255,255,255,.75)'; c.beginPath();
   for (let x = pad - 8; x <= wCss - pad + 6; x += 4) { if (x === pad - 8) c.moveTo(x, Y(x)); else c.lineTo(x, Y(x)); } c.stroke(); c.setLineDash([]);
   // travelled part
-  const bx = X(Math.max(S.bestAlt, 300));
+  const bx = X(Math.max(S.bestAlt, base * 1.2));
   c.lineWidth = 3.5; c.strokeStyle = '#ffd93d'; c.beginPath(); for (let x = pad - 8; x <= bx; x += 3) { if (x === pad - 8) c.moveTo(x, Y(x)); else c.lineTo(x, Y(x)); } c.stroke();
   // stations
   let lockedShown = 0;
   const icon = clamp((wCss - pad * 2) / N * 0.92, 20, 36), cr = Math.max(4.5, icon * 0.19);
-  ROUTES.forEach((r, ri) => {
+  LIST.forEach((r, ri) => {
     const unlocked = routeUnlocked(r), done = routeDone(r.id);
     if (!unlocked) lockedShown++;
     const x = xi(ri + 1), y = Y(x);
@@ -2779,7 +3114,7 @@ function routeIconCanvas(kind, size = 64) {
   const c = cnv.getContext('2d'); c.scale(2, 2);
   c.save(); c.translate(size / 2, size / 2);
   rr(c, -size / 2 + 2, -size / 2 + 2, size - 4, size - 4, 14);
-  const bg = { dummy: '#bfe9ff', cafe: '#bfe9ff', storm: '#8fb8e8', observ: '#5b86d6', diner: '#16285a', hotel: '#1d3f86', moon: '#111a3a', mars: '#3a1420', saturn: '#2a1450', gate: '#123c4a', parcel: '#ffd6e6' }[kind];
+  const bg = { dummy: '#bfe9ff', cafe: '#bfe9ff', storm: '#8fb8e8', observ: '#5b86d6', diner: '#16285a', hotel: '#1d3f86', moon: '#111a3a', mars: '#3a1420', saturn: '#2a1450', gate: '#123c4a', parcel: '#ffd6e6', teapot: '#3b1d5e', pip: '#2a1450', carnival: '#0b3d3a', lighthouse: '#0b2a33', edge: '#6e4a36' }[kind];
   c.fillStyle = bg; c.fill(); c.lineWidth = 3; c.strokeStyle = INK; c.stroke();
   c.save(); rr(c, -size / 2 + 2, -size / 2 + 2, size - 4, size - 4, 14); c.clip();
   if (kind === 'dummy') { c.translate(0, 2); drawFace(c, 'buckley', 16, 'happy', 0); }
@@ -2793,6 +3128,11 @@ function routeIconCanvas(kind, size = 64) {
   else if (kind === 'diner') { for (let i = 0; i < 10; i++) { c.fillStyle = '#fff'; circ(c, hash(i * 5) * size - size / 2, hash(i * 9) * size - size / 2, 1); c.fill(); } drawStation(c, 'diner', 0, 0.135); }
   else if (kind === 'cafe') { drawStation(c, 'cafe', 0, 0.2); }
   else if (kind === 'parcel') { c.translate(0, 4); drawParcel(c, size / 52); }
+  else if (kind === 'teapot') { for (let i = 0; i < 10; i++) { c.fillStyle = '#fff'; circ(c, hash(i * 5 + 1) * size - size / 2, hash(i * 9 + 2) * size - size / 2, 1); c.fill(); } c.translate(-2, 4); drawStation(c, 'teapot', 1, 0.16); }
+  else if (kind === 'pip') { c.translate(0, 0); circ(c, 10, -12, 13); fillStroke(c, '#8be07a', 2.5); c.translate(0, 6); drawStation(c, 'pip', 1, 0.16); }
+  else if (kind === 'carnival') { c.translate(6, 6); drawStation(c, 'carnival', 1, 0.15); }
+  else if (kind === 'lighthouse') { c.translate(0, 12); drawStation(c, 'lighthouse', 1, 0.15); }
+  else if (kind === 'edge') { c.translate(0, -2); drawStation(c, 'edge', 1, 0.135); }
   c.restore();
   c.restore();
   return cnv;
@@ -2865,7 +3205,7 @@ function applyTwist(st, id) {
   if (id === 'glass') { st.hp = Math.min(st.hp, 2); st.thrust *= 1.3; }
   else if (id === 'feather') st.gMul = 0.8;
   else if (id === 'magnet') st.magnet = Math.max(st.magnet, 120) * 1.8;
-  else if (id === 'rush') { st.hazMul = 1.5; st.coinMul = 2; }
+  else if (id === 'rush') { st.hazMul = (st.hazMul || 1) * 1.5; st.coinMul = 2; }
   else if (id === 'turbo') { st.thrust *= 1.25; st.fuelCap *= 0.7; st.dropFuel *= 0.7; st.stage2 *= 0.7; }
   return st;
 }
@@ -3063,6 +3403,10 @@ function makeObstacle(type, x, py) {
     case 'comet': o.dir = chance(0.5) ? 1 : -1; o.x = G.cam.x - o.dir * (vw / 2 + 150); o.vx = o.dir * rand(380, 560); o.vy = rand(-160, 40); o.r = 18; o.dmg = 2; o.slow = 0.3; break;
     case 'jelly': o.r = 28; o.vx = rand(-30, 30); o.slow = 0.12; o.bouncy = true; break;
     case 'blackhole': o.r = 26; o.dmg = 2; o.slow = 0.4; o.pull = 340; break;
+    case 'crystal': o.r = rand(16, 36); o.small = o.r < 23; o.dmg = o.r > 30 ? 2 : 1; o.slow = 0.2; o.vx = rand(-40, 40); o.vy = rand(-20, 20); o.vr = rand(-1, 1); o.hue = pick(['#ff8ad0', '#7fdcff', '#c9a6ff', '#8affc1']); break;
+    case 'eel': o.dir = chance(0.5) ? 1 : -1; o.x = G.cam.x - o.dir * (vw / 2 + 160); o.vx = o.dir * rand(150, 230); o.r = 15; o.slow = 0.2; o.long = 44; o.amp = rand(18, 34); o.ph = rand(0, TAU); break;
+    case 'dragonling': o.r = 24; o.slow = 0.15; o.dir = chance(0.5) ? 1 : -1; o.vx = o.dir * rand(20, 60); o.fireCd = rand(0.4, 1.4); o.fireWarn = 0; o.col = pick(['#7be0c0', '#ff9f43', '#c9a6ff', '#ff8ad0']); break;
+    case 'fireball': o.r = 13; o.small = true; o.slow = 0.12; o.hot = true; break;
   }
   return o;
 }
@@ -3534,6 +3878,9 @@ const GUIDE = [
   { id: 'comet', name: 'Comet', desc: 'Streaks sideways at silly speeds and hits for two hearts.', ext: 40 },
   { id: 'jelly', name: 'Space Jelly', desc: 'Floaty, glowy, stingy. Nobody knows how they got up here.', ext: 44, oy: 8 },
   { id: 'blackhole', name: 'Black Hole', desc: 'Pulls you in. Steer hard away and do not look back.', ext: 56 },
+  { id: 'crystal', name: 'Nebula Crystal', desc: 'Grows in the Nebula Shallows like frost on a window. Pretty and sharp. The big ones cost two hearts.', ext: 40 },
+  { id: 'eel', name: 'Aurora Eel', desc: 'Swims through the Aurora Reach trailing light. A bump gives you a fizzy zap that scrambles your steering.', ext: 64 },
+  { id: 'dragonling', name: 'Star Dragonling', desc: 'Baby dragons from the Edge of the Map. They mean well, but they sneeze fireballs when they get excited.', ext: 46 },
   { boss: 'storm', stat: 'king', name: 'The Storm King', desc: 'Rules the clouds around 2 km. When a yellow stripe appears under you, get out of it!' },
   { boss: 'whale', stat: 'whale', name: 'Big Blue', desc: 'A friendly sky whale above 9 km. Its spout is the best boost in the sky.' },
   { boss: 'pirates', stat: 'pirates', name: 'Captain Calico', desc: 'A pirate cat in a flying ship, 26 to 55 km up. Red X lanes get cannonballs: slide into a green SAFE lane!' },
@@ -3559,6 +3906,7 @@ function guideIcon(g, locked) {
       if (g.id === 'storm') { o.w = 200; o.h = 70; o.charge = 0.2; }
       if (g.id === 'asteroid') { o.r = 34; }
       if (g.id === 'ice') { o.r = 28; }
+      if (g.id === 'crystal') { o.r = 32; o.rot = 0; }
       if (g.id === 'meteor') { o.r = 20; }
       if (g.id === 'gust') { o.w = 120; o.h = 90; }
       if (g.id === 'junk') { o.kind = 1; o.rot = 0.7; }
@@ -3758,7 +4106,7 @@ function tryAfterburner() {
   if (R.fuel <= 0 && R.dropFuel <= 0) { sfx.deny(); return; }
   R.abT = st.ab.dur; R.abCd = st.ab.cd + st.ab.dur;
   // a real kick in the pants: an instant shove, a shock ring off the tail, a flash and a rumble
-  const kick = Math.max(45, Math.abs(R.vy) * 0.14); R.vy += kick; R.abKick = 0.5;
+  const kick = clamp(Math.abs(R.vy) * 0.14, 45, 240); R.vy += kick; R.abKick = 0.5; // capped, so a string of boosts can't snowball your speed in deep space
   sfx.boost(); G.cam.shake = Math.max(G.cam.shake, 13); G.cam.flash = Math.max(G.cam.flash, 0.12); G.cam.flashCol = '#ffd9a0'; buzz([30, 30, 60]);
   const tail = (rocketDims(G.look).BL / 2 + 20) * G.rocketScale;
   G.parts.push({ k: 'shock', x: R.x, py: R.py - tail, vx: 0, vy: -60, r: 90, life: 0.55, t: 0, col: '#fff3b0' });
@@ -3821,7 +4169,8 @@ function updateFlight(dt) {
   if (st.repair && R.hp < st.hp && !R.crashed) { R.repairT += dt; if (R.repairT >= st.repair) { R.repairT = 0; R.hp++; sfx.repair(); floater(R.x, R.py + 40, '+1 ♥', '#5fd068'); } }
   if (st.scoop && R.alt < 12000 && R.fuel > 0) R.fuel = Math.min(R.stage === 2 ? Infinity : st.fuelCap, R.fuel + st.fuelCap * 0.005 * st.scoop * dt);
   // --- physics (sub-stepped, warped in deep space). Very long flights meet the 'solar wind' so a run never drags on forever.
-  R.kMul = R.time > 70 ? 1 + Math.pow((R.time - 70) / 12, 2) : 1;
+  const windT = st.windT || 70;
+  R.kMul = R.time > windT ? 1 + Math.pow((R.time - windT) / 12, 2) : 1;
   const warp = simWarp(R);
   R.warp = warp;
   const tiltCos = lerp(Math.cos(R.tilt), 1, st.vector / 3);
@@ -3962,6 +4311,11 @@ const CHATTER = {
   r5: ['Extra cheese!', 'Pizza time!', 'Red planet, here we come!'],
   r6: ['Mud bath o’clock!', 'Cucumber slices ready?', 'Fabulous.'],
   r7: ['Here we go!', 'What’s out there?', 'Hold on tight!'],
+  x1: ['One lump or two?', 'Pinkies up!', 'Is the kettle on?'],
+  x2: ['Purple snacks!', 'Beep beep!', 'Party time!'],
+  x3: ['Roll up, roll up!', 'Cotton candy in space!', 'Is that a comet with a Ferris wheel?'],
+  x4: ['Mind the auroras!', 'Pretty lights!', 'Spanner, please!'],
+  x5: ['Here be dragons?', 'Off the map we go!', 'Is that the edge?!'],
 };
 // ---- passenger wishes: small optional asks mid-flight (happier riders + bonus coins)
 const WISHES = [
@@ -4071,6 +4425,10 @@ const TIPS = {
   comet: 'Comets streak sideways at huge speed!',
   jelly: 'Space jellies... they sting!',
   blackhole: 'A BLACK HOLE! It pulls you in. Steer hard away!',
+  crystal: 'Nebula crystals! Pretty, but the big glowing ones cost TWO hearts.',
+  eel: 'Aurora eels! Touch one and you get a fizzy zap that scrambles your steering for a moment.',
+  dragonling: 'Baby dragons! They sneeze fireballs when they get excited. Watch for the puff of smoke!',
+  fireball: 'Fireball! Dodge sideways, or smash it on full afterburner.',
   ring: 'Fly through boost rings for a burst of speed. Chain them for combos!',
   fuel: 'Fuel cans top up your tank, and can even re-light a dead engine!',
   wrench: 'Wrenches fix one heart.',
@@ -4130,6 +4488,19 @@ function updateObstacles(dt) {
       const dx = o.x - R.x, dy = o.py - R.py, dist = Math.hypot(dx, dy);
       if (dist < o.pull) { const f = (1 - dist / o.pull) * 420; R.x += dx / dist * f * dt; if (dy < 0) R.vy *= Math.pow(0.8, dt); }
     }
+    if (o.type === 'eel') { o.py += Math.cos(G.t * 2.4 + o.ph) * o.amp * dt; if (!o.buzz && Math.abs(o.x - R.x) < 280 && Math.abs(o.py - R.py) < 260) { o.buzz = true; sfx.eel(); } }
+    if (o.type === 'dragonling' && !o.knock) { // flutters about, faces the rocket, and sneezes fireballs at it when it gets close
+      const dx = R.x - o.x, dy = R.py - o.py;
+      o.dir = dx >= 0 ? 1 : -1;
+      o.vx += (clamp(dx * 0.35, -80, 80) - o.vx) * Math.min(1, dt * 0.7);
+      if (o.fireWarn > 0) {
+        o.fireWarn -= dt;
+        if (o.fireWarn <= 0 && !R.crashed && !R.ended) {
+          const f = makeObstacle('fireball', o.x + o.dir * 26, o.py - 4), d = Math.hypot(dx, dy) || 1;
+          f.vx = dx / d * 200 + R.vx * 0.3; f.vy = -280; G.obs.push(f); sfx.fire(); puff(o.x + o.dir * 26, o.py, 4, '#ffd9a0', 60);
+        }
+      } else if ((o.fireCd -= dt) <= 0 && dy < -110 && dy > -640 && Math.abs(dx) < 340 && !R.crashed && !R.ended) { o.fireWarn = 0.5; o.fireCd = rand(1.8, 3.2); }
+    }
     // despawn
     if (o.py < camBottom - 300 || Math.abs(o.x - G.cam.x) > vw * 1.6) { o.dead = true; continue; }
     if (!R.ended && o.py - R.py < 380 && o.py - R.py > -50 && Math.abs(o.x - G.cam.x) < vw / 2) tipOnce(o.type);
@@ -4173,7 +4544,7 @@ function hitRocket(o, lightning) {
   o.hitT = 0.8; o.wasHit = true;
   // ram prow smashes small stuff, and so does a rocket on full afterburner
   if ((st.ram || R.abT > 0) && o.small && !lightning) {
-    o.dead = true; R.smashed++; S.stats.smashed++; sfx.smash();
+    o.dead = true; R.smashed++; S.stats.smashed++; sfx.smash(); if (o.type === 'crystal') sfx.chime();
     sparks(o.x, o.py, 14, ['#ffffff', '#c9ced8', '#ffd93d']); puff(o.x, o.py, 6, '#ffffff', 120);
     const v = coinValue(R.alt) * 3; R.coins += 3; R.coinCash += v; floater(o.x, o.py, `SMASH +${fmtMoney(v)}`, '#ffd93d', 16);
     R.vy *= st.ram ? 0.98 : 1;
@@ -4203,6 +4574,9 @@ function hitRocket(o, lightning) {
   puff(R.x, R.py + 20, 8, '#ffffff', 140);
   floater(R.x, R.py + 60, dmg > 1 ? `-${dmg} ♥` : '-1 ♥', '#ff5a5f', 22);
   if (!o.cloud) { o.knock = { x: (o.x - R.x) * 5 + rand(-60, 60), y: 160 }; o.vr = rand(-6, 6); }
+  if (o.type === 'eel') { R.stun = Math.max(R.stun || 0, 0.5); sfx.zap(); G.cam.flash = Math.max(G.cam.flash, 0.18); G.cam.flashCol = '#bfffe9'; floater(R.x, R.py + 90, 'BZZT!', '#8affc1', 18); }
+  if (o.type === 'crystal') { sfx.chime(); sparks(o.x, o.py, 12, [o.hue, '#ffffff']); }
+  if (o.type === 'dragonling') floater(o.x, o.py + 30, 'Boop!', '#ffd9a0', 16);
   if (o.type === 'bird') { sfx.squawk(); for (let i = 0; i < 6; i++) G.parts.push({ k: 'feather', x: o.x, py: o.py, vx: rand(-120, 120), vy: rand(-40, 140), r: 5, life: 1.2, t: 0, col: o.col, rot: rand(0, TAU), vr: rand(-6, 6) }); }
   if (R.hp <= 0) crash();
 }
@@ -4504,6 +4878,7 @@ function computeResult() {
   saveGhost(R);
   S.stats.time += R.time; S.stats.pax += R.delivered ? R.pax : 0;
   if (R.delivered && R.faces) { S.met = S.met || {}; for (const f of R.faces) if (GUESTS[f]) S.met[f] = (S.met[f] || 0) + 1; }
+  if (R.delivered && r && r.id === 'x5') S.met.ember = (S.met.ember || 0) + 1; // she moves into the shed
   if (alt > S.bestAlt) S.bestAlt = alt;
   if (r && R.delivered) {
     const rec = S.routes[r.id] || { done: false, stars: 0, runs: 0 };
@@ -4511,7 +4886,7 @@ function computeResult() {
     S.routes[r.id] = rec;
     if (firstTime) {
       S.pendingStory = r.id;
-      const nx = nextRoute(); if (nx) S.route = nx.id; else S.route = 'r7';
+      const nx = nextRoute(); if (nx) S.route = nx.id; else S.route = r.fr ? 'x5' : 'r7';
       if (r.id === 'r7') S.ended = true;
     }
   }
@@ -4558,9 +4933,16 @@ const ACH = [
   { id: 'jobs25', prog: () => [S.stats.jobs, 25], name: 'Odd Job Pro', desc: 'Finish 25 jobs from the Job Board', test: () => S.stats.jobs >= 25, reward: 6000 },
   { id: 'close50', prog: () => [S.stats.close, 50], name: 'Daredevil', desc: 'Get 50 close calls', test: () => S.stats.close >= 50, reward: 3000 },
   { id: 'night5', prog: () => [S.stats.nights, 5], name: 'Night Owl', desc: 'Fly 5 night flights', test: () => S.stats.nights >= 5, reward: 2500 },
-  { id: 'stars10', prog: () => [ROUTES.filter(r => (S.routes[r.id] || {}).stars >= 3).length, ROUTES.length], name: 'Perfect Line', desc: 'Get 3 stars on every route', test: () => ROUTES.every(r => (S.routes[r.id] || {}).stars >= 3), reward: 60000 },
+  { id: 'stars10', prog: () => [MAIN_ROUTES.filter(r => (S.routes[r.id] || {}).stars >= 3).length, MAIN_ROUTES.length], name: 'Perfect Line', desc: 'Get 3 stars on every route up to the Starlight Gate', test: () => MAIN_ROUTES.every(r => (S.routes[r.id] || {}).stars >= 3), reward: 60000 },
   { id: 'km1000', prog: () => [S.bestAlt / 1000, 1000, ' km'], name: 'Thousand Club', desc: 'Reach 1,000 km', test: () => S.bestAlt >= 1000000, reward: 100000 },
-  { id: 'km2500', prog: () => [S.bestAlt / 1000, 2500, ' km'], name: 'Beyond the Gate', desc: 'Reach 2,500 km in endless mode', test: () => S.bestAlt >= 2500000, reward: 250000 },
+  { id: 'km2500', prog: () => [S.bestAlt / 1000, 2500, ' km'], name: 'Beyond the Gate', desc: 'Reach 2,500 km', test: () => S.bestAlt >= 2500000, reward: 150000 },
+  { id: 'tea', name: 'Tea for Ten', desc: 'Deliver ten guests to the Teapot Tea Room', test: () => routeDone('x1'), reward: 40000 },
+  { id: 'party', name: 'Purple Snacks', desc: 'Make it to the party on Pip’s home planet', test: () => routeDone('x2'), reward: 60000 },
+  { id: 'carnival', name: 'Roll Up, Roll Up!', desc: 'Get the performers to the Comet Carnival', test: () => routeDone('x3'), reward: 90000 },
+  { id: 'light', name: 'Lamp Lighter', desc: 'Fly the repair crew to the Aurora Lighthouse', test: () => routeDone('x4'), reward: 140000 },
+  { id: 'edge', name: 'Here Be Dragons', desc: 'Reach the Edge of the Map', test: () => routeDone('x5'), reward: 300000 },
+  { id: 'frontier', prog: () => [UPGRADES.filter(u => u.br === 'front' && !u.fork).reduce((a, u) => a + lvl(u.id), 0), UPGRADES.filter(u => u.br === 'front' && !u.fork).reduce((a, u) => a + u.max, 0)], name: 'Frontier Engineer', desc: 'Max out Star Sail, Nova Core, Comet Ice and Hyperdrive', test: () => UPGRADES.filter(u => u.br === 'front' && !u.fork).every(u => lvl(u.id) >= u.max), reward: 500000 },
+  { id: 'km10000', prog: () => [S.bestAlt / 1000, 20000, ' km'], name: 'Off the Map', desc: 'Reach 20,000 km, far past the Edge of the Map', test: () => S.bestAlt >= 20000000, reward: 2000000 },
   { id: 'king', name: 'Storm Chaser', desc: 'Dodge every bolt the Storm King throws', test: () => S.stats.king >= 1, reward: 1500 },
   { id: 'whale', name: 'Whale Rider', desc: 'Catch a boost from Big Blue’s spout', test: () => S.stats.whale >= 1, reward: 2500 },
   { id: 'rival', name: 'Vroom Vanquished', desc: 'Beat all five of Baron Vroom\u2019s challenges', test: () => !!(S.rival && S.rival.v5), reward: 10000 },
@@ -4602,6 +4984,13 @@ const ACH_SYM = {
   stars10: '<path d="M32 15l3 6 6 1-5 4 1 6-5-3-5 3 1-6-5-4 6-1z" fill="#ffd93d" stroke-width="2"/><path d="M22 28l2 4 4 .5-3 3 1 4-4-2-4 2 1-4-3-3 4-.5z" fill="#ffd93d" stroke-width="2"/><path d="M42 28l2 4 4 .5-3 3 1 4-4-2-4 2 1-4-3-3 4-.5z" fill="#ffd93d" stroke-width="2"/>',
   km1000: T_KM('1000', 10.5),
   km2500: T_KM('2500', 10.5),
+  km10000: T_KM('20K', 13),
+  tea: '<path d="M19 26h22v4a11 11 0 0 1-22 0z" fill="#ff8ad0" stroke-width="2.5"/><path d="M41 28c5 0 5 7 0 7" stroke-width="2.5"/><ellipse cx="30" cy="41" rx="14" ry="2.6" fill="#fff6e5" stroke-width="2.2"/><path d="M26 22c-2-3 2-4 0-7M33 22c-2-3 2-4 0-7" stroke="#9b5de5" stroke-width="2"/>',
+  party: '<circle cx="32" cy="30" r="9" fill="#9fe0a0" stroke-width="2.5"/><path d="M28 21l-3-6M36 21l3-6" stroke-width="2"/><circle cx="25" cy="14.5" r="2" fill="#ff5a5f" stroke-width="1.6"/><circle cx="39" cy="14.5" r="2" fill="#ff5a5f" stroke-width="1.6"/><circle cx="29" cy="29" r="1.4" fill="${INK}" stroke="none"/><circle cx="35" cy="29" r="1.4" fill="${INK}" stroke="none"/><path d="M28.5 33q3.5 3 7 0" stroke-width="2"/>',
+  carnival: '<path d="M20 38l4-14 8-7 8 7 4 14z" fill="#fff6e5" stroke-width="2.5"/><path d="M27 38l3-21M37 38l-3-21" stroke="#ff5a5f" stroke-width="3"/><path d="M32 17v-5l5 2-5 2" fill="#ffd93d" stroke-width="2"/>',
+  light: '<path d="M27 40l2-20h6l2 20z" fill="#fff6e5" stroke-width="2.5"/><path d="M28 33h8M28.6 26h6.8" stroke="#ff5a5f" stroke-width="3"/><rect x="28" y="14" width="8" height="6" rx="1.5" fill="#fff6a0" stroke-width="2.2"/><path d="M38 16l7-3M38 19l7 1M26 16l-7-3M26 19l-7 1" stroke="#ffd93d" stroke-width="2"/>',
+  edge: '<path d="M18 22h28v16H18z" fill="#f3e2b3" stroke-width="2.5"/><path d="M18 22l3-3 3 3 3-3 3 3 3-3 3 3 3-3 3 3 3-3 3 3" fill="#f3e2b3" stroke-width="2"/><ellipse cx="18" cy="30" rx="3" ry="9" fill="#e6cf98" stroke-width="2"/><ellipse cx="46" cy="30" rx="3" ry="9" fill="#e6cf98" stroke-width="2"/><path d="M25 33c4-4 8 2 12-2" stroke="#6e4a36" stroke-width="2" stroke-dasharray="2 3"/>',
+  frontier: '<path d="M32 13l4 9 10 1-8 6 3 10-9-6-9 6 3-10-8-6 10-1z" fill="#2ec4b6" stroke-width="2.5"/><circle cx="32" cy="28" r="3.5" fill="#fff6e5" stroke-width="2"/>',
   king: '<path d="M35 14l-9 15h6l-4 12 11-17h-7l4-10z" fill="#fff36b" stroke-width="2.5"/>',
   whale: '<path d="M17 30c0-6 6-10 14-10 7 0 12 4 13 9l5-5c1 3 0 7-3 9 2 1 3 3 2 5-3 0-6-2-7-4-3 4-8 6-14 6-6 0-10-4-10-10z" fill="#6ec3ff" stroke-width="2.4"/><path d="M19 33c4 3 12 3 19 0" stroke-width="1.8"/><circle cx="24" cy="27" r="1.6" fill="' + INK + '" stroke="none"/><path d="M27 18c0-3 1-4 1-4M27 18c-2-2-4-2-4-2M27 18c2-2 4-2 4-2" stroke="#4fd8ff" stroke-width="2"/>',
   rival: '<path d="M23 34h18M26 34V17h12v17" fill="#3a2f4d" stroke-width="2.5"/><rect x="26" y="17" width="12" height="17" fill="#3a2f4d" stroke-width="2.5"/><path d="M26 29h12" stroke="#ff5a5f" stroke-width="3"/><path d="M20 35h24" stroke-width="3.5"/><path d="M24 40c3 0 5-1 8-2 3 1 5 2 8 2" stroke-width="2.5"/>',
@@ -4741,6 +5130,7 @@ function render() {
   sg.addColorStop(0, rgbStr(top)); sg.addColorStop(1, rgbStr(bot));
   ctx.fillStyle = sg; ctx.fillRect(0, 0, W, H);
   drawStars(alt);
+  if (alt > 700000) drawFrontierSky(alt);
   drawSunAndPlanets(alt);
   // shake
   let sx = 0, sy = 0;
@@ -4890,6 +5280,65 @@ function drawStars(alt) {
   }
   ctx.restore();
 }
+// ---- the frontier skies: nebula clouds, aurora curtains and, at the very end, the old map's parchment
+function drawFrontierSky(alt) {
+  const z = G.cam.z, py = G.cam.py * z, la = Math.log10(Math.max(alt, 1));
+  const nebK = smooth(invLerp(5.9, 6.0, la)) * (1 - smooth(invLerp(6.42, 6.55, la)));   // 0.8M -> 1M, gone by 3.5M
+  const aurK = smooth(invLerp(6.32, 6.42, la)) * (1 - smooth(invLerp(6.9, 6.98, la)));   // 2.1M -> 2.6M, gone by 9.5M
+  const mapK = smooth(invLerp(6.82, 6.9, la));                                               // 6.6M -> 8M
+  ctx.save();
+  if (nebK > 0) { // big soft clouds of glowing gas drifting past
+    const cols = [[255, 138, 208], [155, 93, 229], [79, 216, 255], [255, 159, 67], [138, 255, 193]];
+    for (let i = 0; i < 6; i++) {
+      const sz = Math.min(W, H) * (0.35 + hash(i * 31 + 7) * 0.4), span = H + sz * 2;
+      const cx = W * hash(i * 17 + 3) + Math.sin(G.t * 0.07 + i) * 30, cy = ((hash(i * 13 + 5) * span + py * (0.004 + 0.003 * hash(i))) % span) - sz;
+      const col = cols[i % cols.length], g = ctx.createRadialGradient(cx, cy, sz * 0.05, cx, cy, sz);
+      g.addColorStop(0, rgbStr(col, 0.22 * nebK)); g.addColorStop(0.55, rgbStr(col, 0.09 * nebK)); g.addColorStop(1, rgbStr(col, 0));
+      ctx.fillStyle = g; ctx.save(); ctx.translate(cx, cy); ctx.scale(1.5, 0.75); ctx.translate(-cx, -cy); ctx.fillRect(cx - sz, cy - sz, sz * 2, sz * 2); ctx.restore();
+    }
+    for (let i = 0; i < 26; i++) { // crystal dust glinting in the gas
+      const x = hash(i * 7 + 11) * W, y = ((hash(i * 19 + 3) * H * 1.2 + py * 0.02) % (H * 1.2)) - H * 0.1, tw = Math.max(0, Math.sin(G.t * (1.5 + hash(i) * 2) + i * 2));
+      if (tw < 0.4) continue;
+      ctx.globalAlpha = nebK * tw; ctx.fillStyle = ['#ffd6f0', '#bff8ff', '#e8d8ff'][i % 3];
+      ctx.beginPath(); const rr2 = 2 + hash(i * 3) * 3; for (let j = 0; j < 8; j++) { const rad = j % 2 ? rr2 * 0.3 : rr2 * 1.6, a = j * Math.PI / 4; ctx.lineTo(x + Math.cos(a) * rad, y + Math.sin(a) * rad); } ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+  }
+  if (aurK > 0) { // aurora curtains rippling across the top of the sky
+    ctx.globalCompositeOperation = 'lighter';
+    const bands = [[[95, 255, 176], 0.06, 130, 0, 1], [[79, 216, 255], 0.13, 100, 2.1, 0.75], [[255, 138, 208], 0.2, 70, 4.2, 0.55]];
+    for (const [col, yk, hgt, ph, str] of bands) {
+      const base = H * yk, amp = H * 0.04, h = hgt * Math.min(1.3, H / 700), a = aurK * str;
+      const yAt = x => base + Math.sin(x * 0.006 + G.t * 0.35 + ph) * amp + Math.sin(x * 0.017 - G.t * 0.6 + ph * 2) * amp * 0.35;
+      const g = ctx.createLinearGradient(0, base - amp, 0, base + amp + h);
+      g.addColorStop(0, rgbStr(col, 0)); g.addColorStop(0.12, rgbStr(col, 0.34 * a)); g.addColorStop(0.45, rgbStr(col, 0.1 * a)); g.addColorStop(1, rgbStr(col, 0));
+      ctx.fillStyle = g; ctx.beginPath(); ctx.moveTo(0, yAt(0));
+      for (let x = 0; x <= W + 12; x += 12) ctx.lineTo(x, yAt(x));
+      for (let x = W + 12; x >= 0; x -= 12) ctx.lineTo(x, yAt(x) + h * (0.75 + 0.25 * Math.sin(x * 0.03 + G.t + ph)));
+      ctx.closePath(); ctx.fill();
+      ctx.strokeStyle = rgbStr(col, 0.14 * a); ctx.lineWidth = 2;
+      for (let x = (G.t * 14 + ph * 40) % 22; x < W; x += 22) { const y0 = yAt(x), l = h * (0.4 + 0.5 * hash(Math.floor(x) * 3 + Math.floor(ph))); ctx.beginPath(); ctx.moveTo(x, y0 + 4); ctx.lineTo(x, y0 + l); ctx.stroke(); }
+    }
+    ctx.globalCompositeOperation = 'source-over';
+  }
+  if (mapK > 0) { // the old map: parchment glow, a grid of latitude lines and a compass rose
+    const vg = ctx.createRadialGradient(W / 2, H / 2, Math.min(W, H) * 0.3, W / 2, H / 2, Math.max(W, H) * 0.75);
+    vg.addColorStop(0, 'rgba(243,226,179,0)'); vg.addColorStop(1, `rgba(214,170,110,${0.45 * mapK})`);
+    ctx.fillStyle = vg; ctx.fillRect(0, 0, W, H);
+    ctx.strokeStyle = `rgba(243,226,179,${0.22 * mapK})`; ctx.lineWidth = 1.5; ctx.setLineDash([6, 8]);
+    const gs = 150, off = (py * 0.05) % gs;
+    for (let y = -gs + off; y < H + gs; y += gs) { ctx.beginPath(); for (let x = 0; x <= W; x += 20) { const yy = y + Math.sin(x / W * Math.PI) * 26; x ? ctx.lineTo(x, yy) : ctx.moveTo(x, yy); } ctx.stroke(); }
+    for (let k = -3; k <= 3; k++) { ctx.beginPath(); ctx.moveTo(W / 2 + k * W * 0.16, 0); ctx.quadraticCurveTo(W / 2 + k * W * 0.24, H / 2, W / 2 + k * W * 0.16, H); ctx.stroke(); }
+    ctx.setLineDash([]);
+    const cr = Math.min(W, H) * 0.22, cx = W * 0.78, cy = H * 0.24;
+    ctx.save(); ctx.globalAlpha = 0.35 * mapK; ctx.translate(cx, cy); ctx.rotate(G.t * 0.03);
+    ctx.strokeStyle = '#f3e2b3'; ctx.lineWidth = 2; circ(ctx, 0, 0, cr); ctx.stroke(); circ(ctx, 0, 0, cr * 0.82); ctx.stroke();
+    for (let i = 0; i < 16; i++) { const a = i * TAU / 16, l = i % 4 === 0 ? cr * 1.0 : i % 2 ? cr * 0.55 : cr * 0.75; ctx.beginPath(); ctx.moveTo(Math.cos(a - 0.12) * cr * 0.1, Math.sin(a - 0.12) * cr * 0.1); ctx.lineTo(Math.cos(a) * l, Math.sin(a) * l); ctx.lineTo(Math.cos(a + 0.12) * cr * 0.1, Math.sin(a + 0.12) * cr * 0.1); ctx.closePath(); ctx.fillStyle = i % 2 ? 'rgba(243,226,179,.5)' : '#f3e2b3'; ctx.fill(); }
+    ctx.rotate(-G.t * 0.03); text(ctx, 'N', 0, -cr * 1.15, Math.max(12, cr * 0.18), '#f3e2b3', 'center', null);
+    ctx.restore();
+  }
+  ctx.restore();
+}
 // ---- sun / moon / planets that drift past as you climb
 const BODIES = [
   { alt: 2300, kind: 'blimp', x: 0.7, size: 0.5, fall: true }, // sky scenery: you climb past these
@@ -4923,6 +5372,7 @@ function drawSunAndPlanets(alt) {
     ctx.fillStyle = g; circ(ctx, W * 0.9, H * 0.1, 90); ctx.fill(); ctx.restore();
   }
   for (const b of BODIES) {
+    if (b.kind === 'teapot' && G.R && G.R.route && G.R.route.id === 'x1' && G.mode !== 'hangar') continue; // you're flying to the real one
     const d = Math.log(Math.max(alt, 1) / b.alt);
     if (d < -1.1 || d > 0.7) continue;
     const vis = d < 0 ? smooth(invLerp(-1.1, -0.6, d)) : 1 - smooth(invLerp(0.2, 0.7, d));
@@ -5317,7 +5767,8 @@ function drawGround() {
       for (let k = 0; k < nDone; k++) {
         const u = (k + 0.5) / nDone, px = ax + (bx - ax) * u, py = ay + 30 * 2 * u * (1 - u) * 1;
         const sw = Math.sin(G.t * 2 + k) * 2;
-        ctx.beginPath(); ctx.moveTo(px - 8, py); ctx.lineTo(px + 8, py); ctx.lineTo(px + sw, py + 16); ctx.closePath(); fillStroke(ctx, cols[k % cols.length], 2);
+        const pw = Math.min(8, (bx - ax) / nDone / 2 - 0.5);
+        ctx.beginPath(); ctx.moveTo(px - pw, py); ctx.lineTo(px + pw, py); ctx.lineTo(px + sw, py + 16); ctx.closePath(); fillStroke(ctx, cols[k % cols.length], 2);
       }
     }
     const guests = crowdGuests();
@@ -5675,6 +6126,10 @@ function drawObstacleShape(c, o, t) {
     case 'comet': drawComet(c, o, t); break;
     case 'jelly': drawJelly(c, o, t); break;
     case 'blackhole': drawBlackHole(c, o, t); break;
+    case 'crystal': drawCrystal(c, o, t); break;
+    case 'eel': drawEel(c, o, t); break;
+    case 'dragonling': drawDragonling(c, o, t); break;
+    case 'fireball': drawFireball(c, o, t); break;
   }
 }
 function drawPickup(p) {
@@ -6487,6 +6942,9 @@ const UI = (() => {
       });
       t.appendChild(d);
     }
+    // keep the open branch in view when the tab row has to scroll (seven branches on a phone)
+    const act = t.querySelector('.tab.active');
+    if (act) { const r = act.offsetLeft + act.offsetWidth - t.clientWidth + 10; if (t.scrollLeft < r) t.scrollLeft = r; else if (act.offsetLeft - 10 < t.scrollLeft) t.scrollLeft = Math.max(0, act.offsetLeft - 10); }
   }
   function renderTree() {
     const nodesEl = $('tree-nodes'), svg = $('tree-lines'), inner = $('tree-inner');
@@ -6729,14 +7187,15 @@ const UI = (() => {
     const list = $('map-list'); list.innerHTML = '';
     $('scr-map').querySelector('h2').textContent = 'Route Map';
     const skyWrap = routeDone('r0') ? el('div', 'skymap') : null; if (skyWrap) list.appendChild(skyWrap);
+    let frWrap = null;
     const st = computeStats();
     let lockedShown = 0;
-    ROUTES.forEach((r, i) => {
+    const routeCard = r => {
       const unlocked = routeUnlocked(r), done = routeDone(r.id);
       if (!unlocked) lockedShown++;
       const mystery = !unlocked && lockedShown > 1;
       const cur = S.route === r.id || (S.route !== 'free' && S.route !== 'daily' && flightRoute() === r);
-      const card = el('div', 'route' + (cur ? ' cur' : '') + (!unlocked ? ' locked' : ''));
+      const card = el('div', 'route' + (cur ? ' cur' : '') + (!unlocked ? ' locked' : '') + (r.fr ? ' fr' : ''));
       card.appendChild(el('div', 'route-link'));
       const ic = mystery ? el('div', 'r-ico', ICONS.lock) : routeIconCanvas(r.icon, 64);
       ic.classList.add('r-ico'); ic.style.width = '64px'; ic.style.height = '64px';
@@ -6764,7 +7223,16 @@ const UI = (() => {
       card.appendChild(act);
       if (unlocked && !done) S.seen['map_' + r.id] = 1;
       list.appendChild(card);
-    });
+    };
+    MAIN_ROUTES.forEach(routeCard);
+    if (frontierOpen()) { // the frontier chapter gets its own heading and map
+      const edgeAlt = FRONT_ROUTES[FRONT_ROUTES.length - 1].alt, charted = routeDone('x5') && S.bestAlt > edgeAlt;
+      const sec = el('div', 'map-sec fr', `<div class="ms-t">Beyond the Gate</div><div class="ms-s">${charted ? `You’ve charted <b>${fmtAlt(S.bestAlt - edgeAlt)}</b> of sky past the Edge of the Map` : `The frontier: ${FRONT_ROUTES.filter(r => routeDone(r.id)).length} of ${FRONT_ROUTES.length} stops reached`}</div>`);
+      list.appendChild(sec);
+      frWrap = el('div', 'skymap'); list.appendChild(frWrap);
+      lockedShown = 0;
+      FRONT_ROUTES.forEach(routeCard);
+    }
     if (dailyUnlocked()) {
       const d = todaysDaily(), tw = TWISTS[d.twist], cd = CONDS[d.cond];
       const cur = S.route === 'daily' && !d.done;
@@ -6808,6 +7276,7 @@ const UI = (() => {
     }
     overlay('scr-map', true);
     if (skyWrap) skyWrap.appendChild(skyMapCanvas(Math.max(240, Math.min(680, list.clientWidth || 340)), 118));
+    if (frWrap) frWrap.appendChild(skyMapCanvas(Math.max(240, Math.min(680, list.clientWidth || 340)), 104, true));
     renderHeadBtns();
     saveGame();
   }
@@ -7023,8 +7492,27 @@ const UI = (() => {
     renderHeadBtns(); renderStatCard();
   }
 
+  // ---------- the frontier finale: the Edge of the Map, with everyone you met beyond the Gate
+  function showEdgeCredits() {
+    const list = $('map-list'); list.innerHTML = '';
+    $('scr-map').querySelector('h2').textContent = 'The Whole Map!';
+    const cnv = document.createElement('canvas'); cnv.width = 1000; cnv.height = 560; cnv.style.cssText = 'display:block;margin:0 auto;width:auto;max-width:100%;max-height:52vh;border-radius:18px;border:4px solid #2b2240';
+    const c = cnv.getContext('2d'); c.scale(2, 2);
+    const g = c.createLinearGradient(0, 0, 0, 280); g.addColorStop(0, '#241638'); g.addColorStop(1, '#6e4a36'); c.fillStyle = g; c.fillRect(0, 0, 500, 280);
+    for (let i = 0; i < 70; i++) { c.fillStyle = '#fff6e5'; c.globalAlpha = hash(i * 3) * 0.8; c.beginPath(); c.arc(hash(i * 7) * 500, hash(i * 11) * 200, 0.6 + hash(i) * 1.3, 0, TAU); c.fill(); } c.globalAlpha = 1;
+    c.save(); c.translate(250, 150); drawStation(c, 'edge', 2, 0.95); c.restore();
+    c.fillStyle = 'rgba(36,22,56,.55)'; c.fillRect(0, 214, 500, 66);
+    const who = ['ada', 'earl', 'pip', 'ringo', 'lumen', 'ember', 'buckley', 'plum', 'baron', 'cat'];
+    who.forEach((k, i) => { c.save(); c.translate(250 + (i - (who.length - 1) / 2) * 44, 246); drawFace(c, k, 16, 'joy', i); c.restore(); });
+    text(c, 'YOU FLEW OFF THE EDGE OF THE MAP!', 250, 24, 17, '#ffd93d');
+    list.appendChild(cnv);
+    list.appendChild(el('div', 'small-note', `<br><b>Tea at the Teapot, a party on Pip’s planet, a show on a comet, a lighthouse relit, and a dragon who now lives in the shed.</b><br>${S.flights} flights · ${S.stats.pax} passengers delivered · ${fmtMoney(S.earned)} earned · best ${fmtAlt(S.bestAlt)}<br><br>Ember painted your rocket in <b>Dragon Scale</b> (see the Paint Shop).<br>Past the edge the sky is blank. Every flight draws a little more of the map: how far can you go?<br><br><i>Story, art, music & code: generated with love by Claude for David.</i>`));
+    overlay('scr-map', true);
+    sfx.deliver(); confetti(0, 200, 120);
+  }
   // ---------- ending credits
-  function showCredits() {
+  function showCredits(edge = false) {
+    if (edge) return showEdgeCredits();
     const list = $('map-list'); list.innerHTML = '';
     $('scr-map').querySelector('h2').textContent = 'The End!';
     const cnv = document.createElement('canvas'); cnv.width = 1000; cnv.height = 560; cnv.style.cssText = 'display:block;margin:0 auto;width:auto;max-width:100%;max-height:52vh;border-radius:18px;border:4px solid #2b2240'; // short landscape screens still show the thank-you text
@@ -7032,11 +7520,11 @@ const UI = (() => {
     const g = c.createLinearGradient(0, 0, 0, 280); g.addColorStop(0, '#123c4a'); g.addColorStop(1, '#2a1450'); c.fillStyle = g; c.fillRect(0, 0, 500, 280);
     for (let i = 0; i < 80; i++) { c.fillStyle = '#fff'; c.globalAlpha = hash(i * 3); c.beginPath(); c.arc(hash(i * 7) * 500, hash(i * 11) * 280, 0.6 + hash(i) * 1.4, 0, TAU); c.fill(); } c.globalAlpha = 1;
     c.save(); c.beginPath(); c.rect(0, 0, 500, 212); c.clip(); c.translate(250, 120); drawStation(c, 'gate', 2, 0.6); c.restore(); // ring only: its name label would sit under the faces
-    const who = Object.keys(CHARS).filter(k => k !== 'tourist');
+    const who = Object.keys(CHARS).filter(k => k !== 'tourist' && !CHARS[k].fr);
     who.forEach((k, i) => { const row = i < 12 ? 0 : 1; const n = row ? who.length - 12 : 12; const x = 250 + ((row ? i - 12 : i) - (n - 1) / 2) * 38; c.save(); c.translate(x, 200 + row * 44); drawFace(c, k, 15, 'joy', i); c.restore(); });
     text(c, 'THANK YOU FOR FLYING SKYHOP!', 250, 24, 18, '#ffd93d');
     list.appendChild(cnv);
-    list.appendChild(el('div', 'small-note', `<br><b>You built a rocket line from a backyard shed to the edge of the sky.</b><br>${S.flights} flights · ${S.stats.pax} passengers delivered · ${fmtMoney(S.earned)} earned · best ${fmtAlt(S.bestAlt)}<br><br>Your <b>Solid Gold</b> paint job is in the Paint Shop.<br>Endless mode: keep flying the Starlight route as far as you dare!<br>Or open a <b>new line</b> from the Route Map: start fresh, keep your trophies, and earn +50% per line.<br><br><i>Story, art, music & code: generated with love by Claude for David.</i>`));
+    list.appendChild(el('div', 'small-note', `<br><b>You built a rocket line from a backyard shed to the edge of the sky.</b><br>${S.flights} flights · ${S.stats.pax} passengers delivered · ${fmtMoney(S.earned)} earned · best ${fmtAlt(S.bestAlt)}<br><br>Your <b>Solid Gold</b> paint job is in the Paint Shop.<br><b>But the map goes on!</b> Pip says there are five more stops beyond the Gate. Look for <b>Beyond the Gate</b> on the Route Map.<br>Or open a <b>new line</b> from the Route Map: start fresh, keep your trophies, and earn +50% per line.<br><br><i>Story, art, music & code: generated with love by Claude for David.</i>`));
     overlay('scr-map', true);
     sfx.deliver(); confetti(0, 200, 120);
   }
@@ -7063,7 +7551,7 @@ const UI = (() => {
       const c = cnv.getContext('2d'); c.scale(2, 2); rr(c, 2, 2, 60, 60, 14); c.fillStyle = '#bfe9ff'; c.fill(); c.lineWidth = 3; c.strokeStyle = INK; c.stroke();
       c.translate(32, 34); c.scale(0.42, 0.42); const L = Object.assign(rocketLook(), { paint: p }); drawRocket(c, L, { t: 0, faces: [] });
       card.appendChild(cnv);
-      card.appendChild(el('div', 'r-main', `<div class="r-name">${p.name}</div><div class="r-meta">${ok ? '<span class="chip ok">Unlocked</span>' : `<span class="chip pay">${p.end ? 'Finish the story' : p.lost ? 'Lost & Found reward' : p.stars + ' ★'}</span>`}</div>`));
+      card.appendChild(el('div', 'r-main', `<div class="r-name">${p.name}</div><div class="r-meta">${ok ? '<span class="chip ok">Unlocked</span>' : `<span class="chip pay">${p.end ? 'Finish the story' : p.route ? 'Fly to ' + routeById(p.route).to : p.lost ? 'Lost & Found reward' : p.stars + ' ★'}</span>`}</div>`));
       const act = el('div', 'r-act');
       if (ok) { const b = el('button', 'btn ' + (cur ? 'go' : 'blue'), cur ? 'Wearing' : 'Paint'); b.addEventListener('click', () => { sfx.buy(); S.paint = p.id; saveGame(); G.look = rocketLook(); G.hangarPop = 1; openPaint(); }); act.appendChild(b); }
       card.appendChild(act);
@@ -7314,13 +7802,14 @@ const UI = (() => {
     }
     if (S.pendingRival) { const c = RIVAL.find(x => x.id === S.pendingRival); S.pendingRival = null; if (c) lines.push(...c.lose); }
     { const rc = rivalCur(); if (rc && !S.seen['rival_' + rc.id] && lines.length < 6 && S.flights >= 2) { S.seen['rival_' + rc.id] = 1; lines.push(...rc.intro); } }
+    if (frontierOpen() && !S.seen.frontier && S.seen.endCredits && !lines.length) { S.seen.frontier = 1; lines.push(...STORY.frontier); }
     if (jobsUnlocked() && !S.seen.jobs) { S.seen.jobs = 1; fillJobs(); S.jobsNew = 3; lines.push(...STORY.jobs); }
     if (dailyUnlocked() && !S.seen.dailyIntro && !lines.length && (S.line || 1) === 1) { S.seen.dailyIntro = 1; lines.push(...STORY.daily); }
     if (S.pendingAch && S.pendingAch.length) { for (const id of S.pendingAch) achToast(id); sfx.ach(); S.pendingAch = []; }
     const mailNow = S.pendingMail; S.pendingMail = 0;
     saveGame();
     Dialog.play(lines, () => {
-      if (mailNow && mailCount()) { setTimeout(() => sfx.mail(), 250); toast(S.seen.mailTip ? `<b>You've got mail!</b>` : `<b>You've got mail!</b> Tap the mailbox in the yard.`, 3600); S.seen.mailTip = 1; } refresh(); if (S.ended && !S.seen.endCredits) { S.seen.endCredits = 1; saveGame(); showCredits(); } if (then) then(); });
+      if (mailNow && mailCount()) { setTimeout(() => sfx.mail(), 250); toast(S.seen.mailTip ? `<b>You've got mail!</b>` : `<b>You've got mail!</b> Tap the mailbox in the yard.`, 3600); S.seen.mailTip = 1; } refresh(); if (S.ended && !S.seen.endCredits) { S.seen.endCredits = 1; saveGame(); showCredits(); } else if (routeDone('x5') && !S.seen.edgeCredits) { S.seen.edgeCredits = 1; saveGame(); showCredits(true); } if (then) then(); });
   }
 
   // ---------- wiring
@@ -7602,8 +8091,8 @@ G.cam.py = padRestPy(G.look); G.cam.anchor = 0.72; G.cam.z = worldZoom();
 UI.showScreen('title');
 if (S.seen.intro) {
   $('btn-start').textContent = 'Continue';
-  const nr = nextRoute(), nDone = ROUTES.filter(r => routeDone(r.id)).length;
-  $('title-foot').innerHTML = `Welcome back! ${S.flights} flights · best <b>${fmtAlt(S.bestAlt)}</b> · ${nDone}/${ROUTES.length} routes${nr ? ` · next: <b>${nr.to}</b>` : ' · Endless mode'}`;
+  const nr = nextRoute(), nDone = MAIN_ROUTES.filter(r => routeDone(r.id)).length, fDone = FRONT_ROUTES.filter(r => routeDone(r.id)).length;
+  $('title-foot').innerHTML = `Welcome back! ${S.flights} flights · best <b>${fmtAlt(S.bestAlt)}</b> · ${frontierOpen() ? `frontier ${fDone}/${FRONT_ROUTES.length}` : `${nDone}/${MAIN_ROUTES.length} routes`}${nr ? ` · next: <b>${nr.to}</b>` : ' · the whole map!'}`;
   if (dailyUnlocked()) { const d = todaysDaily(); const pill = document.createElement('div'); pill.className = 'title-daily'; pill.innerHTML = d.done ? `Today's special delivered! Come back tomorrow.` : `Today's special: <b>${d.cargo}</b> for ${d.to} · ${fmtAlt(d.target)}${dailyStreakAlive() ? ` · ${dailyStreakAlive()}-day streak` : ''}`; document.querySelector('#scr-title .tagline').after(pill); }
 }
 Music.play('title');
