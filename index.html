@@ -788,6 +788,7 @@ const AudioSys = (() => {
     stage() { noise({ dur: 0.12, vol: 0.5, filter: 'lowpass', f: 1200 }); tone({ type: 'square', f: 140, f2: 60, dur: 0.12, vol: 0.2 }); this.boost(); },
     detach() { tone({ type: 'square', f: 300, f2: 120, dur: 0.1, vol: 0.12 }); noise({ dur: 0.15, vol: 0.2, filter: 'highpass', f: 1000 }); },
     chute() { noise({ dur: 0.08, vol: 0.3, filter: 'highpass', f: 2000 }); noise({ dur: 0.6, vol: 0.15, filter: 'bandpass', f: 500, f2: 300, delay: 0.06, q: 3 }); },
+    dashReady() { tone({ type: 'sine', f: 1568, dur: 0.07, vol: 0.05 }); tone({ type: 'sine', f: 2093, dur: 0.1, vol: 0.04, delay: 0.06 }); },
     beep(hi) { tone({ type: 'square', f: hi ? 1320 : 880, dur: hi ? 0.35 : 0.12, vol: 0.12, filter: 'lowpass', ff: 3000 }); },
     perfect() { [0, 4, 7, 12].forEach((s, i) => { tone({ type: 'square', f: N(79 + s), dur: 0.3, vol: 0.08, delay: i * 0.06, filter: 'lowpass', ff: 3500 }); tone({ type: 'triangle', f: N(67 + s), dur: 0.3, vol: 0.15, delay: i * 0.06 }); }); },
     good() { [0, 7].forEach((s, i) => tone({ type: 'triangle', f: N(76 + s), dur: 0.2, vol: 0.16, delay: i * 0.07 })); },
@@ -1098,6 +1099,7 @@ const ICONS = {
   magnet: svgI('<path d="M14 8v24a18 18 0 0 0 36 0V8H40v24a8 8 0 0 1-16 0V8z" fill="#ff5a5f"/><path d="M14 8h10v8H14zM40 8h10v8H40z" fill="#c9ced8"/><path d="M8 48l-4 4M56 48l4 4M32 58v4" stroke-width="3"/>'),
   radar: svgI('<path d="M10 40a26 26 0 0 1 30-30z" fill="#c9ced8"/><path d="M22 28l14-14" stroke-width="3"/><circle cx="38" cy="12" r="4" fill="#ff5a5f"/><path d="M24 40l-8 18h24l-8-18" fill="#fff6e5"/><path d="M46 24a10 10 0 0 1 4 10M50 16a18 18 0 0 1 6 18" stroke="#5fd068" stroke-width="3"/>'),
   autododge: svgI('<rect x="14" y="14" width="36" height="36" rx="8" fill="#5fd068"/><rect x="24" y="24" width="16" height="16" rx="3" fill="#fff6e5" stroke-width="3"/><path d="M22 8v6M32 8v6M42 8v6M22 50v6M32 50v6M42 50v6M8 22h6M8 32h6M8 42h6M50 22h6M50 32h6M50 42h6" stroke-width="3"/>'),
+  dash: svgI('<path d="M28 12c6 5 8 11 8 16v14H20V28c0-5 2-11 8-16z" fill="#fff6e5"/><circle cx="28" cy="26" r="3.2" fill="#4d96ff" stroke-width="2.5"/><path d="M24 42l4 8 4-8" fill="#ff9f43" stroke-width="2.5"/><path d="M42 22h14M44 31h10M42 40h14" stroke="#4fd8ff" stroke-width="4"/><path d="M14 24L6 31l8 7" stroke-width="3.5"/>'),
   vector: svgI('<path d="M24 6h16v14l6 18H18l6-18z" fill="#c9ced8"/><path d="M14 54l10-12M50 54L40 42M32 58V42" stroke="#ff9f43" stroke-width="5"/>'),
   tower: svgI('<path d="M16 60V8h14v52M16 18h14M16 30h14M16 42h14M16 18l14 12M16 30l14 12M16 42l14 12" stroke-width="3"/><path d="M30 14h18v6H30" fill="#ff5a5f" stroke-width="3"/><path d="M8 60h48" />'),
   control: svgI('<rect x="6" y="10" width="52" height="34" rx="6" fill="#2b2240"/><path d="M12 36l10-10 8 6 10-14 8 8" stroke="#5fd068" stroke-width="3"/><path d="M24 44l-4 12h24l-4-12" fill="#c9ced8"/>'),
@@ -1684,6 +1686,9 @@ const UPGRADES = [
   { id: 'vector', br: 'ctrl', name: 'Vector Thrust', icon: 'vector', pos: [1.5, 2], max: 3, base: 2500, g: 2.6, req: [['fins', 4]], fork: 'steer',
     desc: 'FORK: Swivelling nozzle. Super-fast sideways moves and no thrust lost when tilting.',
     fx: l => `Sideways speed +${l * 25}%, tilt loss −${l * 33}%` },
+  { id: 'dash', br: 'ctrl', name: 'Dash Jets', icon: 'dash', pos: [2, 3], max: 3, base: 4000, g: 2.5, req: [['radar', 2]],
+    desc: 'Double-tap left or right (or one side of the screen) to zip sideways. Nothing can hit you mid-dash.',
+    fx: l => l ? `Dash every ${STAT.dashCd(l).toFixed(1)}s` : 'None' },
 
   // ---- structure
   { id: 'hull', br: 'hull', name: 'Hull Plating', icon: 'hull', pos: [0, 0], max: 7, base: 80, g: 2.1,
@@ -1751,6 +1756,7 @@ const STAT = {
   boostTime: l => 1.6 + 0.6 * l,
   abDur: l => 1.2 + 0.3 * l,
   abCd: l => Math.max(4, 11 - 2 * l),
+  dashCd: l => [0, 3, 2.3, 1.6][l] || 1.6,
   stage2Pct: l => 0.35 + 0.15 * l,
   warpDrag: l => Math.pow(0.72, l),
   hp: l => 3 + l,
@@ -1812,6 +1818,7 @@ function computeStats() {
   st.canRate = 1 + 0.5 * L('finder');
   st.boost = L('boosters') ? { thrust: STAT.thrust(L('engine')) * STAT.boostPct(L('boosters')), time: STAT.boostTime(L('boosters')), mass: 0.25 + 0.05 * L('boosters') } : null;
   st.ab = L('afterburner') ? { dur: STAT.abDur(L('afterburner')), cd: STAT.abCd(L('afterburner')) } : null;
+  st.dash = L('dash') ? STAT.dashCd(L('dash')) : 0;
   st.stage2 = L('stage2') ? st.fuelCap * STAT.stage2Pct(L('stage2')) : 0;
   st.stage1Mass = 0.35;
   st.spaceK = 0.07 * STAT.warpDrag(L('warp'));
@@ -2778,7 +2785,7 @@ function prepareRocket() {
   const R = newRocketState(G.st, { pax: px.pax });
   Object.assign(R, {
     x: 0, py: padRestPy(G.look), vx: 0, tilt: 0, steer: 0, hp: G.st.hp, shieldOn: !!G.st.shield, shieldT: 0, repairT: 0,
-    invuln: 0, stun: 0, comfort: 1, coins: 0, coinCash: 0, docked: false, delivered: false, route, paxOk: px.ok, faces: px.faces,
+    invuln: 0, stun: 0, dashT: 0, dashCd: 0, dashDir: 0, dashFx: 0, dashTrail: [], comfort: 1, coins: 0, coinCash: 0, docked: false, delivered: false, route, paxOk: px.ok, faces: px.faces,
     time: 0, hits: 0, rings: 0, ringCombo: 0, ringT: 0, smashed: 0, launchQ: 1, launchLabel: '', zi: zoneIndex(R.alt),
     recordShown: S.bestAlt <= 0, ended: false, crashed: false, endT: 0, moodT: 0, mood: 'happy', bubble: null, bubbleT: rand(3, 6),
     boosters: !!G.st.boost, drops: G.st.dropFuel > 0, visStage: 1, burnout: false, warp: 1, apogee: 0, apT: 0,
@@ -3488,6 +3495,23 @@ function tryAfterburner() {
   sfx.boost(); G.cam.shake = Math.max(G.cam.shake, 6);
   R.mood = 'joy'; R.moodT = 1.2;
 }
+// Dash Jets: a quick sideways zip with a barrel roll; the rocket can't be hit while it lasts
+const DASH_T = 0.22, DASH_V = 1050;
+function tryDash(dir) {
+  const R = G.R, st = G.st;
+  if (!st || !st.dash || G.mode !== 'flight' || !R || R.crashed || R.ended || R.stun > 0 || R.dashCd > 0 || !dir) return;
+  R.dashT = DASH_T; R.dashDir = dir; R.dashCd = st.dash + DASH_T;
+  S.stats.dashes = (S.stats.dashes || 0) + 1;
+  sfx.whoosh(); buzz(15);
+  puff(R.x - dir * 20, R.py, 5, '#ffffff', 90);
+}
+// double-tap detection shared by keys and touch
+const DTAP = { d: 0, t: 0 };
+function dashTap(dir) {
+  if (G.mode !== 'flight' || !G.st || !G.st.dash || !dir) return;
+  const now = performance.now();
+  if (DTAP.d === dir && now - DTAP.t < 280) { tryDash(dir); DTAP.t = 0; } else { DTAP.d = dir; DTAP.t = now; }
+}
 function updateFlight(dt) {
   const R = G.R, st = G.st;
   R.time += dt;
@@ -3505,6 +3529,16 @@ function updateFlight(dt) {
   R.vx += (tvx + R.gustVx - R.vx) * Math.min(1, dt * 5);
   R.gustVx *= Math.pow(0.2, dt);
   R.x += R.vx * dt;
+  if (R.dashT > 0) {
+    const k = Math.min(dt, R.dashT); R.dashT -= dt;
+    R.x += R.dashDir * DASH_V * k; R.vx = R.dashDir * Math.max(Math.abs(R.vx), 260);
+    R.dashTrail.push({ x: R.x, py: R.py, a: 1 }); if (R.dashTrail.length > 5) R.dashTrail.shift();
+  }
+  for (const g of R.dashTrail) g.a -= dt * 4;
+  while (R.dashTrail.length && R.dashTrail[0].a <= 0) R.dashTrail.shift();
+  if (R.dashCd > 0) { R.dashCd -= dt; if (R.dashCd <= 0 && st.dash) { R.dashFx = 0.45; sfx.dashReady(); } }
+  if (R.dashFx > 0) R.dashFx -= dt;
+  if (st.dash && R.time > 1.5 && !S.seen.tip_dash) tipOnce('dash');
   // --- timers
   if (R.abT > 0) R.abT = Math.max(0, R.abT - dt);
   if (R.abCd > 0) R.abCd = Math.max(0, R.abCd - dt);
@@ -3646,6 +3680,7 @@ const WISHES = [
   { id: 'calm', s: 'No bumps for 10 seconds, please!', dur: 10, endOk: true, v: R => R.hits, fail: (R, w) => R.hits > w.v },
   { id: 'wiggle', s: 'Do a wiggle! Left, then right!', dur: 7, v: () => 0, ok: (R, w) => { if (R.steer < -0.5) w.l = 1; if (w.l && R.steer > 0.5) w.r = 1; return w.l && w.r; } },
   { id: 'close', s: 'Fly close to something! Photo time!', dur: 14, can: R => R.alt < 60000, v: R => R.nearMiss || 0, ok: (R, w) => (R.nearMiss || 0) > w.v },
+  { id: 'roll', s: 'Ooh, do a barrel roll!', dur: 8, can: R => G.st.dash && R.dashCd <= 0, v: () => S.stats.dashes || 0, ok: (R, w) => (S.stats.dashes || 0) > w.v },
   { id: 'boost', s: 'Hit the BOOST! I want to feel it!', dur: 8, can: R => G.st.ab && R.abCd <= 0 && R.fuel > 0, v: () => 0, ok: R => R.abT > 0 },
   { id: 'star', s: 'Catch that lucky star!', dur: 12, can: R => G.picks.some(p => p.type === 'star' && p.py > R.py + 150), v: R => R.starsGot, ok: (R, w) => R.starsGot > w.v },
   { id: 'rainbow', s: 'A rainbow! Fly through it, pretty please!', dur: 12, can: R => G.picks.some(p => p.type === 'rainbow' && !p.done && p.py + p.r > R.py + 120), v: R => R.rainbows || 0, ok: (R, w) => (R.rainbows || 0) > w.v },
@@ -3750,12 +3785,13 @@ const TIPS = {
   fuel: 'Fuel cans top up your tank, and can even re-light a dead engine!',
   wrench: 'Wrenches fix one heart.',
   star: 'A lucky star! Worth a pile of coins.',
+  dash: 'Dash Jets ready! Double-tap ← or → (or one side of the screen) to zip sideways. Nothing can hit you mid-dash.',
   lost: 'Lost property! Catch it and it goes back to its owner. Check Lost & Found in the trophy book.',
 };
 function tipOnce(type) {
   if (!TIPS[type] || S.seen['tip_' + type]) return;
   S.seen['tip_' + type] = 1;
-  toast(`<b>Ada:</b> ${TIPS[type]}`, 4200);
+  toast(`<b>Ada:</b> ${TIPS[type]}`, 4200, type === 'dash'); // a new control matters more than a hazard tip
 }
 function updateObstacles(dt) {
   const R = G.R, st = G.st, sc = G.rocketScale;
@@ -3838,7 +3874,7 @@ function bolt(x0, y0, x1, y1) { const pts = [[x0, y0]]; const n = 7; for (let i 
 
 function hitRocket(o, lightning) {
   const R = G.R, st = G.st;
-  if (R.crashed || R.invuln > 0) return;
+  if (R.crashed || R.invuln > 0 || R.dashT > 0) return;
   o.hitT = 0.8; o.wasHit = true;
   // shield
   if (R.shieldOn) {
@@ -5336,9 +5372,15 @@ function drawPlayerRocket() {
     if (R.capsule) { const c = R.capsule; ctx.translate(c.x, -c.py); ctx.scale(G.rocketScale, G.rocketScale); drawCapsule(c.chute); }
     ctx.restore(); return;
   }
+  for (const g of R.dashTrail) {
+    ctx.save(); ctx.translate(g.x, -g.py); ctx.rotate(R.tilt); ctx.scale(G.rocketScale, G.rocketScale);
+    ctx.globalAlpha = Math.max(0, g.a) * 0.3; drawRocket(ctx, look, { t: G.t, flame: false, faces: [], stage: R.visStage }); ctx.restore();
+  }
   ctx.translate(R.x + (G.mode === 'launch' ? Math.sin(G.t * 50) * 1.2 : 0), -R.py);
+  if (R.dashFx > 0) { const k = R.dashFx / 0.45; ctx.globalAlpha = k * 0.8; circ(ctx, 0, 0, 40 + (1 - k) * 34); ctx.lineWidth = 4; ctx.strokeStyle = '#4fd8ff'; ctx.stroke(); ctx.globalAlpha = 1; }
   ctx.rotate(R.tilt);
   ctx.scale(G.rocketScale, G.rocketScale);
+  if (R.dashT > 0) { const c = Math.cos((1 - R.dashT / DASH_T) * TAU); ctx.scale((c < 0 ? -1 : 1) * Math.max(0.2, Math.abs(c)), 1); }
   if (R.invuln > 0 && Math.sin(G.t * 40) > 0) ctx.globalAlpha = 0.55;
   const mood = R.delivered ? 'joy' : R.mood;
   drawRocket(ctx, look, { t: G.t, throttle: G.mode === 'launch' ? 0.08 : R.throttle, faces: R.delivered ? [] : R.faces, mood, boostersOn: R.boosters, dropsOn: R.drops, stage: R.visStage, shieldOn: R.shieldOn, ab: R.abT > 0, boostFlame: R.boostT > 0, steer: R.steer });
@@ -5643,7 +5685,8 @@ function toast(html, ms = 3600, pri = false) {
   const below = placeToasts();
   $('toasts').appendChild(t);
   setTimeout(() => t.remove(), ms + 300);
-  const maxT = W < 600 || H < 520 ? (document.body.classList.contains('in-flight') ? 1 : 2) : below ? 2 : 4;
+  const inFlight = document.body.classList.contains('in-flight');
+  const maxT = W < 600 || H < 520 ? (inFlight ? 1 : 2) : below ? 2 : inFlight ? 3 : 4; // in flight, keep clear of the zone banners
   // when there are too many, drop ordinary notes before trophies
   while ($('toasts').children.length > maxT) { const box = $('toasts'); ([...box.children].find(c => !c.classList.contains('pri')) || box.firstChild).remove(); }
 }
@@ -5744,7 +5787,7 @@ const UI = (() => {
     const h = $('head-btns'); h.innerHTML = '';
     const mapB = iconBtn('btn-map', 'map', 'Route map', () => openMap());
     if ((routeDone('r0') && ROUTES.some(r => routeUnlocked(r) && !routeDone(r.id) && !S.seen['map_' + r.id])) || (dailyUnlocked() && !S.seen['daily_' + dayKey()])) mapB.appendChild(el('span', 'badge-dot', '!'));
-    const ach = iconBtn('btn-ach', 'trophy', 'Achievements & Sky Guide', () => openAch());
+    const ach = iconBtn('btn-ach', 'trophy', 'Trophies, Logbook & Sky Guide', () => openAch());
     const bookNew = guideNewCount() + guestNewCount() + lostNewCount();
     if (bookNew) ach.appendChild(el('span', 'badge-dot', String(bookNew)));
     const paint = iconBtn('btn-paint', 'brush', 'Paint shop', () => openPaint());
@@ -6198,6 +6241,7 @@ const UI = (() => {
     const tc = el('div', 'log-card'); tc.appendChild(el('h3', '', 'All-time totals'));
     const bosses = (st.king || 0) + (st.whale || 0) + (st.pirates || 0) + (st.kraken || 0);
     const tot = [['Coins caught', st.coins], ['Boost rings', st.rings], ['Perfect launches', st.perfect], ['Close calls', st.close], ['Things smashed', st.smashed], ['Wishes granted', st.wishes || 0], ['Side jobs done', st.jobs || 0], ['Bosses beaten', bosses], ['Rainbows', st.rainbows || 0], ['Letters opened', st.letters || 0], ['Lost items returned', lostFound()], ['Daily Specials', st.daily || 0]];
+    if (st.dashes) tot.splice(5, 0, ['Dashes', st.dashes]);
     const trows = el('div', 'log-rows two');
     for (const [k, v] of tot) trows.appendChild(el('div', 'lr', `<span>${k}</span><b>${fmtInt(v)}</b>`));
     tc.appendChild(trows); list.appendChild(tc);
@@ -6573,6 +6617,7 @@ window.addEventListener('keydown', e => {
   if (e.target && (e.target.tagName === 'TEXTAREA' || e.target.tagName === 'INPUT')) return;
   if (e.repeat && (e.code === 'Space')) { e.preventDefault(); return; }
   G.input.keys[e.code] = true;
+  if (!e.repeat && G.mode === 'flight' && !G.paused) { if (e.code === 'ArrowLeft' || e.code === 'KeyA') dashTap(-1); else if (e.code === 'ArrowRight' || e.code === 'KeyD') dashTap(1); }
   const inGame = G.mode === 'flight' || G.mode === 'launch';
   if (inGame && BLOCK_KEYS.has(e.code)) e.preventDefault();
   if (Dialog.active) { if (e.code === 'Space' || e.code === 'Enter') { e.preventDefault(); Dialog.next(); } return; }
@@ -6606,6 +6651,7 @@ cv.addEventListener('pointerdown', e => {
   if (G.mode === 'flight') {
     if (G.st && G.st.ab) { const b = boostBtnPos(); if (Math.hypot(e.clientX - b.x, e.clientY - b.y) < b.r + 12) { G.input.boostPressed = true; tryAfterburner(); G.input.pointers.set(e.pointerId, { side: 0, boost: true }); return; } }
     G.input.pointers.set(e.pointerId, { side: pointerSide(e.clientX) });
+    dashTap(pointerSide(e.clientX));
     try { cv.setPointerCapture(e.pointerId); } catch (err) { /* ignore */ }
   }
 });
@@ -6707,6 +6753,7 @@ function botSteer() {
     if (best) push = clamp((best.x - R.x) / 80, -1, 1);
   }
   G.input.keys.ArrowLeft = push < -0.25; G.input.keys.ArrowRight = push > 0.25;
+  if (G.st.dash && R.dashCd <= 0 && Math.abs(push) > 2.2) tryDash(push > 0 ? 1 : -1);
   if (G.st.ab && R.abCd <= 0 && R.fuel > 0) tryAfterburner();
 }
 

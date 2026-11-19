@@ -15,12 +15,13 @@ Open `index.html` in any modern browser, or enable GitHub Pages for this repo (S
 | Launch (hit the green zone!) | Space | Tap |
 | Steer | ← → or A D | Hold left / right half of the screen (or turn on **Tilt to steer** in Settings) |
 | Afterburner (once unlocked) | Space | BOOST button |
+| Dash (once unlocked) | Double-tap ← or → | Double-tap the left or right half |
 | Pause | P / Esc | ⏸ button |
 
 ## Features
 
 - Launch timing mini-game, then dodge birds, planes, storm clouds, jets, satellites, asteroids, UFOs, comets, space jellies and black holes.
-- 33 upgrades across 6 branches (Engine, Fuel, Control, Structure, Launch Site, Cabin) that unlock progressively, with 6 either/or forks (swap any time for a partial refund).
+- 34 upgrades across 6 branches (Engine, Fuel, Control, Structure, Launch Site, Cabin) that unlock progressively, with 6 either/or forks (swap any time for a partial refund).
 - 10 passenger routes with a little story, passenger comfort, star ratings and reviews, plus a free-flight mode and an endless run past the Starlight Gate (keep going and someone will wave).
 - Job Board side jobs (collect coins, skim obstacles, fly clean...) that scale with how you play.
 - Sky forecast before each flight: sunset, night, tailwind, coin shower or ring festival, each with its own bonus.
@@ -46,6 +47,7 @@ Open `index.html` in any modern browser, or enable GitHub Pages for this repo (S
 - After the finale, open a new line (new game plus): start over with a fresh rocket, keep your trophies and cosmetics, and earn +50% per line.
 - Relaxed mode (+2 hearts, fewer hazards), tilt steering on phones, music and sound volume sliders, and a calmer-screen option (less shake and flashing).
 - Save codes (Settings): copy your progress from one device and load it on another.
+- Dash Jets: a late Control upgrade that lets you double-tap to zip sideways with a barrel roll, untouchable mid-dash.
 - Your rocket visibly changes as you upgrade: nose cones, fins, boosters, drop tanks, stages, shield bubble, ram prow and more.
 - Procedural music (seven songs) and ~40 synthesized sound effects.
 - Plays on desktop and phones (portrait and landscape). Progress is saved in your browser (localStorage).
