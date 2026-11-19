@@ -96,6 +96,10 @@ button{font-family:var(--font)}
 #tree{position:relative;flex:1 1 auto;min-height:110px;background:var(--paper);border-top:4px solid var(--ink);border-bottom:4px solid var(--ink);overflow:auto;
   background-image:radial-gradient(circle,rgba(43,34,64,.09) 1.5px,transparent 2px);background-size:22px 22px}
 #tree-inner{position:relative;margin:0 auto}
+.tree-fade{position:sticky;left:0;bottom:0;height:30px;margin-top:-30px;pointer-events:none;background:linear-gradient(rgba(255,250,240,0),var(--paper) 80%);opacity:0;transition:opacity .2s;z-index:3}
+.tree-fade::after{content:"";position:absolute;left:50%;bottom:7px;width:9px;height:9px;border-right:3px solid var(--ink2);border-bottom:3px solid var(--ink2);border-radius:0 0 3px 0;transform:translateX(-50%) rotate(45deg);animation:fadeNudge 1.4s ease-in-out infinite}
+@keyframes fadeNudge{50%{bottom:4px}}
+#tree.more-below .tree-fade{opacity:1}
 #tree-lines{position:absolute;inset:0;width:100%;height:100%;overflow:visible;pointer-events:none}
 .node{position:absolute;width:76px;display:flex;flex-direction:column;align-items:center;cursor:pointer;transform:translate(-50%,-50%)}
 .node .nbox{width:66px;height:66px;border:4px solid var(--ink);border-radius:18px;background:#fff;box-shadow:0 4px 0 var(--ink);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;
@@ -455,7 +459,7 @@ body.in-hangar #toasts{left:calc((100vw - min(580px,54vw) - 16px)/2)}
         <div class="head-btns" id="head-btns"></div>
       </div>
       <div id="tabs"></div>
-      <div id="tree"><div id="tree-inner"><svg id="tree-lines"></svg><div id="tree-nodes"></div></div></div>
+      <div id="tree"><div id="tree-inner"><svg id="tree-lines"></svg><div id="tree-nodes"></div></div><div class="tree-fade"></div></div>
       <div id="detail"></div>
       <div class="side-foot">
         <div id="route-chip"></div>
@@ -5777,14 +5781,18 @@ const UI = (() => {
     if (!vis.find(u => u.id === sel) && vis.length) sel = vis[0].id;
     const compact = $('tree').clientHeight < 300;
     $('tree').classList.toggle('compact', compact);
-    const CW = compact ? 104 : 118, RH = compact ? 90 : 112;
     const rows = Math.max(...vis.map(u => u.pos[1])) + 1;
+    const CW = compact ? 104 : 118;
+    let RH = compact ? 90 : 112, top = compact ? 44 : 52;
+    // a two-row tree on a small phone: pull the rows together so the bottom labels aren't cut off by the
+    // panel edge (only when that makes it fit; deeper trees keep their spacing and scroll)
+    if (compact && rows === 2) { const fit = $('tree').clientHeight - 42 - 54; if (fit < RH && fit >= 74) { RH = fit; top = 42; } }
     const wInner = Math.max(380, $('tree').clientWidth);
     const offX = (wInner - CW * 3) / 2 + CW / 2;
     const hInner = rows * RH + 20 + (vis.length < ups.length ? 34 : 0);
     inner.style.width = wInner + 'px'; inner.style.height = hInner + 'px';
     svg.setAttribute('viewBox', `0 0 ${wInner} ${hInner}`);
-    const P = u => [offX + u.pos[0] * CW, (compact ? 44 : 52) + u.pos[1] * RH];
+    const P = u => [offX + u.pos[0] * CW, top + u.pos[1] * RH];
     // connectors
     let lines = '';
     for (const u of vis) {
@@ -5824,7 +5832,11 @@ const UI = (() => {
       hint.style.left = wInner / 2 + 'px'; hint.style.top = (hInner - 18) + 'px'; hint.style.background = 'rgba(43,34,64,.75)'; hint.style.color = '#fff6e5'; hint.style.fontSize = '12px';
       nodesEl.appendChild(hint);
     }
+    requestAnimationFrame(treeFade);
   }
+  // a soft fade with a little arrow at the bottom of the tree while more upgrades sit below the fold
+  function treeFade() { const t = $('tree'); t.classList.toggle('more-below', t.scrollHeight - t.clientHeight - t.scrollTop > 8); }
+  $('tree').addEventListener('scroll', treeFade, { passive: true });
   function renderDetail() {
     const d = $('detail'); d.innerHTML = '';
     const u = UP[sel]; if (!u) return;
