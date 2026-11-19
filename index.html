@@ -850,7 +850,7 @@ const AudioSys = (() => {
   };
 
   function setEngine(throttle, boost) {
-    if (!ac) return;
+    if (!ac || !isFinite(throttle)) return;
     const t = ac.currentTime;
     const th = clamp(throttle, 0, 1.8);
     engGain.gain.setTargetAtTime(th * 0.32, t, 0.06);
@@ -859,7 +859,7 @@ const AudioSys = (() => {
     engOsc.frequency.setTargetAtTime(42 + th * 18 + (boost ? 20 : 0), t, 0.1);
   }
   function setWind(amount) {
-    if (!ac) return;
+    if (!ac || !isFinite(amount)) return;
     const t = ac.currentTime;
     windGain.gain.setTargetAtTime(clamp(amount, 0, 1) * 0.16, t, 0.15);
     windFilter.frequency.setTargetAtTime(500 + amount * 1500, t, 0.2);
@@ -6955,17 +6955,20 @@ function update(dt) {
   }
   saveTimer += dt;
 }
+let frameErrs = 0;
 function frame() {
-  const now = performance.now() / 1000;
-  let dt = Math.min(0.05, now - lastT); lastT = now;
-  pollPad();
-  if (G.paused) dt = 0;
-  const n = DEBUG.timeScale > 1 ? Math.round(DEBUG.timeScale) : 1;
-  const t0 = performance.now();
-  for (let i = 0; i < n; i++) { G.t += dt; update(dt); }
-  render();
-  DEBUG.frames++; DEBUG.ms = (DEBUG.ms || 0) * 0.95 + (performance.now() - t0) * 0.05; DEBUG.maxMs = Math.max(DEBUG.maxMs || 0, performance.now() - t0);
-  requestAnimationFrame(frame);
+  requestAnimationFrame(frame); // scheduled first, so one bad frame can never stop the game loop
+  try {
+    const now = performance.now() / 1000;
+    let dt = Math.min(0.05, now - lastT); lastT = now;
+    pollPad();
+    if (G.paused) dt = 0;
+    const n = DEBUG.timeScale > 1 ? Math.round(DEBUG.timeScale) : 1;
+    const t0 = performance.now();
+    for (let i = 0; i < n; i++) { G.t += dt; update(dt); }
+    render();
+    DEBUG.frames++; DEBUG.ms = (DEBUG.ms || 0) * 0.95 + (performance.now() - t0) * 0.05; DEBUG.maxMs = Math.max(DEBUG.maxMs || 0, performance.now() - t0);
+  } catch (e) { if (frameErrs++ < 5) setTimeout(() => { throw e; }); } // still reported, but the game keeps running
 }
 
 // a simple autopilot used for automated play-testing (window.__skyhop.bot = true)
