@@ -1659,7 +1659,7 @@ function bannerMsg() {
   const nr = nextRoute();
   if (nr) opts.push(`Next stop: ${nr.to}!`, `Next stop: ${nr.to}!`);
   if (mailCount()) opts.push('You’ve got mail!');
-  { const rv = rivalLive(); if (rv) opts.push(`Vroom Rockets: ${fmtAlt(rv.alt)}! Beat THAT!`, `Baron Vroom challenges you: ${fmtAlt(rv.alt)}!`); }
+  { const rv = rivalLive(); if (rv) opts.push(...(rivalWho(rv) === 'ember' ? [`Ember wants a race: ${fmtAlt(rv.alt)}!`, `Dragon race to ${fmtAlt(rv.alt)}!`] : [`Vroom Rockets: ${fmtAlt(rv.alt)}! Beat THAT!`, `Baron Vroom challenges you: ${fmtAlt(rv.alt)}!`])); }
   if (hangarDailyOn()) opts.push(`Today’s special: ${todaysDaily().cargo}!`);
   if (S.stats.pax > 1) opts.push(`${fmtInt(S.stats.pax)} happy passengers!`);
   if (S.rocketName) opts.push(`Go, ${S.rocketName}!`);
@@ -5110,7 +5110,7 @@ function computeResult() {
   }
   if (R.foundLost) { const it = LOST.find(x => x.id === R.foundLost); rows.push([`Found ${it.name}`, Math.round(80 + coinValue(it.min) * 40)]); }
   const rivalWon = R.rivalBeat && G.rival && !R.crashed ? G.rival.c : null;
-  if (rivalWon) rows.push([`Beat Baron Vroom’s ${rivalWon.name}`, rivalWon.prize]);
+  if (rivalWon) rows.push([rivalWho(rivalWon) === 'ember' ? `Beat Ember: ${rivalWon.name}` : `Beat Baron Vroom’s ${rivalWon.name}`, rivalWon.prize]);
   let dailyPaid = false;
   if (R.daily && R.dailyDone && S.daily && S.daily.day === R.daily.day && !S.daily.done) {
     const y = dayKey(new Date(Date.now() - 864e5));
@@ -5125,7 +5125,7 @@ function computeResult() {
   if (line > 1) { const base = rows.reduce((a, x) => a + x[1], 0); rows.push([`Line #${line} bonus +${(line - 1) * 50}%`, Math.round(base * 0.5 * (line - 1))]); }
   const jobsPaid = settleJobs(R, rows);
   const total = rows.reduce((s, x) => s + x[1], 0);
-  const core = rows.reduce((s, x) => s + (x[0].startsWith('Job:') || x[0].startsWith('Beat Baron') || x[0] === 'First delivery bonus!' || x[0].startsWith('Special delivery') ? 0 : x[1]), 0);
+  const core = rows.reduce((s, x) => s + (x[0].startsWith('Job:') || x[0].startsWith('Beat Baron') || x[0].startsWith('Beat Ember') || x[0] === 'First delivery bonus!' || x[0].startsWith('Special delivery') ? 0 : x[1]), 0);
   S.avg.total = S.avg.total * 0.65 + core * 0.35;
   const badges = [];
   if (R.delivered) badges.push('Delivered!');
@@ -5226,6 +5226,7 @@ const ACH = [
   { id: 'bandit', name: 'Lost Luggage Hero', desc: 'Catch the Comet Bandit and win the luggage back', test: () => (S.stats.bandit || 0) >= 1, reward: 30000 },
   { id: 'statue', name: 'Pebbleton’s Pride', desc: 'Build the Golden Ada Statue', test: () => lvl('statue') > 0, reward: 1000000 },
   { id: 'town', name: 'Town Planner', desc: 'Finish every Pebbleton town project', test: () => UPGRADES.filter(u => u.br === 'town').every(u => lvl(u.id) >= u.max), reward: 3000000 },
+  { id: 'dragonrace', name: 'Faster Than a Dragon', desc: 'Win all three of Ember’s sky races', test: () => !!(S.rival && S.rival.e3), reward: 5000000 },
   { id: 'stargazer', name: 'Stargazer', desc: 'Find a constellation past the Edge of the Map', test: () => chartedN() >= 1, reward: 600000 },
   { id: 'atlas', prog: () => [chartedN(), STAR_CHARTS.length], name: 'Sky Atlas', desc: 'Find all eight constellations', test: () => chartedN() >= STAR_CHARTS.length, reward: 6000000 },
   { id: 'gobble', name: 'Unslurpable', desc: 'Escape the Gobble Nebula without a scratch', test: () => (S.stats.gobble || 0) >= 1, reward: 400000 },
@@ -5248,6 +5249,7 @@ const ACH = [
 const T_ = (t, fs = 12) => `<text x="32" y="${28 + fs * 0.36}" text-anchor="middle" font-size="${fs}" font-weight="900" font-family="Fredoka, 'Arial Rounded MT Bold', Nunito, sans-serif" fill="${INK}" stroke="none">${t}</text>`;
 const T_KM = (n, fs) => `<text x="32" y="${27.5 + fs * 0.1}" text-anchor="middle" font-size="${fs}" font-weight="900" font-family="Fredoka, 'Arial Rounded MT Bold', Nunito, sans-serif" fill="${INK}" stroke="none">${n}</text><text x="32" y="38" text-anchor="middle" font-size="7.5" font-weight="800" font-family="Fredoka, 'Arial Rounded MT Bold', Nunito, sans-serif" fill="#5b4e72" stroke="none">km</text>`;
 const ACH_SYM = {
+  dragonrace: '<path d="M14 40c6-2 10-8 14-14l6 4c-4 6-8 10-14 14z" fill="#7be0c0" stroke-width="2.5"/><circle cx="36" cy="22" r="8" fill="#7be0c0" stroke-width="2.5"/><circle cx="38" cy="20" r="2.4" fill="#fff" stroke-width="1.5"/><path d="M33 14l-1-6 5 4M40 14l2-6 2 6" fill="#ffd93d" stroke-width="2"/><path d="M44 28l8 2-6 4" fill="#ffd93d" stroke-width="2"/><path d="M12 22h8M10 28h7M14 16h6" stroke="#4d96ff" stroke-width="2.5"/>',
   stargazer: '<path d="M14 40L24 22 36 30 48 14" fill="none" stroke="#e0a800" stroke-width="2.5" stroke-dasharray="0"/><path d="M14 36l1.6 3.4 3.4 1.6-3.4 1.6L14 46l-1.6-3.4L9 41l3.4-1.6zM24 17l1.6 3.4 3.4 1.6-3.4 1.6L24 27l-1.6-3.4L19 22l3.4-1.6zM36 25l1.6 3.4 3.4 1.6-3.4 1.6L36 35l-1.6-3.4L31 30l3.4-1.6zM48 9l1.6 3.4 3.4 1.6-3.4 1.6L48 19l-1.6-3.4L43 14l3.4-1.6z" fill="#fff6c8" stroke-width="1.5"/>',
   atlas: '<path d="M14 16l12-4 12 4 12-4v30l-12 4-12-4-12 4z" fill="#2a1450" stroke-width="2.5"/><path d="M26 12v30M38 16v30" stroke-width="2"/><path d="M18 34l5-9 8 5 6-10 7 6" fill="none" stroke="#ffd93d" stroke-width="2"/><circle cx="18" cy="34" r="1.8" fill="#fff6c8" stroke="none"/><circle cx="23" cy="25" r="1.8" fill="#fff6c8" stroke="none"/><circle cx="31" cy="30" r="1.8" fill="#fff6c8" stroke="none"/><circle cx="37" cy="20" r="1.8" fill="#fff6c8" stroke="none"/><circle cx="44" cy="26" r="1.8" fill="#fff6c8" stroke="none"/>',
   fly1: '<path d="M32 15c5 4 7 9 7 13v6H25v-6c0-4 2-9 7-13z" fill="#fff6e5"/><circle cx="32" cy="25" r="2.6" fill="#4d96ff" stroke-width="2"/><path d="M25 30l-4 6h4M39 30l4 6h-4" fill="#ff5a5f" stroke-width="2"/><path d="M29 35l3 5 3-5" fill="#ff9f43" stroke-width="2"/>',
@@ -6011,6 +6013,14 @@ const SEASON_POKE = {
 // the little seasonal friend between Ada and the tower: snowman, pumpkins, tulips or sunflowers
 // Baron Vroom hovers over the yard in his gold balloon while a challenge is open (tap him)
 const BARON_TAUNTS = ['My rocket has TWO cup holders!', 'Vroom Rockets: first, best, LOUDEST!', 'Is that a rocket or a teapot?', 'I polish my fins every morning. Twice!', 'Ha! You call that a launch pad?'];
+const EMBER_TAUNTS = ['Race me! Race me! RACE ME!', 'I have been practising my flapping.', 'Your rocket smells like toast. Nice toast.', 'Dragons don’t need fuel. We run on snacks.', 'I napped on your shed. It is very warm.'];
+const emberPerchX = () => Math.max(-246, G.cam.x - W / 2 / G.cam.z + 78); // over the shed, but always on screen
+function drawEmberPerch() { // Ember hovers over the shed roof, waiting for a race
+  const P = G.poke, hop = P.baronT > 0 ? Math.abs(Math.sin(P.baronT * 9)) * 8 : 0, ex = emberPerchX() + Math.sin(G.t * 0.7) * 10, epy = 186 + Math.sin(G.t * 1.6) * 7 + hop;
+  ctx.save(); ctx.translate(ex, -epy); ctx.scale(1.15, 1.15); drawDragonling(ctx, { dir: 1, seed: 0.37, col: '#7be0c0' }, G.t); ctx.restore();
+  ctx.save(); ctx.translate(ex - 4, -epy - 44); ctx.rotate(-0.08); rr(ctx, -30, -11, 60, 22, 7); fillStroke(ctx, '#ffd93d', 3); text(ctx, 'RACE?', 0, 1, 13, INK, 'center', null); ctx.restore();
+  if (P.baronT > 0) speechBubble(ctx, P.baronLine, ex + 70, -epy - 40, clamp(P.baronT * 3, 0, 1) * clamp((2.8 - P.baronT) * 6, 0, 1), 150, true);
+}
 function drawBaronBalloon() {
   const P = G.poke, bpy = 196 + Math.sin(G.t * 1.2 + 1) * 8, bx = 228 + Math.sin(G.t * 0.5) * 8, hop = P.baronT > 0 ? Math.abs(Math.sin(P.baronT * 9)) * 6 : 0;
   ctx.save(); ctx.translate(bx, -bpy); ctx.rotate(Math.sin(G.t * 0.9) * 0.05); ctx.scale(0.62, 0.62); ink(ctx, 3);
@@ -6262,7 +6272,7 @@ function drawGround() {
     }
   }
   if (G.mode === 'hangar') drawBannerPlane();
-  if (G.mode === 'hangar' && rivalLive() && !mountain) drawBaronBalloon();
+  if (G.mode === 'hangar' && rivalLive() && !mountain) { if (rivalWho(rivalLive()) === 'ember') drawEmberPerch(); else drawBaronBalloon(); }
   // ---- launch pad
   rr(ctx, -80, -4, 160, 22, 5); fillStroke(ctx, '#c9ced8');
   ctx.save(); rr(ctx, -80, -4, 160, 22, 5); ctx.clip(); ctx.fillStyle = '#ffd93d'; for (let i = -10; i < 10; i++) { ctx.beginPath(); ctx.moveTo(i * 22, 18); ctx.lineTo(i * 22 + 11, 18); ctx.lineTo(i * 22 + 22, -4); ctx.lineTo(i * 22 + 11, -4); ctx.fill(); } ctx.restore();
@@ -6383,7 +6393,13 @@ function pokeHangar(sx, sy) {
     return true;
   }
   if (townTap) { pokeTown(townTap); return true; } // Pebbleton's landmarks on the hills
-  if (town && rivalLive() && Math.abs(wx - 228) < 28 && wpy > 150 && wpy < 225) {
+  if (town && rivalLive() && rivalWho(rivalLive()) === 'ember' && Math.abs(wx - emberPerchX()) < 44 && wpy > 150 && wpy < 245) {
+    const rv = rivalLive(), opts = EMBER_TAUNTS.concat([`First to ${fmtAlt(rv.alt)} wins!`]);
+    let line = pick(opts); if (line === P.baronLine) line = pick(opts);
+    P.baronLine = line; P.baronT = 2.8; for (let i = 0; i < 5; i++) setTimeout(() => sfx.talk(1.35), i * 70);
+    return true;
+  }
+  if (town && rivalLive() && rivalWho(rivalLive()) === 'baron' && Math.abs(wx - 228) < 28 && wpy > 150 && wpy < 225) {
     const rv = rivalLive(), opts = BARON_TAUNTS.concat([`Beat ${fmtAlt(rv.alt)} first, then we talk!`]);
     let line = pick(opts); if (line === P.baronLine) line = pick(opts);
     P.baronLine = line; P.baronT = 2.8; for (let i = 0; i < 6; i++) setTimeout(() => sfx.talk(0.75), i * 70);
@@ -6667,7 +6683,22 @@ const RIVAL = [
   { id: 'v5', after: 'r6', alt: 420000, prize: 12000, name: 'Vroom-MAX', lv: 9,
     intro: [['baron', 'This is it. The Vroom-MAX, built with my entire fortune.'], ['baron', '420 kilometres! If you beat this, I... I don’t know what I’ll do!'], ['ada', 'Go on, dear. One last time!']],
     lose: [['baron', 'You beat the Vroom-MAX. You actually beat it.'], ['baron', 'Fine. You run the finest rocket line in the sky. May I have your autograph?'], ['ada', 'Come and watch our next launch, Baron. Front row!']] },
+  // ---- Ember's sky races, after the Edge of the Map: she flies alongside on her own wings
+  { id: 'e1', who: 'ember', after: 'x5', alt: 12000000, prize: 1500000, name: 'Sky Race', lv: 0,
+    intro: [['ember', 'Rawr! I mean... hello again. Everybody says your rocket is the fastest thing in the sky.'], ['ember', 'But I am a DRAGON. Dragons are the fastest thing in the sky. Race me to 12,000 km!'], ['ada', 'Oh, this should be fun. Mind her tail, sweetpea.']],
+    lose: [['ember', 'Hmph. I wasn’t even flapping properly. Again! After my nap.']] },
+  { id: 'e2', who: 'ember', after: 'x5', alt: 16000000, prize: 3000000, name: 'Comet Race', lv: 0,
+    intro: [['ember', 'I ate seven comets for breakfast. I am VERY fast now.'], ['ember', 'Sixteen thousand kilometres. Winner is Queen of the Sky!'], ['pip', 'Beep! Can a rocket be a queen?']],
+    lose: [['ember', 'Fine. You are Queen of the Sky. Or King. Or Rocket.'], ['ember', 'One more race. The big one. I will practise flapping.']] },
+  { id: 'e3', who: 'ember', after: 'x5', alt: 21000000, prize: 6000000, name: 'The Big Race', lv: 0,
+    intro: [['ember', 'This is it. All the way into the Star Atlas: 21,000 km. My whole family is watching from the Edge.'], ['ada', 'Give it everything, dear. There’s always further!']],
+    lose: [['ember', '...You won. You really, truly won.'], ['ember', 'I will tell all the dragons. Some of them will cry. I might cry a little bit too.'], ['ada', 'Come inside, dear, there’s cocoa. Even the fastest dragon in the sky needs cocoa.']] },
 ];
+const RIVAL_LINES = {
+  baron: { go: ['Eat my exhaust!', 'Ta-ta, slowpoke!', 'Vroom VROOM!'], pass: ['WHAT?!', 'Hey! No fair!', 'How are you so fast?!'], top: 'Top THAT!', lost: ['NOOOO!', 'My beautiful rocket!', 'Impossible!'] },
+  ember: { go: ['Rawr! Catch me!', 'Flap flap FLAP!', 'Byeee, slowpoke!'], pass: ['Hey! Wait for me!', 'How?! You don’t even have wings!', 'My wings are tired!'], top: 'Beat THAT, rocket!', lost: ['Rawwwr...', 'No fair, you have ENGINES!', 'I need a nap.'] },
+};
+const rivalWho = c => (c && c.who) || 'baron';
 function rivalCur() { if ((S.line || 1) > 1) return null; S.rival = S.rival || {}; return RIVAL.find(c => routeDone(c.after) && !S.rival[c.id]) || null; }
 const rivalLive = () => { const c = rivalCur(); return c && S.seen['rival_' + c.id] ? c : null; };
 // the rival's flight: a scripted climb paced against your own rocket, so it feels like a race
@@ -6696,12 +6727,13 @@ function updateRival(R, dt) {
   const rv = G.rival; if (!rv || R.crashed) return;
   if (rv.sayT > 0) rv.sayT -= dt;
   const gp = ghostAt(rv, R.time);
-  if (R.time > 0.6) rivalSay(rv, 'go', pick(['Eat my exhaust!', 'Ta-ta, slowpoke!', 'Vroom VROOM!']));
-  if (R.time > 2.5 && R.alt > gp.alt + 40 && gp.up && !rv.said.go2) { rv.said.go2 = 1; rv.say = pick(['WHAT?!', 'Hey! No fair!', 'How are you so fast?!']); rv.sayT = 2; }
-  if (R.time > rv.T && !R.rivalBeat) rivalSay(rv, 'top', 'Top THAT!');
+  const RL = RIVAL_LINES[rivalWho(rv.c)];
+  if (R.time > 0.6) rivalSay(rv, 'go', pick(RL.go));
+  if (R.time > 2.5 && R.alt > gp.alt + 40 && gp.up && !rv.said.go2) { rv.said.go2 = 1; rv.say = pick(RL.pass); rv.sayT = 2; }
+  if (R.time > rv.T && !R.rivalBeat) rivalSay(rv, 'top', RL.top);
   if (!R.rivalBeat && R.time > 1 && R.alt > rv.alt) {
-    R.rivalBeat = true; rv.say = pick(['NOOOO!', 'My beautiful rocket!', 'Impossible!']); rv.sayT = 2.4;
-    banner('BARON VROOM BEATEN!', '#ffd93d', 2.2, 'Prize: ' + fmtMoney(rv.c.prize)); sfx.record(); confetti(R.x, R.py + 80, 30);
+    R.rivalBeat = true; rv.say = pick(RL.lost); rv.sayT = 2.4;
+    banner(rivalWho(rv.c) === 'ember' ? 'YOU OUTFLEW EMBER!' : 'BARON VROOM BEATEN!', '#ffd93d', 2.2, 'Prize: ' + fmtMoney(rv.c.prize)); sfx.record(); confetti(R.x, R.py + 80, 30);
   }
 }
 function drawRivalRocket() {
@@ -6717,23 +6749,33 @@ function drawRivalRocket() {
     const sy = above ? (small ? 168 : 196) : H - (small ? 120 : 70);
     ctx.save(); ctx.setTransform(DPR, 0, 0, DPR, 0, 0); ctx.globalAlpha = gp.fade;
     ink(ctx, 3); circ(ctx, sx, sy, 15); fillStroke(ctx, '#3a3554', 3);
-    ctx.save(); ctx.translate(sx, sy + 1); drawFace(ctx, 'baron', 10, above ? 'joy' : 'scared', G.t); ctx.restore();
+    ctx.save(); ctx.translate(sx, sy + 1); drawFace(ctx, rivalWho(rv.c), 10, above ? 'joy' : 'scared', G.t); ctx.restore();
     ctx.beginPath(); if (above) { ctx.moveTo(sx - 7, sy - 18); ctx.lineTo(sx, sy - 27); ctx.lineTo(sx + 7, sy - 18); } else { ctx.moveTo(sx - 7, sy + 18); ctx.lineTo(sx, sy + 27); ctx.lineTo(sx + 7, sy + 18); } ctx.closePath(); fillStroke(ctx, '#ffd93d', 2.5);
     text(ctx, (above ? '+' : '−') + fmtAlt(Math.abs(gp.alt - R.alt)), sx + 22, sy + 1, small ? 12 : 14, '#ffd93d', 'left', INK, 3);
     if (rv.sayT > 0 && rv.say) speechBubble(ctx, rv.say, sx + 10, sy + (above ? 52 : -32), clamp(rv.sayT * 3, 0, 1), 120, true);
     ctx.restore();
     return;
   }
-  const look = rv.look || (rv.look = rivalLook(rv.c.lv)), rs = G.rocketScale;
-  ctx.save();
-  ctx.translate(rx, -gpy); ctx.scale(rs, rs);
-  ctx.globalAlpha = 0.92 * gp.fade;
-  drawRocket(ctx, look, { t: G.t, throttle: gp.up ? 0.85 : 0, faces: ['baron'], mood: R.rivalBeat ? 'scared' : 'joy', stage: 1, boostersOn: false, dropsOn: false });
-  ctx.restore();
-  const d = rocketDims(look), tagY = -gpy - (d.BL + d.NH + d.BH) * rs - 14;
+  const rs = G.rocketScale, ember = rivalWho(rv.c) === 'ember';
+  let tagY;
+  if (ember) { // Ember races on her own wings, tilted up into the climb with a sparkly wake
+    ctx.save(); ctx.translate(rx, -gpy); ctx.globalAlpha = 0.95 * gp.fade;
+    for (let i = 1; i <= 5; i++) { ctx.globalAlpha = 0.95 * gp.fade * (1 - i / 6); ctx.fillStyle = i % 2 ? '#ffe58a' : '#7be0c0'; circ(ctx, Math.sin(G.t * 6 + i) * 6 * rs, (26 + i * 16) * rs, (5 - i * 0.6) * rs); ctx.fill(); }
+    ctx.globalAlpha = 0.95 * gp.fade; ctx.rotate(-1.25 + Math.sin(G.t * 2) * 0.06); ctx.scale(1.55 * rs, 1.55 * rs);
+    drawDragonling(ctx, { dir: 1, seed: 0.37, col: '#7be0c0' }, G.t);
+    ctx.restore(); tagY = -gpy - 62 * rs;
+  } else {
+    const look = rv.look || (rv.look = rivalLook(rv.c.lv));
+    ctx.save();
+    ctx.translate(rx, -gpy); ctx.scale(rs, rs);
+    ctx.globalAlpha = 0.92 * gp.fade;
+    drawRocket(ctx, look, { t: G.t, throttle: gp.up ? 0.85 : 0, faces: ['baron'], mood: R.rivalBeat ? 'scared' : 'joy', stage: 1, boostersOn: false, dropsOn: false });
+    ctx.restore();
+    const d = rocketDims(look); tagY = -gpy - (d.BL + d.NH + d.BH) * rs - 14;
+  }
   ctx.save(); ctx.globalAlpha = gp.fade * hudFade(tagY);
   ctx.scale(1 / z, 1 / z);
-  text(ctx, 'BARON VROOM', rx * z, tagY * z, 12, '#ffd93d', 'center', INK, 3);
+  text(ctx, ember ? 'EMBER' : 'BARON VROOM', rx * z, tagY * z, 12, '#ffd93d', 'center', INK, 3);
   if (rv.sayT > 0 && rv.say) speechBubble(ctx, rv.say, rx * z, tagY * z - 20, clamp(rv.sayT * 3, 0, 1), 120, true);
   ctx.restore();
 }
