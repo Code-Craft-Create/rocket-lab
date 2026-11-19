@@ -247,7 +247,7 @@ button{font-family:var(--font)}
   body.in-hangar #toasts{left:calc((100vw - min(440px,54vw) - 16px)/2)}
   .toast{font-size:12px;padding:5px 10px;max-width:42vw}
   body.in-flight #toasts{top:auto;bottom:10px}
-  body.in-flight .toast{font-size:12px;padding:4px 10px;max-width:44vw;border-width:2px}
+  body.in-flight .toast{font-size:12px;padding:4px 10px;max-width:44vw;border-width:2px;animation-name:toastUp,toastOut}
 }
 /* small phones on their side (568 px wide): wider panel so every header button fits */
 @media (max-height:520px) and (max-width:640px){
@@ -396,6 +396,9 @@ body.in-hangar #toasts{left:calc((100vw - min(580px,54vw) - 16px)/2)}
 .toast .tmedal{display:inline-block;width:34px;height:34px;vertical-align:middle;margin:-10px 6px -8px -8px}.toast .tmedal svg{width:100%;height:100%;display:block}
 @keyframes toastIn{from{transform:translateY(-30px) scale(.8);opacity:0}}
 @keyframes toastOut{to{transform:translateY(-20px);opacity:0}}
+/* desktop and tablet flights: tips sit at the bottom, behind the rocket, so they never cover the cash, the passengers or the sky ahead */
+@media (min-width:601px) and (min-height:521px){body.in-flight #toasts{top:auto;bottom:14px;width:max(300px,min(600px,calc(100vw - 540px)))}body.in-flight .toast{max-width:100%;animation-name:toastUp,toastOut}} /* narrow enough to stay between the jobs list and the boost button */
+@keyframes toastUp{from{transform:translateY(30px) scale(.8);opacity:0}}
 
 /* ---------- Pause / settings ---------- */
 #scr-letter .panel{max-width:410px;background:#fffaf0 repeating-linear-gradient(180deg,transparent 0 28px,rgba(77,150,255,.16) 28px 30px);padding:18px 20px 16px;position:relative;overflow:visible;transform:rotate(-1deg);animation:letterIn .5s cubic-bezier(.2,1.4,.4,1)}
@@ -3694,6 +3697,7 @@ function updateFlight(dt) {
   G.cam.anchor += (anchorT - G.cam.anchor) * Math.min(1, dt * 2);
   G.cam.py = R.py;
   G.cam.x += (R.x - G.cam.x) * Math.min(1, dt * 3.2);
+  { const lag = W * 0.24 / G.cam.z; G.cam.x = clamp(G.cam.x, R.x - lag, R.x + lag); } // keep the rocket well on screen, even on narrow phones
   // --- spawn ahead
   const viewTop = G.cam.py + (H * G.cam.anchor) / G.cam.z;
   while (G.spawnY < viewTop + 700) { spawnChunk(G.spawnY, G.spawnY + 200); G.spawnY += 200; }
@@ -5549,10 +5553,12 @@ function drawPlayerRocket() {
   if (R.dashFx > 0) { const k = R.dashFx / 0.45; ctx.globalAlpha = k * 0.8; circ(ctx, 0, 0, 40 + (1 - k) * 34); ctx.lineWidth = 4; ctx.strokeStyle = '#4fd8ff'; ctx.stroke(); ctx.globalAlpha = 1; }
   ctx.rotate(R.tilt);
   ctx.scale(G.rocketScale, G.rocketScale);
+  ctx.save(); // the barrel roll squashes only the rocket, not its speech bubble or parachute
   if (R.dashT > 0) { const c = Math.cos((1 - R.dashT / DASH_T) * TAU); ctx.scale((c < 0 ? -1 : 1) * Math.max(0.2, Math.abs(c)), 1); }
   if (R.invuln > 0 && Math.sin(G.t * 40) > 0) ctx.globalAlpha = 0.55;
   const mood = R.delivered ? 'joy' : R.mood;
   drawRocket(ctx, look, { t: G.t, throttle: G.mode === 'launch' ? 0.08 : R.throttle, faces: R.delivered ? [] : R.faces, mood, boostersOn: R.boosters, dropsOn: R.drops, stage: R.visStage, shieldOn: R.shieldOn, ab: R.abT > 0, boostFlame: R.boostT > 0, steer: R.steer });
+  ctx.restore();
   ctx.globalAlpha = 1;
   if (R.chute) drawChute(R.chuteY, rocketDims(look));
   // speech bubble
@@ -5563,10 +5569,13 @@ function drawPlayerRocket() {
     const a = clamp(R.bubble.t * 5, 0, 1) * (1 - clamp((R.bubble.t - 2.2) / 0.4, 0, 1));
     ctx.globalAlpha = a;
     ctx.font = `900 14px ${FONT}`; const tw = ctx.measureText(R.bubble.s).width;
-    rr(ctx, bx, by - 30, tw + 20, 28, 12); ink(ctx, 3); fillStroke(ctx, '#ffffff', 3);
-    ctx.beginPath(); ctx.moveTo(bx + 8, by - 3); ctx.lineTo(bx - 4, by + 8); ctx.lineTo(bx + 18, by - 3); ctx.fillStyle = '#fff'; ctx.fill(); ctx.stroke();
-    ctx.fillStyle = '#fff'; ctx.fillRect(bx + 7, by - 6, 12, 5);
-    text(ctx, R.bubble.s, bx + 10 + tw / 2, by - 16, 14, INK, 'center', null);
+    // flip the bubble to the rocket's left when it would run off the right edge (narrow phones)
+    const m = ctx.getTransform(), flip = (m.a * (bx + tw + 20) + m.c * (by - 16) + m.e) / DPR > W - 6;
+    const s = flip ? -1 : 1, x0 = flip ? -bx - tw - 20 : bx;
+    rr(ctx, x0, by - 30, tw + 20, 28, 12); ink(ctx, 3); fillStroke(ctx, '#ffffff', 3);
+    ctx.beginPath(); ctx.moveTo(s * (bx + 8), by - 3); ctx.lineTo(s * (bx - 4), by + 8); ctx.lineTo(s * (bx + 18), by - 3); ctx.fillStyle = '#fff'; ctx.fill(); ctx.stroke();
+    ctx.fillStyle = '#fff'; ctx.fillRect(flip ? -bx - 19 : bx + 7, by - 6, 12, 5);
+    text(ctx, R.bubble.s, x0 + 10 + tw / 2, by - 16, 14, INK, 'center', null);
   }
   ctx.restore();
 }
@@ -5599,8 +5608,12 @@ function drawHUD() {
   if (!R) return;
   const small = W < 600;
   const pad = small ? 10 : 16;
-  // altitude
-  text(ctx, fmtAlt(R.alt), pad, pad + (small ? 18 : 24), small ? 30 : 40, '#ffffff', 'left');
+  // altitude: shrinks a little when a long number would run under the coin counter
+  const altS = fmtAlt(R.alt), coinL = (W < 380 ? W / 2 + 22 : W / 2) - 40 - (small ? 11 : 14) - 8;
+  let altF = small ? 30 : 40; ctx.font = `900 ${altF}px ${FONT}`;
+  const altW = ctx.measureText(altS).width + altF * 0.18;
+  if (pad + altW > coinL) altF = Math.max(20, Math.floor(altF * (coinL - pad) / altW));
+  text(ctx, altS, pad, pad + (small ? 18 : 24), altF, '#ffffff', 'left');
   text(ctx, `${fmtSpeed(R.vy)}${R.warp > 1.05 ? `  ·  WARP ×${R.warp.toFixed(1)}` : ''}`, pad + 2, pad + (small ? 44 : 58), small ? 13 : 16, '#bff8ff', 'left');
   // hearts
   const hy = pad + (small ? 66 : 86), hs = small ? 20 : 24, rowH = small ? 19 : 23;
@@ -5629,10 +5642,11 @@ function drawHUD() {
   // coins
   const cx = W < 380 ? W / 2 + 22 : W / 2; // nudge right on very narrow phones so the altitude fits
   ctx.save(); ctx.translate(cx - 40, pad + 20); drawCoin(ctx, { r: small ? 11 : 14, seed: 0 }, G.t); ctx.restore();
-  text(ctx, fmtMoney(R.coinCash), cx - 22, pad + 21, small ? 20 : 26, '#ffd93d', 'left');
+  const mx = cx - (small ? 22 : 17); // the money text starts clear of the coin's outline
+  text(ctx, fmtMoney(R.coinCash), mx, pad + 21, small ? 20 : 26, '#ffd93d', 'left');
   if (R.lucky > 0) { // rainbow luck: x2 pill under the coin, flashing as it runs out
     ctx.font = `900 ${small ? 20 : 26}px ${FONT}`;
-    const mr = cx - 22 + ctx.measureText(fmtMoney(R.coinCash)).width, over = mr + 40 > W - (small ? 64 : 84);
+    const mr = mx + ctx.measureText(fmtMoney(R.coinCash)).width, over = mr + 40 > W - (small ? 64 : 84);
     // no room after the money (narrow phones): sit at the end of the speed line instead
     ctx.font = `900 ${small ? 13 : 16}px ${FONT}`;
     const spW = ctx.measureText(`${fmtSpeed(R.vy)}${R.warp > 1.05 ? `  ·  WARP ×${R.warp.toFixed(1)}` : ''}`).width;
@@ -5659,9 +5673,11 @@ function drawHUD() {
   // afterburner button
   if (st.ab && G.mode !== 'launch') drawBoostButton();
   // radar warnings
-  for (const w of G.warnings) {
-    const [sx] = w2s(w.x, 0);
-    const x = clamp(sx, 30, W - 60), y = small ? Math.max(150, (G.hudB || 0) + 26) : 178; // below the hearts and fuel gauge
+  // hazards close together share one triangle (the most urgent one, red if any of them is big) instead of a messy pile
+  const warn = G.warnings.map(w => ({ x: clamp(w2s(w.x, 0)[0], 30, W - 60), k: w.k, big: w.big })).sort((a, b) => a.x - b.x), shown = [];
+  for (const w of warn) { const p = shown[shown.length - 1]; if (p && w.x - p.x < 38) { p.k = Math.max(p.k, w.k); p.big = p.big || w.big; } else shown.push(w); }
+  for (const w of shown) {
+    const x = w.x, y = small ? Math.max(150, (G.hudB || 0) + 26) : 178; // below the hearts and fuel gauge
     ctx.save(); ctx.globalAlpha = 0.4 + w.k * 0.6;
     ctx.translate(x, y + Math.sin(G.t * 14) * 3);
     ink(ctx, 3); ctx.beginPath(); ctx.moveTo(0, -16); ctx.lineTo(15, 12); ctx.lineTo(-15, 12); ctx.closePath(); fillStroke(ctx, w.big ? '#ff5a5f' : '#ffd93d', 3);
@@ -5851,11 +5867,12 @@ function placeToasts() {
 }
 function toast(html, ms = 3600, pri = false) {
   const t = el('div', 'toast' + (pri ? ' pri' : ''), html);
+  t.style.animationDelay = '0s,' + Math.max(0.4, ms / 1000 - 0.4) + 's'; // fade out when this toast ends, not at a fixed 3.6 s
   const below = placeToasts();
   $('toasts').appendChild(t);
   setTimeout(() => t.remove(), ms + 300);
   const inFlight = document.body.classList.contains('in-flight');
-  const maxT = W < 600 || H < 520 ? (inFlight ? 1 : 2) : below ? 2 : inFlight ? 3 : 4; // in flight, keep clear of the zone banners
+  const maxT = W < 600 || H < 520 ? (inFlight ? 1 : 2) : below || inFlight ? 2 : 4; // in flight, keep clear of the zone banners
   // when there are too many, drop ordinary notes before trophies
   while ($('toasts').children.length > maxT) { const box = $('toasts'); ([...box.children].find(c => !c.classList.contains('pri')) || box.firstChild).remove(); }
 }
@@ -7084,7 +7101,7 @@ window.__skyhop = {
   done(id) { S.routes[id] = { done: true, stars: 3, runs: 1 }; const nx = nextRoute(); S.route = nx ? nx.id : 'free'; },
   start: startGame, launch(v = 0.8) { $('scr-results').classList.add('hidden'); if (G.mode !== 'launch') enterLaunch(); G.launch.v = v; doLaunch(); },
   hangar: () => goHangar(true), flush: () => UI.flushPending(), reset() { resetSave(); }, LOST, drawLostItem, mail: () => UI.openLetter(),
-  daily() { return todaysDaily(); },
+  daily() { return todaysDaily(); }, toast,
   skyEvent(id) { DEBUG.forceEvent = id; },
   teleport(alt) { const R = G.R; if (!R) return; R.alt = alt; R.maxAlt = Math.max(R.maxAlt, alt); },
   save: saveGame, music: Music, audio: AudioSys, sfxTest() { const errs = []; for (const k in AudioSys.sfx) { try { AudioSys.sfx[k](); } catch (e) { errs.push(k + ':' + e.message); } } return errs; },
