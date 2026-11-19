@@ -1065,6 +1065,11 @@ const STORY = {
     ['ada', 'Buckley says it was "fine". Now the town wants real rides! I’ve set up a Launch Site branch for you.'],
     ['plum', 'Ahem! Mayor Plum here. I demand a latte at the Cloud Nine Café. Immediately. Please.'],
   ],
+  newline: [
+    ['plum', 'Ahem! Splendid news! Every town in the valley wants a Skyhop line of its own.'],
+    ['ada', 'So we start again with a shiny new rocket, sweetpea. Same sky, bigger crowds.'],
+    ['ada', 'Word has spread, so every flight pays more now. Let’s see how fast you can do it this time!'],
+  ],
   jobs: [
     ['plum', 'Ahem! Pebbleton is buzzing about your rocket. I have pinned a Job Board in the shed.'],
     ['plum', 'Odd jobs for daring pilots: coins, rings, close shaves. Finish them on ANY flight for extra cash!'],
@@ -1569,7 +1574,7 @@ const PAINTS = [
   { id: 'gold', name: 'Solid Gold', stars: 24, end: true, body: '#ffd34d', accent: '#ff9f43', pattern: 'shine' },
 ];
 const totalStars = () => Object.values(S.routes).reduce((a, r) => a + (r.stars || 0), 0);
-const paintUnlocked = p => totalStars() >= p.stars || (p.end && S.ended);
+const paintUnlocked = p => totalStars() >= p.stars || (p.end && (S.ended || (S.line || 1) > 1));
 const HULL_COLS = ['#fff6e5', '#f4f1fb', '#e3ecf7', '#d4e6ff', '#cfe9ff', '#fff0b3', '#ffe07a', '#ffd34d'];
 function rocketDims(L) {
   const BL = 66 + Math.min(L.tank, 12) * 2.6;
@@ -3067,6 +3072,8 @@ function computeResult() {
   const record = alt > S.bestAlt && S.flights > 0;
   if (record) rows.push(['New record bonus', Math.round(altPay * 0.25)]);
   if (st.gift) rows.push(['Gift shop sales', st.gift]);
+  const line = S.line || 1;
+  if (line > 1) { const base = rows.reduce((a, x) => a + x[1], 0); rows.push([`Line #${line} bonus +${(line - 1) * 50}%`, Math.round(base * 0.5 * (line - 1))]); }
   const jobsPaid = settleJobs(R, rows);
   const total = rows.reduce((s, x) => s + x[1], 0);
   const core = rows.reduce((s, x) => s + (x[0].startsWith('Job:') || x[0] === 'First delivery bonus!' ? 0 : x[1]), 0);
@@ -3145,6 +3152,7 @@ const ACH = [
   { id: 'whale', name: 'Whale Rider', desc: 'Catch a boost from Big Blue’s spout', test: () => S.stats.whale >= 1, reward: 2500 },
   { id: 'kraken', name: 'Eight-Arm Escape', desc: 'Slip past every arm of the Space Kraken', test: () => S.stats.kraken >= 1, reward: 20000 },
   { id: 'guide', prog: () => [GUIDE.filter(guideSeen).length, GUIDE.length], name: 'Sky Spotter', desc: 'Fill every page of the Sky Guide', test: () => GUIDE.every(guideSeen), reward: 50000 },
+  { id: 'line2', name: 'Franchise', desc: 'Open a second Skyhop line after the finale', test: () => (S.line || 1) >= 2, reward: 5000 },
   { id: 'tickle', secret: true, name: 'Tickle Tank', desc: 'Poke your rocket 25 times in the workshop', test: () => (S.stats.pokes || 0) >= 25, reward: 250 },
   { id: 'fork', name: 'Decisions!', desc: 'Pick your first fork upgrade', test: () => UPGRADES.some(u => u.fork && lvl(u.id) > 0), reward: 500 },
 ];
@@ -3514,7 +3522,9 @@ function drawGround() {
       rr(ctx, shx - 30, -64, 60 * (1 - op * 0.75), 64, 4); fillStroke(ctx, '#fff6e5');
     } else { rr(ctx, shx - 30, -64, 60, 64, 4); fillStroke(ctx, '#fff6e5'); ctx.beginPath(); ctx.moveTo(shx - 30, -64); ctx.lineTo(shx + 30, 0); ctx.moveTo(shx + 30, -64); ctx.lineTo(shx - 30, 0); ctx.stroke(); }
     rr(ctx, shx - 62, -122, 124, 26, 6); fillStroke(ctx, '#fff6e5');
-    text(ctx, routeDone('r2') ? 'SKYHOP EXPRESS' : "ADA'S ROCKETS", shx, -109, routeDone('r2') ? 12 : 13, INK, 'center', null);
+    const pro = routeDone('r2') || (S.line || 1) > 1;
+    text(ctx, pro ? 'SKYHOP EXPRESS' : "ADA'S ROCKETS", shx, -109, pro ? 12 : 13, INK, 'center', null);
+    if ((S.line || 1) > 1) { circ(ctx, shx + 62, -122, 12); fillStroke(ctx, '#ffd93d', 3); text(ctx, String(S.line), shx + 62, -121, 13, INK, 'center', null); }
     if (routeDone('r3')) { const on = Math.sin(G.t * 3) > 0; ctx.beginPath(); ctx.moveTo(shx, -140); ctx.lineTo(shx, -162); ctx.stroke(); circ(ctx, shx, -166, 5); fillStroke(ctx, on ? '#ff5a5f' : '#7a1d2e', 2.5); }
     // crowd grows with every route delivered
     const nDone = ROUTES.filter(r => routeDone(r.id)).length;
@@ -4441,9 +4451,28 @@ const UI = (() => {
       const act = el('div', 'r-act'); act.appendChild(b); card.appendChild(act);
       list.appendChild(card);
     }
+    if (S.ended) {
+      const nl = (S.line || 1) + 1;
+      const card = el('div', 'route');
+      card.appendChild(el('div', 'r-ico', ICONS.trophy));
+      card.appendChild(el('div', 'r-main', `<div class="r-name">Open Line #${nl}</div><div class="r-desc">Start the story again with a brand-new rocket. You keep trophies, paint jobs, the Sky Guide and stats, and every flight pays <b>+${(nl - 1) * 50}%</b>.</div>`));
+      const b = el('button', 'btn go', 'Start');
+      b.addEventListener('click', () => { sfx.click(); confirmBox(`Open Line #${nl}?`, 'Your rocket, money and routes start over. Trophies, paint jobs, the Sky Guide and stats stay. Every flight pays more.', startNewLine); });
+      const act = el('div', 'r-act'); act.appendChild(b); card.appendChild(act);
+      list.appendChild(card);
+    }
     overlay('scr-map', true);
     renderHeadBtns();
     saveGame();
+  }
+  function startNewLine() {
+    const keep = { ach: S.ach, stats: S.stats, settings: S.settings, seen: S.seen, viewed: S.viewed, tabsSeen: S.tabsSeen, paint: S.paint, earned: S.earned, flights: S.flights, avg: S.avg, line: (S.line || 1) + 1 };
+    S = Object.assign(defaultSave(), keep);
+    S.seen.endCredits = 0; S.pendingLine = true;
+    checkAchievements(); saveGame();
+    overlay('scr-map', false);
+    G.st = computeStats(); G.look = rocketLook();
+    sfx.unlock(); goHangar();
   }
 
   // ---------- achievements
@@ -4534,7 +4563,7 @@ const UI = (() => {
     who.forEach((k, i) => { const row = i < 12 ? 0 : 1; const n = row ? who.length - 12 : 12; const x = 250 + ((row ? i - 12 : i) - (n - 1) / 2) * 38; c.save(); c.translate(x, 200 + row * 44); drawFace(c, k, 15, 'joy', i); c.restore(); });
     text(c, 'THANK YOU FOR FLYING SKYHOP!', 250, 24, 18, '#ffd93d');
     list.appendChild(cnv);
-    list.appendChild(el('div', 'small-note', `<br><b>You built a rocket line from a backyard shed to the edge of the sky.</b><br>${S.flights} flights · ${S.stats.pax} passengers delivered · ${fmtMoney(S.earned)} earned · best ${fmtAlt(S.bestAlt)}<br><br>Your <b>Solid Gold</b> paint job is in the Paint Shop.<br>Endless mode: keep flying the Starlight route as far as you dare!<br><br><i>Story, art, music & code: generated with love by Claude for David.</i>`));
+    list.appendChild(el('div', 'small-note', `<br><b>You built a rocket line from a backyard shed to the edge of the sky.</b><br>${S.flights} flights · ${S.stats.pax} passengers delivered · ${fmtMoney(S.earned)} earned · best ${fmtAlt(S.bestAlt)}<br><br>Your <b>Solid Gold</b> paint job is in the Paint Shop.<br>Endless mode: keep flying the Starlight route as far as you dare!<br>Or open a <b>new line</b> from the Route Map: start fresh, keep your trophies, and earn +50% per line.<br><br><i>Story, art, music & code: generated with love by Claude for David.</i>`));
     overlay('scr-map', true);
     sfx.deliver(); confetti(0, 200, 120);
   }
@@ -4659,7 +4688,8 @@ const UI = (() => {
   function flushPending(then) {
     const lines = [];
     if (S.pendingFirst) { S.pendingFirst = false; lines.push(...STORY.firstFlight); }
-    if (S.pendingStory) { lines.push(...(STORY[S.pendingStory] || [])); S.pendingStory = null; }
+    if (S.pendingLine) { S.pendingLine = false; lines.push(...STORY.newline); }
+    if (S.pendingStory) { if ((S.line || 1) === 1 || S.pendingStory === 'r7') lines.push(...(STORY[S.pendingStory] || [])); S.pendingStory = null; }
     if (S.pendingCrash) { S.pendingCrash = false; S.seen.crash = 1; lines.push(...STORY.crash); }
     if (S.pendingSpace) { S.pendingSpace = false; lines.push(...STORY.space); }
     if (S.pendingFork) { S.pendingFork = false; lines.push(...STORY.fork); }
