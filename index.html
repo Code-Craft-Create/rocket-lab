@@ -1810,6 +1810,16 @@ const STORY = {
     ['plum', 'I’ve drawn up some Town Projects: a fountain, a Ferris wheel, a museum, even a spaceport. They’d go up on the hills right behind your yard!'],
     ['ada', 'And they pay their way, sweetpea: happier tourists, bigger fares. Have a look at the new Pebbleton tab.'],
   ],
+  stars1: [
+    ['ada', 'Sweetpea! The stars out past the Edge make pictures, and you just found your first one. I’ve pinned it up on the Route Map.'],
+    ['pip', 'Beep! Each picture leaves starlight on your sail. More starlight, more zoom! Three percent more, I measured.'],
+    ['ada', 'There are eight up there, each one higher than the last. The very last one, they say, looks just like home.'],
+  ],
+  atlas: [
+    ['ada', 'All eight! The whole sky atlas, drawn in gold. Nobody has ever done that, not even me.'],
+    ['pip', 'Beep! And the last one looks exactly like Pebbleton. Somebody up there knows where we live.'],
+    ['ada', 'I had the Paint Shop mix you a Star Atlas coat. Wear it proudly, star pilot!'],
+  ],
   statue: [
     ['plum', 'Ladies, gentlemen and robots! I give you... the Golden Ada Statue!'],
     ['ada', 'Oh, goodness me. Is my nose really that shiny?'],
@@ -2123,6 +2133,7 @@ function computeStats() {
   st.chart = L('chart'); st.lantern = L('lantern');
   st.fountain = L('fountain'); st.wheel = L('wheel'); st.museum = L('museum'); st.observ = L('observ'); st.port = L('port'); st.statue = L('statue');
   if (st.port) st.thrust *= 1 + 0.05 * st.port;
+  st.starlight = chartedN(); if (st.starlight) st.thrust *= 1 + 0.03 * st.starlight; // each constellation found lends a little starlight
   if (st.lantern) st.hazMul = 1 - 0.15 * st.lantern;
   st.hp = STAT.hp(L('hull')) + (S.settings.relaxed ? 2 : 0) + L('lantern') + L('statue');
   st.cd = 0.0011 * STAT.drag(L('nose'));
@@ -4443,7 +4454,7 @@ function updateFlight(dt) {
     S.charted = S.charted || {}; R.charts = R.charts || [];
     for (const ch of STAR_CHARTS) if (R.alt >= ch.alt && !S.charted[ch.id]) {
       S.charted[ch.id] = 1; R.charts.push(ch.id); R.chartT = R.chartT || {}; R.chartT[ch.id] = 0;
-      banner(ch.name, '#ffe58a', 2.6, 'NEW CONSTELLATION!'); sfx.chime(); sfx.bigcoin(); confetti(R.x, R.py + 120, 50);
+      banner(ch.name, '#ffe58a', 2.6, 'NEW CONSTELLATION!'); sfx.chime(); sfx.bigcoin(); confetti(R.x, R.py + 120, 50); floater(R.x, R.py + 90, 'Starlight: +3% thrust from now on', '#ffe58a', 16);
       if (R.faces.length) R.bubble = { s: pick(['It looks just like it!', 'Write that down!', 'Ooooh, pretty!', 'Our very own stars!']), t: 0 };
     }
   }
@@ -7588,7 +7599,7 @@ const UI = (() => {
   // ---------- map
   function constellationCard() { // the sky atlas past the Edge: found ones in gold, the rest as dashed guesses
     const n = chartedN(), nc = nextChart(), card = el('div', 'route consts');
-    card.appendChild(el('div', 'c-head', `<div class="r-name">Constellations</div><div class="r-desc">${nc ? `<b>${n} of ${STAR_CHARTS.length}</b> found. Fly a Free Flight past the Edge to find the rest. Next: <b>${nc.name}</b> at ${fmtAlt(nc.alt)}.` : `All ${STAR_CHARTS.length} found! The whole sky atlas is yours.`}</div>`));
+    card.appendChild(el('div', 'c-head', `<div class="r-name">Constellations</div><div class="r-desc">${nc ? `<b>${n} of ${STAR_CHARTS.length}</b> found. Each one lends you <b>+3% thrust</b>. Fly a Free Flight past the Edge to find the rest. Next: <b>${nc.name}</b> at ${fmtAlt(nc.alt)}.` : `All ${STAR_CHARTS.length} found, and their starlight gives you <b>+${3 * STAR_CHARTS.length}% thrust</b>. The whole sky atlas is yours!`}</div>`));
     const grid = el('div', 'c-grid');
     STAR_CHARTS.forEach(ch => {
       const lit = !!(S.charted && S.charted[ch.id]), sz = 64, cnv = document.createElement('canvas');
@@ -8229,6 +8240,8 @@ const UI = (() => {
     if (frontierOpen() && !S.seen.frontier && S.seen.endCredits && !lines.length) { S.seen.frontier = 1; lines.push(...STORY.frontier); }
     if (townOpen() && !S.seen.town && !lines.length) { S.seen.town = 1; lines.push(...STORY.town); }
     if (lvl('statue') > 0 && !S.seen.statue && !lines.length) { S.seen.statue = 1; lines.push(...STORY.statue); confetti(TOWN_SPOTS.statue, 260, 80); }
+    if (chartedN() >= STAR_CHARTS.length && !S.seen.atlas && !lines.length) { S.seen.atlas = 1; S.seen.stars1 = 1; lines.push(...STORY.atlas); confetti(0, 220, 90); }
+    if (chartedN() >= 1 && !S.seen.stars1 && !lines.length) { S.seen.stars1 = 1; lines.push(...STORY.stars1); }
     if (jobsUnlocked() && !S.seen.jobs) { S.seen.jobs = 1; fillJobs(); S.jobsNew = 3; lines.push(...STORY.jobs); }
     if (dailyUnlocked() && !S.seen.dailyIntro && !lines.length && (S.line || 1) === 1) { S.seen.dailyIntro = 1; lines.push(...STORY.daily); }
     if (S.pendingAch && S.pendingAch.length) { for (const id of S.pendingAch) achToast(id); sfx.ach(); S.pendingAch = []; }
@@ -8520,7 +8533,7 @@ UI.showScreen('title');
 if (S.seen.intro) {
   $('btn-start').textContent = 'Continue';
   const nr = nextRoute(), nDone = MAIN_ROUTES.filter(r => routeDone(r.id)).length, fDone = FRONT_ROUTES.filter(r => routeDone(r.id)).length;
-  $('title-foot').innerHTML = `Welcome back! ${S.flights} flights · best <b>${fmtAlt(S.bestAlt)}</b> · ${frontierOpen() ? `frontier ${fDone}/${FRONT_ROUTES.length}` : `${nDone}/${MAIN_ROUTES.length} routes`}${nr ? ` · next: <b>${nr.to}</b>` : ' · the whole map!'}`;
+  $('title-foot').innerHTML = `Welcome back! ${S.flights} flights · best <b>${fmtAlt(S.bestAlt)}</b> · ${frontierOpen() ? `frontier ${fDone}/${FRONT_ROUTES.length}` : `${nDone}/${MAIN_ROUTES.length} routes`}${nr ? ` · next: <b>${nr.to}</b>` : chartsOpen() ? ` · constellations <b>${chartedN()}/${STAR_CHARTS.length}</b>` : ' · the whole map!'}`;
   if (dailyUnlocked()) { const d = todaysDaily(); const pill = document.createElement('div'); pill.className = 'title-daily'; pill.innerHTML = d.done ? `Today's special delivered! Come back tomorrow.` : `Today's special: <b>${d.cargo}</b> for ${d.to} · ${fmtAlt(d.target)}${dailyStreakAlive() ? ` · ${dailyStreakAlive()}-day streak` : ''}`; document.querySelector('#scr-title .tagline').after(pill); }
 }
 Music.play('title');
