@@ -361,6 +361,7 @@ body.in-hangar #toasts{left:calc((100vw - min(580px,54vw) - 16px)/2)}
 .toast{background:var(--ink);color:var(--cream);font-weight:800;font-size:15px;padding:8px 16px;border-radius:22px;text-align:center;justify-content:center;border:3px solid var(--cream);box-shadow:0 4px 0 rgba(0,0,0,.25);
   animation:toastIn .35s cubic-bezier(.2,1.6,.4,1),toastOut .4s 3.2s forwards;display:block;white-space:normal;max-width:min(92vw,560px);line-height:1.25}
 .toast b{color:var(--yellow)}
+.toast .tmedal{display:inline-block;width:34px;height:34px;vertical-align:middle;margin:-10px 6px -8px -8px}.toast .tmedal svg{width:100%;height:100%;display:block}
 @keyframes toastIn{from{transform:translateY(-30px) scale(.8);opacity:0}}
 @keyframes toastOut{to{transform:translateY(-20px);opacity:0}}
 
@@ -4100,6 +4101,52 @@ const ACH = [
   { id: 'rainbow', prog: () => [S.stats.rainbows || 0, 5], name: 'Pot of Gold', desc: 'Fly up through 5 rainbows', test: () => (S.stats.rainbows || 0) >= 5, reward: 1500 },
   { id: 'fork', name: 'Decisions!', desc: 'Pick your first fork upgrade', test: () => UPGRADES.some(u => u.fork && lvl(u.id) > 0), reward: 500 },
 ];
+// ---- trophy medals: one little drawing per achievement, on a bronze, silver or gold medal
+const T_ = (t, fs = 12) => `<text x="32" y="${28 + fs * 0.36}" text-anchor="middle" font-size="${fs}" font-weight="900" font-family="Fredoka, 'Arial Rounded MT Bold', Nunito, sans-serif" fill="${INK}" stroke="none">${t}</text>`;
+const T_KM = (n, fs) => `<text x="32" y="${27.5 + fs * 0.1}" text-anchor="middle" font-size="${fs}" font-weight="900" font-family="Fredoka, 'Arial Rounded MT Bold', Nunito, sans-serif" fill="${INK}" stroke="none">${n}</text><text x="32" y="38" text-anchor="middle" font-size="7.5" font-weight="800" font-family="Fredoka, 'Arial Rounded MT Bold', Nunito, sans-serif" fill="#5b4e72" stroke="none">km</text>`;
+const ACH_SYM = {
+  fly1: '<path d="M32 15c5 4 7 9 7 13v6H25v-6c0-4 2-9 7-13z" fill="#fff6e5"/><circle cx="32" cy="25" r="2.6" fill="#4d96ff" stroke-width="2"/><path d="M25 30l-4 6h4M39 30l4 6h-4" fill="#ff5a5f" stroke-width="2"/><path d="M29 35l3 5 3-5" fill="#ff9f43" stroke-width="2"/>',
+  perf5: '<circle cx="32" cy="28" r="12" fill="#fff"/><circle cx="32" cy="28" r="7.5" fill="#ff5a5f" stroke-width="2.5"/><circle cx="32" cy="28" r="3" fill="#fff" stroke-width="2"/>',
+  coins500: '<circle cx="32" cy="28" r="11" fill="#ffd93d"/><circle cx="32" cy="28" r="6.5" stroke="#e0a800" stroke-width="2.5"/>',
+  coins3000: '<ellipse cx="32" cy="36" rx="11" ry="4" fill="#ffd93d" stroke-width="2.5"/><ellipse cx="32" cy="30" rx="11" ry="4" fill="#ffd93d" stroke-width="2.5"/><ellipse cx="32" cy="24" rx="11" ry="4" fill="#ffd93d" stroke-width="2.5"/><ellipse cx="32" cy="18.5" rx="7" ry="2.6" fill="#ffe680" stroke-width="2.5"/>',
+  rings20: '<ellipse cx="32" cy="28" rx="7.5" ry="12" stroke-width="7"/><ellipse cx="32" cy="28" rx="7.5" ry="12" stroke="#4fd8ff" stroke-width="3.5"/>',
+  km10: T_KM('10', 15),
+  space: '<circle cx="32" cy="28" r="7.5" fill="#9b5de5"/><ellipse cx="32" cy="28" rx="13" ry="4" stroke-width="2.5" transform="rotate(-18 32 28)"/><circle cx="22" cy="18" r="1.6" fill="#fff" stroke="none"/><circle cx="43" cy="37" r="1.4" fill="#fff" stroke="none"/>',
+  km100: T_KM('100', 13),
+  smash25: '<path d="M32 15l3 7 7-3-3 7 7 3-7 3 3 7-7-3-3 7-3-7-7 3 3-7-7-3 7-3-3-7 7 3z" fill="#ff9f43" stroke-width="2.5"/>',
+  pax50: '<circle cx="26" cy="23" r="4.5" fill="#ffd9b3" stroke-width="2.5"/><circle cx="38" cy="23" r="4.5" fill="#c68b59" stroke-width="2.5"/><path d="M19 38c0-6 3-9 7-9s7 3 7 9zM31 38c0-6 3-9 7-9s7 3 7 9z" fill="#4d96ff" stroke-width="2.5"/>',
+  stars: '<path d="M32 15l4 8 9 1-7 6 2 9-8-5-8 5 2-9-7-6 9-1z" fill="#ffd93d" stroke-width="2.5"/>',
+  jobs25: '<rect x="23" y="16" width="18" height="23" rx="3" fill="#fff6e5" stroke-width="2.5"/><rect x="28" y="13.5" width="8" height="5" rx="2" fill="#ffd93d" stroke-width="2"/><path d="M27 28l3 3 7-7" stroke="#1d9e4c" stroke-width="3"/>',
+  close50: '<path d="M20 33c6 0 10-2 13-6M18 27c6 0 9-2 12-6" stroke-width="2.5"/><circle cx="38" cy="30" r="6" fill="#c9ced8" stroke-width="2.5"/><path d="M36 19l3-4M42 21l4-2" stroke="#ffb000" stroke-width="2.5"/>',
+  night5: '<path d="M37 16a12 12 0 1 0 5 18 10 10 0 0 1-5-18z" fill="#fff2a8" stroke-width="2.5"/><circle cx="24" cy="19" r="1.4" fill="#fff" stroke="none"/>',
+  stars10: '<path d="M32 15l3 6 6 1-5 4 1 6-5-3-5 3 1-6-5-4 6-1z" fill="#ffd93d" stroke-width="2"/><path d="M22 28l2 4 4 .5-3 3 1 4-4-2-4 2 1-4-3-3 4-.5z" fill="#ffd93d" stroke-width="2"/><path d="M42 28l2 4 4 .5-3 3 1 4-4-2-4 2 1-4-3-3 4-.5z" fill="#ffd93d" stroke-width="2"/>',
+  km1000: T_KM('1000', 10.5),
+  km2500: T_KM('2500', 10.5),
+  king: '<path d="M35 14l-9 15h6l-4 12 11-17h-7l4-10z" fill="#fff36b" stroke-width="2.5"/>',
+  whale: '<path d="M17 30c0-6 6-10 14-10 7 0 12 4 13 9l5-5c1 3 0 7-3 9 2 1 3 3 2 5-3 0-6-2-7-4-3 4-8 6-14 6-6 0-10-4-10-10z" fill="#6ec3ff" stroke-width="2.4"/><path d="M19 33c4 3 12 3 19 0" stroke-width="1.8"/><circle cx="24" cy="27" r="1.6" fill="' + INK + '" stroke="none"/><path d="M27 18c0-3 1-4 1-4M27 18c-2-2-4-2-4-2M27 18c2-2 4-2 4-2" stroke="#4fd8ff" stroke-width="2"/>',
+  rival: '<path d="M23 34h18M26 34V17h12v17" fill="#3a2f4d" stroke-width="2.5"/><rect x="26" y="17" width="12" height="17" fill="#3a2f4d" stroke-width="2.5"/><path d="M26 29h12" stroke="#ff5a5f" stroke-width="3"/><path d="M20 35h24" stroke-width="3.5"/><path d="M24 40c3 0 5-1 8-2 3 1 5 2 8 2" stroke-width="2.5"/>',
+  pirates: '<path d="M22 27a10 10 0 0 1 20 0c0 4-2 6-4 7v4H26v-4c-2-1-4-3-4-7z" fill="#fff6e5" stroke-width="2.5"/><circle cx="28" cy="27" r="2.6" fill="' + INK + '" stroke="none"/><circle cx="36" cy="27" r="2.6" fill="' + INK + '" stroke="none"/><path d="M30 38v-3M34 38v-3" stroke-width="2"/>',
+  kraken: '<path d="M24 40c-4-6 2-10 6-8 5 2 3 8-1 7M34 16c6 0 10 6 6 11-3 4-8 1-6-3" stroke="#f15bb5" stroke-width="5"/><path d="M24 40c-4-6 2-10 6-8 5 2 3 8-1 7M34 16c6 0 10 6 6 11-3 4-8 1-6-3" stroke-width="1.6"/>',
+  guide: '<path d="M32 20c-4-3-8-3-12-2v19c4-1 8-1 12 2 4-3 8-3 12-2V18c-4-1-8-1-12 2z" fill="#fff6e5" stroke-width="2.5"/><path d="M32 20v19" stroke-width="2"/>',
+  wish10: '<path d="M22 39l12-12" stroke-width="3.5"/><path d="M37 15l2 5 5 1-4 3 1 5-4-3-5 2 2-5-3-4 5 0z" fill="#ffd93d" stroke-width="2"/>',
+  guests20: '<rect x="21" y="17" width="22" height="22" rx="4" fill="#bfe9ff" stroke-width="2.5"/><circle cx="32" cy="26" r="4.5" fill="#ffd9b3" stroke-width="2"/><path d="M24 39c1-5 4-7 8-7s7 2 8 7" fill="#f15bb5" stroke-width="2"/>',
+  lost5: '<circle cx="29" cy="26" r="8" fill="#e6f6ff" stroke-width="3"/><path d="M35 32l7 7" stroke-width="4.5"/>',
+  pen10: '<rect x="19" y="19" width="26" height="18" rx="3" fill="#fff6e5" stroke-width="2.5"/><path d="M20 20l12 9 12-9" stroke-width="2.5"/><path d="M32 33c-2-2-4-3-4-5a2 2 0 0 1 4-1 2 2 0 0 1 4 1c0 2-2 3-4 5z" fill="#ff5a5f" stroke-width="1.5"/>',
+  wave: '<path d="M25 38c-3-3-4-7-3-11l1-6c0-2 3-2 3 0v5V17c0-2 3-2 3 0v8-10c0-2 3-2 3 0v10-8c0-2 3-2 3 0v13l2-3c1-2 4-1 3 1l-4 8c-2 4-5 5-9 5-2 0-3-1-4-3z" fill="#c8ffb0" stroke-width="2.2"/>',
+  daily: '<rect x="21" y="18" width="22" height="20" rx="3" fill="#fff6e5" stroke-width="2.5"/><path d="M21 24h22" stroke-width="2.5"/><rect x="21" y="18" width="22" height="6" rx="2" fill="#ff5a5f" stroke-width="2.5"/>' + T_('1', 10).replace('y="31.6"', 'y="35"'),
+  line2: T_('#2', 14),
+  tickle: '<path d="M21 41c4-11 11-20 22-26-1 11-8 20-19 24z" fill="#ffb3d9" stroke-width="2.5"/><path d="M21 41l14-16M30 26l-3-3M34 29l4 0M27 31l-3-2M30 33l3 1" stroke-width="1.8"/>',
+  rainbow: '<path d="M18 36a14 14 0 0 1 28 0" stroke="#ff5a5f" stroke-width="4"/><path d="M22 36a10 10 0 0 1 20 0" stroke="#ffd93d" stroke-width="4"/><path d="M26 36a6 6 0 0 1 12 0" stroke="#4d96ff" stroke-width="4"/>',
+  fork: '<path d="M32 40V29l-8-9M32 29l8-9" stroke-width="3.5"/><path d="M21 22v-5h5M43 22v-5h-5" stroke-width="3"/>',
+};
+function achBadge(a) {
+  const tier = a.secret || a.reward >= 10000 ? ['#ffd93d', '#fff3b0'] : a.reward >= 1500 ? ['#c9ced8', '#f1f3f8'] : ['#e8a06a', '#f8d6b6'];
+  return `<svg viewBox="0 0 64 64" fill="none" stroke="${INK}" stroke-width="3" stroke-linejoin="round" stroke-linecap="round">
+    <path d="M23 40l-6 20 8-4 4 7 5-20z" fill="#ff5a5f"/><path d="M41 40l6 20-8-4-4 7-5-20z" fill="#4d96ff"/>
+    <circle cx="32" cy="28" r="23" fill="${tier[0]}"/><circle cx="32" cy="28" r="17.5" fill="${tier[1]}" stroke-width="2"/>
+    ${ACH_SYM[a.id] || ICONS.trophy}</svg>`;
+}
+function achToast(id) { const a = ACH.find(x => x.id === id); if (a) toast(`<span class="tmedal">${achBadge(a)}</span>Achievement: <b>${a.name}</b> +${fmtMoney(a.reward)}`, 3600, true); }
 function checkAchievements() {
   for (const a of ACH) {
     if (S.ach[a.id] || !a.test()) continue;
@@ -4867,7 +4914,7 @@ function pokeHangar(sx, sy) {
     sfx.boing(); if (chance(0.3)) sfx.honk();
     if (S.stats.pokes % 5 === 0 || chance(0.25)) { P.rocketLine = S.stats.pokes === 25 ? 'OK OK, you win a trophy!' : pick(ROCKET_POKES); P.rocketLineT = 1.8; }
     puff(wx + rand(-20, 20), 4, 2, '#ffffff', 40);
-    if (S.stats.pokes === 25) { checkAchievements(); if (S.pendingAch && S.pendingAch.length) { for (const id of S.pendingAch) { const a = ACH.find(x => x.id === id); toast(`Achievement: <b>${a.name}</b> +${fmtMoney(a.reward)}`); } sfx.ach(); S.pendingAch = []; UI.refresh(); } saveGame(); }
+    if (S.stats.pokes === 25) { checkAchievements(); if (S.pendingAch && S.pendingAch.length) { for (const id of S.pendingAch) achToast(id); sfx.ach(); S.pendingAch = []; UI.refresh(); } saveGame(); }
     return true;
   }
   if (town && rivalLive() && Math.abs(wx - 228) < 28 && wpy > 150 && wpy < 225) {
@@ -5506,12 +5553,25 @@ function savePostcard(res) {
 }
 
 // ================================================================ DOM UI
-function toast(html, ms = 3600) {
-  const t = el('div', 'toast', html);
+// On wide screens the workshop has a stats card top left: keep notes out from under it
+function placeToasts() {
+  const box = $('toasts'), sc = $('statcard'), sd = document.querySelector('#scr-hangar .side');
+  box.style.left = box.style.width = box.style.top = '';
+  if (!document.body.classList.contains('in-hangar') || !sc || !sc.offsetParent || !sd) return;
+  const a = sc.getBoundingClientRect(), b = sd.getBoundingClientRect(), gap = b.left - a.right - 24;
+  if (b.left < 300) return;
+  if (gap >= 340) { box.style.left = (a.right + 12 + gap / 2) + 'px'; box.style.width = gap + 'px'; return; }
+  box.style.top = (a.bottom + 12) + 'px'; box.style.left = (b.left / 2) + 'px'; box.style.width = (b.left - 32) + 'px';
+  return 'below'; // over the yard: keep the stack short
+}
+function toast(html, ms = 3600, pri = false) {
+  const t = el('div', 'toast' + (pri ? ' pri' : ''), html);
+  const below = placeToasts();
   $('toasts').appendChild(t);
   setTimeout(() => t.remove(), ms + 300);
-  const maxT = W < 600 || H < 520 ? (document.body.classList.contains('in-flight') ? 1 : 2) : 4;
-  while ($('toasts').children.length > maxT) $('toasts').firstChild.remove();
+  const maxT = W < 600 || H < 520 ? (document.body.classList.contains('in-flight') ? 1 : 2) : below ? 2 : 4;
+  // when there are too many, drop ordinary notes before trophies
+  while ($('toasts').children.length > maxT) { const box = $('toasts'); ([...box.children].find(c => !c.classList.contains('pri')) || box.firstChild).remove(); }
 }
 
 const Dialog = (() => {
@@ -5982,7 +6042,7 @@ const UI = (() => {
     for (const a of ACH) {
       const got = !!S.ach[a.id];
       const card = el('div', 'route' + (got ? '' : ' locked'));
-      card.appendChild(el('div', 'r-ico', got ? ICONS.trophy : ICONS.lock));
+      card.appendChild(el('div', 'r-ico', got ? achBadge(a) : ICONS.lock));
       let pr = '';
       if (!got && a.prog) { const [c, n, u] = a.prog(); const k = clamp(c / n, 0, 1); pr = `<div class="ach-bar"><i style="width:${Math.round(k * 100)}%"></i><span>${fmtInt(Math.min(c, n))}${u || ''} / ${fmtInt(n)}${u || ''}</span></div>`; }
       const hid = a.secret && !got;
@@ -6262,7 +6322,7 @@ const UI = (() => {
       e.stopPropagation();
       if (S.mail[0] !== m.id) return;
       S.mail.shift(); S.money += gift; S.earned += gift; S.stats.letters = (S.stats.letters || 0) + 1;
-      checkAchievements(); if (S.pendingAch && S.pendingAch.length) { for (const id of S.pendingAch) { const a = ACH.find(x => x.id === id); toast(`Achievement: <b>${a.name}</b> +${fmtMoney(a.reward)}`); } sfx.ach(); S.pendingAch = []; }
+      checkAchievements(); if (S.pendingAch && S.pendingAch.length) { for (const id of S.pendingAch) achToast(id); sfx.ach(); S.pendingAch = []; }
       sfx.bigcoin(); saveGame(); refresh();
       if (mailCount()) { const pnl = $('scr-letter').querySelector('.panel'); pnl.style.animation = 'none'; void pnl.offsetWidth; pnl.style.animation = ''; sfx.paper(); openLetter(); }
       else { overlay('scr-letter', false); toast(`Fan mail gift: <b>+${fmtMoney(gift)}</b>`); }
@@ -6288,7 +6348,7 @@ const UI = (() => {
     { const rc = rivalCur(); if (rc && !S.seen['rival_' + rc.id] && lines.length < 6 && S.flights >= 2) { S.seen['rival_' + rc.id] = 1; lines.push(...rc.intro); } }
     if (jobsUnlocked() && !S.seen.jobs) { S.seen.jobs = 1; fillJobs(); S.jobsNew = 3; lines.push(...STORY.jobs); }
     if (dailyUnlocked() && !S.seen.dailyIntro && !lines.length && (S.line || 1) === 1) { S.seen.dailyIntro = 1; lines.push(...STORY.daily); }
-    if (S.pendingAch && S.pendingAch.length) { for (const id of S.pendingAch) { const a = ACH.find(x => x.id === id); toast(`Achievement: <b>${a.name}</b> +${fmtMoney(a.reward)}`); } sfx.ach(); S.pendingAch = []; }
+    if (S.pendingAch && S.pendingAch.length) { for (const id of S.pendingAch) achToast(id); sfx.ach(); S.pendingAch = []; }
     const mailNow = S.pendingMail; S.pendingMail = 0;
     saveGame();
     Dialog.play(lines, () => {
