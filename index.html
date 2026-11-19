@@ -73,7 +73,7 @@ button{font-family:var(--font)}
 @keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.07)}}
 
 /* ---------- Hangar ---------- */
-#scr-hangar .side{position:absolute;right:16px;top:16px;bottom:16px;width:min(580px,54vw);display:flex;flex-direction:column;overflow:hidden}
+#scr-hangar .side{position:absolute;right:16px;top:16px;bottom:16px;width:min(640px,58vw);display:flex;flex-direction:column;overflow:visible}
 .side-head{display:flex;align-items:center;justify-content:space-between;padding:10px 12px 6px 14px;gap:8px;flex:0 0 auto}
 .money{display:flex;align-items:center;gap:8px;font-weight:900;font-size:28px;background:var(--ink);color:var(--yellow);padding:4px 14px 4px 6px;border-radius:999px}
 .money .coin{width:30px;height:30px}
@@ -171,7 +171,7 @@ button{font-family:var(--font)}
 #statcard .job b{color:var(--purple)}
 #statcard .job .jp{color:#1d9e4c;white-space:nowrap}
 @media (max-width:820px) and (min-height:521px){
-  #scr-hangar .side{left:8px;right:8px;width:auto;top:auto;bottom:8px;height:min(66%,600px)}
+  #scr-hangar .side{left:8px;right:8px;width:auto;top:auto;bottom:8px;height:min(66%,780px)}
 }
 @media (max-width:820px),(max-height:520px){
   #statcard{display:none}
@@ -189,7 +189,7 @@ button{font-family:var(--font)}
   #detail .dact .btn{font-size:15px;padding:7px 10px}
   .side-foot{padding:8px 10px 10px}
   #route-chip{padding:4px 8px}
-  #route-chip .rc-n{font-size:14px}
+  #route-chip .rc-n{font-size:14px}#route-chip .rc-n.long{font-size:12.5px;letter-spacing:-.2px}
   .toast{font-size:13px;padding:6px 12px}
   .rc-pre{display:none}
   .btn.big{font-size:22px;padding:10px 18px}
@@ -267,6 +267,89 @@ button{font-family:var(--font)}
   .head-btns .icon-btn svg{width:17px;height:17px}
 }
 
+/* the workshop menu folds away to show the yard (F key); on phones it can also open tall */
+.fold-bar{position:absolute;z-index:5;display:flex;align-items:center;justify-content:center;gap:2px;background:var(--cream);border:4px solid var(--ink);touch-action:none;user-select:none;-webkit-user-select:none}
+.fold-bar.sheet{top:-36px;left:50%;transform:translateX(-50%);height:36px;padding:0 6px;border-bottom:none;border-radius:16px 16px 0 0}
+.fold-bar.edge{left:-36px;top:50%;transform:translateY(-50%);width:36px;flex-direction:column;padding:8px 0;border-right:none;border-radius:16px 0 0 16px;box-shadow:-4px 5px 0 rgba(43,34,64,.18)}
+.fold-btn{width:44px;height:30px;border:none;background:none;display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--ink);border-radius:10px;padding:0;font:inherit}
+.fold-bar.edge .fold-btn{width:28px;height:52px}
+.fold-btn svg{width:24px;height:24px}
+.fold-btn:hover{background:rgba(43,34,64,.09)}
+.fold-btn:active{transform:translateY(2px)}
+.fold-bar.sheet .fold-btn + .fold-btn{border-left:3px solid rgba(43,34,64,.14);border-radius:0 10px 10px 0}
+.fold-bar .badge-dot{top:-12px;right:-12px}
+.fold-bar.edge .badge-dot{right:auto;left:-12px}
+.fold-bar.nudge{animation:foldNudge 3.6s ease-in-out infinite}
+.fold-bar.sheet.nudge{animation-name:foldNudgeY}
+@keyframes foldNudge{0%,84%,100%{margin-left:0}89%{margin-left:-7px}94%{margin-left:0}}
+@keyframes foldNudgeY{0%,84%,100%{margin-top:0}89%{margin-top:-7px}94%{margin-top:0}}
+@media (prefers-reduced-motion:reduce){.fold-bar.nudge,#scr-hangar .side.pop{animation:none}}
+#scr-hangar .side.folded{top:auto;height:auto}
+#scr-hangar .side.folded #tabs,#scr-hangar .side.folded #tree,#scr-hangar .side.folded #detail{display:none}
+#scr-hangar .side.full{top:46px;height:auto}
+#scr-hangar .side.pop{animation:sidePop .34s cubic-bezier(.2,1.4,.4,1)}
+@keyframes sidePop{0%{transform:translateY(18px) scale(.985)}100%{transform:none}}
+@media (min-width:821px),(max-height:520px){#scr-hangar .side.folded{width:min(560px,calc(100vw - 72px))}}
+@media (max-height:520px){#scr-hangar .side.folded{width:min(440px,62vw)}}
+/* narrow tab rows: all branches fit as icons instead of scrolling */
+#tabs.tight{gap:3px;padding:4px 8px 0}
+#tabs.tight .tab{flex:1 1 0;min-width:0;justify-content:center;padding:5px 2px;border-width:3px;border-radius:12px 12px 0 0;gap:4px}
+#tabs.tight .tab.active{flex:0 0 auto;padding:5px 9px 5px 7px}
+#tabs.tight .tab span:not(.badge-dot){font-size:14px}
+#tabs.tighter .tab.active{flex:1 1 0;padding:5px 2px}
+#tabs.tighter .tab.active span:not(.badge-dot){display:none}
+#tabs.tight .tab svg{width:22px;height:22px;flex:0 0 auto}
+#tabs.tight .tab .badge-dot{top:-9px;right:-3px;font-size:10px;padding:0 4px}
+/* big trees on big screens */
+#tree.roomy .node{width:100px}
+#tree.roomy .node .nbox{width:86px;height:86px;border-radius:22px;gap:5px;box-shadow:0 5px 0 var(--ink)}
+#tree.roomy .node .nbox svg{width:50px;height:50px}
+#tree.roomy .pips{width:58px;height:13px}
+#tree.roomy .node .nlabel{font-size:15px;margin-top:12px;max-width:130px}
+#tree.roomy .node .lock{width:30px;height:30px}
+/* desktops and tablets: the tree and the details sit side by side, so the tree gets the panel's full height */
+@media (min-width:1180px) and (min-height:600px){
+  #scr-hangar .side{width:min(880px,61vw)}
+  html body.in-hangar #toasts{left:calc((100vw - min(880px,61vw) - 16px)/2)}
+}
+#detail .est{display:none}
+@media (min-width:1180px) and (min-height:600px),(min-width:700px) and (max-width:820px) and (min-height:900px){
+  #scr-hangar .side{display:grid;grid-template-columns:minmax(0,1fr) 286px;grid-template-rows:auto auto minmax(0,1fr) auto;grid-template-areas:"head head" "tabs tabs" "tree detail" "foot foot"}
+  #scr-hangar .side.folded{display:flex}
+  .side-head{grid-area:head}
+  #tabs{grid-area:tabs}
+  #tree{grid-area:tree;min-height:0}
+  .side-foot{grid-area:foot}
+  #detail{grid-area:detail;flex-direction:column;align-items:stretch;gap:8px;min-height:0;overflow-y:auto;padding:18px 16px 14px;background:var(--cream);border-top:4px solid var(--ink);border-bottom:4px solid var(--ink);border-left:4px solid var(--ink)}
+  #detail .dicon{width:104px;height:104px;border-radius:26px;align-self:center;box-shadow:0 5px 0 var(--ink);margin-bottom:4px}
+  #detail .dicon svg{width:72px;height:72px}
+  #detail .dbody{text-align:center}
+  #detail h3{justify-content:center;font-size:24px;gap:6px}
+  #detail p{font-size:15px;margin:8px 0;display:block;-webkit-line-clamp:unset;overflow:visible}
+  #detail .fx{font-size:15px}
+  #detail .note{margin-top:6px;font-size:13px}
+  #detail .est{display:flex;flex-direction:column;gap:2px;margin:14px 4px 0;padding:8px 10px;background:#fff;border:3px solid var(--ink);border-radius:14px;box-shadow:0 3px 0 var(--ink);font-size:15px;font-weight:800}
+  #detail .est small{font-size:11px;font-weight:900;color:var(--purple);text-transform:uppercase;letter-spacing:.7px}
+  #detail .est b{color:#1d9e4c}
+  #detail .dact{align-self:stretch;margin-top:auto;padding-top:8px}
+  #detail .dact .btn{font-size:19px;padding:10px 14px}
+  #detail .dact .btn.auto{font-size:16px;padding:6px 12px}
+}
+/* big monitors at 100% scaling: the workshop scales up so it isn't tiny */
+@media (min-width:2200px) and (min-height:1250px){#scr-hangar .side,#statcard{zoom:1.25}}
+@media (min-width:3000px) and (min-height:1700px){#scr-hangar .side,#statcard{zoom:1.6}}
+/* laptops: a shorter details column */
+@media (min-width:1180px) and (min-height:600px) and (max-height:820px){
+  #detail{padding:12px 14px 10px;gap:6px}
+  #detail .dicon{width:78px;height:78px;border-radius:20px;margin-bottom:2px}
+  #detail .dicon svg{width:54px;height:54px}
+  #detail h3{font-size:21px}
+  #detail p{font-size:14px;margin:5px 0}
+  #detail .fx{font-size:14px}
+  #detail .est{margin-top:8px;padding:6px 8px;font-size:14px}
+  #detail .dact .btn{font-size:17px;padding:8px 12px}
+}
+
 /* ---------- Generic overlay ---------- */
 .overlay{position:absolute;inset:0;z-index:10;background:rgba(30,18,60,.45);display:flex;align-items:center;justify-content:center;padding:16px;backdrop-filter:blur(2px)}
 .overlay .panel{max-width:560px;width:100%;max-height:100%;display:flex;flex-direction:column}
@@ -320,6 +403,7 @@ button{font-family:var(--font)}
 .map-sec .ms-t{font-size:22px;font-weight:900;letter-spacing:.5px;text-shadow:0 2px 0 var(--ink)}.map-sec .ms-s{font-size:13px;font-weight:800;opacity:.85;margin-top:2px}
 .map-sec::after{content:'';position:absolute;right:-20px;top:-30px;width:120px;height:120px;border-radius:50%;background:radial-gradient(rgba(138,255,193,.35),transparent 70%)}
 .route.fr{background:linear-gradient(135deg,#fff 55%,#e9f6ff)}.route.fr.locked{background:#ddd6e8}
+.route.consts{display:block;background:linear-gradient(135deg,#fff 50%,#f3ecff)}.route.consts .c-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin-top:10px}.route.consts .c-cell{text-align:center;min-width:0}.route.consts .c-cell canvas{width:100%;max-width:72px;aspect-ratio:1;display:block;margin:0 auto;border-radius:12px;border:3px solid var(--ink);box-sizing:border-box}.route.consts .c-cell.lit canvas{box-shadow:0 0 0 3px #ffd93d}.route.consts .c-n{font-size:11px;font-weight:900;color:var(--ink2);margin-top:3px;line-height:1.1;overflow-wrap:anywhere}.route.consts .c-cell.lit .c-n{color:var(--ink)}.route.consts .r-act{margin-top:10px;text-align:right}
 .skymap{margin:0 0 14px;line-height:0}.skymap canvas{display:block;max-width:100%;border-radius:14px;box-shadow:0 4px 0 var(--ink)}
 .route-link{position:absolute;left:44px;width:6px;height:18px;background:repeating-linear-gradient(var(--ink) 0 4px,transparent 4px 8px);top:-18px}
 .route-link{display:none} /* a lone dash between cards read as a stray mark */
@@ -411,8 +495,9 @@ button{font-family:var(--font)}
 #dialog{pointer-events:auto}
 
 /* ---------- Toasts ---------- */
-body.in-hangar #toasts{left:calc((100vw - min(580px,54vw) - 16px)/2)}
+body.in-hangar #toasts{left:calc((100vw - min(640px,58vw) - 16px)/2)}
 @media (max-width:820px) and (min-height:521px){body.in-hangar #toasts{left:50%}}
+html body.in-hangar.menu-fold #toasts{left:50%;width:min(94vw,640px)}
 @media (max-width:600px){body.in-flight #toasts{top:var(--toast-top,126px)}body.in-flight .toast{font-size:12px;padding:5px 10px;max-width:78vw;border-width:2px}}
 #toasts{position:absolute;top:12px;left:50%;transform:translateX(-50%);width:min(94vw,640px);display:flex;flex-direction:column;align-items:center;gap:8px;z-index:6;pointer-events:none}
 .toast{background:var(--ink);color:var(--cream);font-weight:800;font-size:15px;padding:8px 16px;border-radius:22px;text-align:center;justify-content:center;border:3px solid var(--cream);box-shadow:0 4px 0 rgba(0,0,0,.25);
@@ -441,6 +526,7 @@ body.in-hangar #toasts{left:calc((100vw - min(580px,54vw) - 16px)/2)}
 .lt-gift svg{width:26px;height:26px}
 #lt-ok{align-self:center}
 .lt-foot{display:flex;flex-direction:column;align-items:center;flex:none}
+@media (max-width:360px){.lt-head{margin-right:70px;gap:10px}.lt-head canvas{width:52px;height:52px}.lt-name{font-size:19px}.lt-body{font-size:16px;line-height:1.45}}
 @media (max-height:520px){.lt-body{font-size:15px;line-height:1.35}#scr-letter .panel{padding:12px 16px;max-width:600px}.lt-head{margin-bottom:4px}.lt-head canvas{width:48px;height:48px}.lt-foot{flex-direction:row;justify-content:center;gap:12px;margin-top:8px}.lt-gift{margin:0}}
 #scr-code .panel{max-width:440px}
 .name-row{display:flex;gap:8px;align-items:center;margin:4px 0 10px}
@@ -487,6 +573,7 @@ body.in-hangar #toasts{left:calc((100vw - min(580px,54vw) - 16px)/2)}
   <div id="scr-hangar" class="screen hidden">
     <div id="statcard" class="panel"></div>
     <div class="side panel">
+      <div id="fold-bar" class="fold-bar"></div>
       <div class="side-head">
         <div class="money" id="money-box"><svg class="coin" viewBox="0 0 40 40"><circle cx="20" cy="20" r="16" fill="#ffd93d" stroke="#2b2240" stroke-width="4"/><circle cx="20" cy="20" r="9" fill="none" stroke="#e0a800" stroke-width="3"/><path d="M15 14l3 2" stroke="#fff" stroke-width="3" stroke-linecap="round"/></svg><span id="money">0</span></div>
         <div class="head-btns" id="head-btns"></div>
@@ -640,7 +727,7 @@ function srand(seed) { let s = seed >>> 0 || 1; return () => { s ^= s << 13; s ^
 const SAVE_KEY = 'skyhop_express_save_v1';
 function defaultSave() {
   return {
-    v: 1, money: 0, earned: 0, flights: 0, bestAlt: 0,
+    v: 1, money: 0, earned: 0, flights: 0, bestAlt: 0, charted: {},
     up: {},            // upgrade id -> level
     routes: {},        // route id -> {done, stars, runs}
     route: 'r0',       // selected route id ('free' = free flight)
@@ -891,6 +978,10 @@ const AudioSys = (() => {
     squawk() { if (!gate('sq', 120)) return; tone({ type: 'sawtooth', f: rand(900, 1300), f2: rand(500, 700), dur: 0.12, vol: 0.07, filter: 'bandpass', ff: 1500, q: 3 }); },
     jelly() { tone({ type: 'sine', f: 400, f2: 900, dur: 0.25, vol: 0.12 }); },
     chime() { [0, 7, 12, 19].forEach((s, i) => tone({ type: 'sine', f: N(84 + s), dur: 0.35, vol: 0.07, delay: i * 0.04 })); noise({ dur: 0.12, vol: 0.12, filter: 'highpass', f: 5000, q: 0.8 }); },
+    constellation() { // a slow music-box run up the pentatonic as the lines join, then a soft shimmer
+      [0, 4, 7, 12, 16, 19, 24].forEach((s, i) => { tone({ type: 'sine', f: N(76 + s), dur: 0.9, vol: 0.06, delay: 0.15 + i * 0.16 }); tone({ type: 'triangle', f: N(88 + s), dur: 0.4, vol: 0.02, delay: 0.15 + i * 0.16 }); });
+      noise({ dur: 1.6, vol: 0.05, filter: 'highpass', f: 6000, q: 0.7, delay: 1.1 });
+    },
     eel() { if (!gate('eel', 700)) return; tone({ type: 'square', f: 120, f2: 140, dur: 0.5, vol: 0.035, filter: 'lowpass', ff: 700 }); noise({ dur: 0.5, vol: 0.05, filter: 'bandpass', f: 3000, f2: 2000, q: 6 }); },
     slurp() { noise({ dur: 1.1, vol: 0.16, filter: 'bandpass', f: 300, f2: 1800, q: 2.5 }); tone({ type: 'sine', f: 220, f2: 420, dur: 1.0, vol: 0.05 }); },
     splat() { noise({ dur: 0.5, vol: 0.3, filter: 'lowpass', f: 900, f2: 160, q: 1.2 }); tone({ type: 'sine', f: 180, f2: 60, dur: 0.3, vol: 0.18 }); },
@@ -1254,6 +1345,8 @@ const ZONES = [
     spawn: { dragonling: 1.1, eel: 0.6, crystal: 0.6, blackhole: 0.14 } },
   { id: 'z11', name: 'Uncharted Sky', alt: 14000000, sky: ['#2e2440', '#a88866'], coin: 3000, fr: true,
     spawn: { dragonling: 1.3, eel: 0.7, crystal: 0.7, blackhole: 0.2, comet: 0.5 } },
+  { id: 'z12', name: 'The Star Atlas', alt: 17000000, sky: ['#070a26', '#252a6a'], coin: 4000, fr: true, // deep night where the last constellations shine
+    spawn: { dragonling: 1.2, eel: 0.8, crystal: 0.8, blackhole: 0.25, comet: 0.7 } },
 ];
 function zoneAt(alt) { let z = ZONES[0]; for (const zz of ZONES) if (alt >= zz.alt) z = zz; return z; }
 function zoneIndex(alt) { let i = 0; for (let k = 0; k < ZONES.length; k++) if (alt >= ZONES[k].alt) i = k; return i; }
@@ -1310,6 +1403,32 @@ const ROUTES = [
 const MAIN_ROUTES = ROUTES.filter(r => !r.fr), FRONT_ROUTES = ROUTES.filter(r => r.fr);
 const frontierOpen = () => routeDone('r7');
 const townOpen = () => routeDone('x1') || lvl('fountain') > 0; // Mayor Plum's town projects: the late-game place to spend coins
+// ---- constellations out past the Edge of the Map. Fly past one to find it (x, y in -1..1; ln joins stars)
+const STAR_CHARTS = [
+  { id: 'teapot', name: 'The Teapot', alt: 11000000, reward: 500000, pts: [[-0.55, 0.35], [0.55, 0.35], [0.65, -0.15], [0.3, -0.45], [-0.3, -0.45], [-0.65, -0.15], [1, -0.5], [-1, 0], [0, -0.75]], ln: [[0, 1], [1, 2], [2, 3], [3, 4], [4, 5], [5, 0], [2, 6], [5, 7], [7, 0], [3, 8], [4, 8]] },
+  { id: 'helmet', name: 'Buckley’s Helmet', alt: 12000000, reward: 700000, pts: [[-0.7, 0.5], [0.7, 0.5], [0.85, -0.05], [0.4, -0.55], [-0.4, -0.55], [-0.85, -0.05], [0.4, 0.05], [-0.4, 0.05], [0, -1]], ln: [[0, 1], [1, 2], [2, 3], [3, 4], [4, 5], [5, 0], [5, 7], [7, 6], [6, 2], [4, 8], [3, 8]] },
+  { id: 'rocket', name: 'The Great Rocket', alt: 13500000, reward: 900000, pts: [[0, -1], [0.28, -0.5], [0.28, 0.4], [0.62, 0.8], [-0.62, 0.8], [-0.28, 0.4], [-0.28, -0.5], [0, -0.1]], ln: [[0, 1], [1, 2], [2, 3], [3, 4], [4, 5], [5, 6], [6, 0], [2, 5]] },
+  { id: 'pip', name: 'Pip', alt: 15000000, reward: 1200000, pts: [[-0.55, 0.55], [0.55, 0.55], [0.7, 0], [0.25, -0.4], [-0.25, -0.4], [-0.7, 0], [0.45, -0.95], [-0.45, -0.95], [-0.25, 0.05], [0.25, 0.05]], ln: [[0, 1], [1, 2], [2, 3], [3, 4], [4, 5], [5, 0], [3, 6], [4, 7]] },
+  { id: 'cane', name: 'Ada’s Cane', alt: 16500000, reward: 1500000, pts: [[0.25, 1], [0.25, 0.25], [0.25, -0.45], [0.05, -0.85], [-0.35, -0.88], [-0.55, -0.6], [-0.45, -0.35]], ln: [[0, 1], [1, 2], [2, 3], [3, 4], [4, 5], [5, 6]] },
+  { id: 'kraken', name: 'The Kraken', alt: 18000000, reward: 2000000, pts: [[0, -0.95], [0.42, -0.45], [-0.42, -0.45], [0, -0.05], [-0.95, 0.55], [-0.35, 0.95], [0.35, 0.95], [0.95, 0.55]], ln: [[0, 1], [0, 2], [1, 3], [2, 3], [3, 4], [3, 5], [3, 6], [3, 7]] },
+  { id: 'ember', name: 'Ember', alt: 20000000, reward: 2500000, pts: [[-1, 0.45], [-0.4, 0.2], [0.2, 0.15], [0.7, -0.2], [1, 0], [-0.15, -0.8], [0.3, -0.6], [-0.1, 0.65], [0.35, 0.6]], ln: [[0, 1], [1, 2], [2, 3], [3, 4], [1, 5], [5, 2], [2, 6], [6, 3], [1, 7], [2, 8]] },
+  { id: 'home', name: 'Home', alt: 22000000, reward: 4000000, pts: [[-0.7, 0.75], [0.7, 0.75], [0.7, -0.05], [0, -0.8], [-0.7, -0.05], [-0.15, 0.75], [-0.15, 0.2], [0.15, 0.2], [0.15, 0.75]], ln: [[0, 1], [1, 2], [2, 3], [3, 4], [4, 0], [2, 4], [5, 6], [6, 7], [7, 8]] },
+];
+const chartsOpen = () => routeDone('x5');
+const chartedN = () => STAR_CHARTS.filter(c => S.charted && S.charted[c.id]).length;
+const nextChart = () => STAR_CHARTS.find(c => !(S.charted && S.charted[c.id]));
+function drawChartShape(c, ch, size, k = 1, lit = true, t = 0) {
+  // k: how much of the joining lines are drawn (0..1); lit: gold once charted, pale before
+  c.save(); c.lineCap = 'round';
+  const P = ch.pts.map(([x, y]) => [x * size, y * size]);
+  c.strokeStyle = lit ? 'rgba(255,229,138,.9)' : 'rgba(255,255,255,.35)'; c.lineWidth = Math.max(1.5, size * 0.035);
+  if (!lit) c.setLineDash([size * 0.05, size * 0.07]);
+  ch.ln.forEach(([a, b], i) => { const f = clamp(k * ch.ln.length - i, 0, 1); if (f <= 0) return; const [x1, y1] = P[a], [x2, y2] = P[b]; c.beginPath(); c.moveTo(x1, y1); c.lineTo(lerp(x1, x2, f), lerp(y1, y2, f)); c.stroke(); });
+  c.setLineDash([]);
+  P.forEach(([x, y], i) => { const tw = 0.75 + 0.25 * Math.sin(t * 3 + i * 1.9), r = size * (0.05 + 0.02 * hash(i * 3.3)) * tw;
+    c.fillStyle = lit ? '#fff6c8' : '#ffffff'; c.beginPath(); c.moveTo(x, y - r * 2); c.quadraticCurveTo(x, y, x + r * 2, y); c.quadraticCurveTo(x, y, x, y + r * 2); c.quadraticCurveTo(x, y, x - r * 2, y); c.quadraticCurveTo(x, y, x, y - r * 2); c.fill(); });
+  c.restore();
+}
 const routeById = id => ROUTES.find(r => r.id === id);
 const routeDone = id => !!(S.routes[id] && S.routes[id].done);
 function nextRoute() { return ROUTES.find(r => !routeDone(r.id)) || null; }
@@ -1430,6 +1549,10 @@ const MAIL = [
     text: 'Dear friend,\nThe lamp is burning brighter than ever. Last night three starships found their way home by it, and one of them was full of puppies. I’ve sent you the colours of the aurora for your rocket (see the Paint Shop).\n\nKeep your light on.', sign: '— Keeper Lumen' },
   { id: 'x5', from: 'ember', stamp: 'edge', gift: 250000, when: () => routeDone('x5'),
     text: 'Dear Pilot,\nThe shed is SO cozy. The boiler is my favourite thing. Ada says I can’t sleep IN the boiler. I have painted your rocket in my scales (look in the Paint Shop!).\n\nEnclosed: the dragon hoard. It was mostly buttons, but there was a lot of gold under them.', sign: '— Ember (rawr)' },
+  { id: 'stars3', from: 'lumen', stamp: 'lighthouse', gift: 400000, when: () => chartedN() >= 3,
+    text: 'Dear Pilot,\nThree new constellations in my sky! I have added them to the lighthouse charts, and the lost starships are using them already. One captain told me he steered home by the Teapot.\n\nEnclosed: the Starship Guild’s thanks. Keep looking up.', sign: '— Keeper Lumen' },
+  { id: 'atlasmail', from: 'pip', stamp: 'pip', gift: 1000000, when: () => chartedN() >= STAR_CHARTS.length,
+    text: 'BEEP!\nPilot! My whole family went outside to see the new sky. Grandpa Pip cried. Then Grandma Pip cried. Then the dog cried, but I think it was hungry.\n\nWe made you a present. It is money. Pip money is the same as your money. Probably.', sign: '— Pip (and all the Pips)' },
   { id: 'gobble', from: 'earl', stamp: 'teapot', gift: 150000, when: () => (S.stats.gobble || 0) > 0,
     text: 'My dear Pilot,\nI watched you give that greedy Gobble Nebula the slip through my opera glasses. Splendid! The beastly thing once swallowed an entire tea trolley, scones and all.\n\nEnclosed: a reward from the Tea Room Society. Do mind the goo.', sign: '— The Earl of Grey' },
   { id: 'king', from: 'nimbus', stamp: 'storm', gift: 250, when: () => S.stats.king > 0,
@@ -1621,7 +1744,7 @@ function bannerMsg() {
   const nr = nextRoute();
   if (nr) opts.push(`Next stop: ${nr.to}!`, `Next stop: ${nr.to}!`);
   if (mailCount()) opts.push('You’ve got mail!');
-  { const rv = rivalLive(); if (rv) opts.push(`Vroom Rockets: ${fmtAlt(rv.alt)}! Beat THAT!`, `Baron Vroom challenges you: ${fmtAlt(rv.alt)}!`); }
+  { const rv = rivalLive(); if (rv) opts.push(...(rivalWho(rv) === 'ember' ? [`Ember wants a race: ${fmtAlt(rv.alt)}!`, `Dragon race to ${fmtAlt(rv.alt)}!`] : [`Vroom Rockets: ${fmtAlt(rv.alt)}! Beat THAT!`, `Baron Vroom challenges you: ${fmtAlt(rv.alt)}!`])); }
   if (hangarDailyOn()) opts.push(`Today’s special: ${todaysDaily().cargo}!`);
   if (S.stats.pax > 1) opts.push(`${fmtInt(S.stats.pax)} happy passengers!`);
   if (S.rocketName) opts.push(`Go, ${S.rocketName}!`);
@@ -1782,6 +1905,16 @@ const STORY = {
     ['plum', 'Ahem! Mayor Plum here. Pebbleton has never been so famous! But between us, the town square looks a little bare.'],
     ['plum', 'I’ve drawn up some Town Projects: a fountain, a Ferris wheel, a museum, even a spaceport. They’d go up on the hills right behind your yard!'],
     ['ada', 'And they pay their way, sweetpea: happier tourists, bigger fares. Have a look at the new Pebbleton tab.'],
+  ],
+  stars1: [
+    ['ada', 'Sweetpea! The stars out past the Edge make pictures, and you just found your first one. I’ve pinned it up on the Route Map.'],
+    ['pip', 'Beep! Each picture leaves starlight on your sail. More starlight, more zoom! Two percent more, I measured.'],
+    ['ada', 'There are eight up there, each one higher than the last. The very last one, they say, looks just like home.'],
+  ],
+  atlas: [
+    ['ada', 'All eight! The whole sky atlas, drawn in gold. Nobody has ever done that, not even me.'],
+    ['pip', 'Beep! And the last one looks exactly like Pebbleton. Somebody up there knows where we live.'],
+    ['ada', 'I had the Paint Shop mix you a Star Atlas coat. Wear it proudly, star pilot!'],
   ],
   statue: [
     ['plum', 'Ladies, gentlemen and robots! I give you... the Golden Ada Statue!'],
@@ -2096,6 +2229,7 @@ function computeStats() {
   st.chart = L('chart'); st.lantern = L('lantern');
   st.fountain = L('fountain'); st.wheel = L('wheel'); st.museum = L('museum'); st.observ = L('observ'); st.port = L('port'); st.statue = L('statue');
   if (st.port) st.thrust *= 1 + 0.05 * st.port;
+  st.starlight = chartedN(); if (st.starlight) st.thrust *= 1 + 0.02 * st.starlight; // each constellation found lends a little starlight
   if (st.lantern) st.hazMul = 1 - 0.15 * st.lantern;
   st.hp = STAT.hp(L('hull')) + (S.settings.relaxed ? 2 : 0) + L('lantern') + L('statue');
   st.cd = 0.0011 * STAT.drag(L('nose'));
@@ -2128,10 +2262,10 @@ function computeStats() {
 }
 
 // ---------------------------------------------------------- economy
-const ECON = { payK: 0.9, payExp: 0.75, coinBase: [1, 2, 4, 8, 12, 20, 32, 50, 80, 130, 200, 300] };
+const ECON = { payK: 0.9, payExp: 0.75, coinBase: [1, 2, 4, 8, 12, 20, 32, 50, 80, 130, 200, 300, 420] };
 const altitudePay = (alt) => ECON.payK * Math.pow(Math.max(0, alt), ECON.payExp);
 const GATE_ALT = 650000;
-const coinValue = alt => ECON.coinBase[zoneIndex(alt)] * (alt >= GATE_ALT && G.st && G.st.chart ? 1 + 0.4 * G.st.chart : 1) * (G.st && G.st.observ ? 1 + 0.1 * G.st.observ : 1); // Star Charts: coins past the Gate are worth more
+const coinValue = alt => ECON.coinBase[Math.min(zoneIndex(alt), ECON.coinBase.length - 1)] * (alt >= GATE_ALT && G.st && G.st.chart ? 1 + 0.4 * G.st.chart : 1) * (G.st && G.st.observ ? 1 + 0.1 * G.st.observ : 1); // Star Charts: coins past the Gate are worth more
 
 // ---------------------------------------------------------- physics
 const PHYS = { g0: 15, Rg: 30000, H: 6500 };
@@ -2415,9 +2549,11 @@ const PAINTS = [
   { id: 'tea', name: 'Tea Party', stars: 999, route: 'x1', body: '#ff9fd8', accent: '#fff6e5', pattern: 'dots' },
   { id: 'aurora', name: 'Aurora', stars: 999, route: 'x4', body: '#1d4f5c', accent: '#5fffb0', pattern: 'aurora' },
   { id: 'dragon', name: 'Dragon Scale', stars: 999, route: 'x5', body: '#7be0c0', accent: '#2a9d7f', pattern: 'scales' },
+  { id: 'plum', name: 'Mayor’s Plum', stars: 999, statue: true, body: '#c99ae8', accent: '#ffd34d', pattern: 'shine' },
+  { id: 'atlas', name: 'Star Atlas', stars: 999, atlas: true, body: '#1d2a66', accent: '#ffd93d', pattern: 'stars' },
 ];
 const totalStars = () => Object.values(S.routes).reduce((a, r) => a + (r.stars || 0), 0);
-const paintUnlocked = p => totalStars() >= p.stars || !!(p.lost && S.lost && S.lost[p.lost]) || !!S.seen['paintown_' + p.id] || (p.end && (S.ended || (S.line || 1) > 1)) || !!(p.route && routeDone(p.route));
+const paintUnlocked = p => totalStars() >= p.stars || !!(p.lost && S.lost && S.lost[p.lost]) || !!S.seen['paintown_' + p.id] || (p.end && (S.ended || (S.line || 1) > 1)) || !!(p.route && routeDone(p.route)) || !!(p.statue && lvl('statue') > 0) || !!(p.atlas && chartedN() >= STAR_CHARTS.length);
 // exhaust trails: cosmetic, unlocked by trophies
 const TRAILS = [
   { id: 'smoke', name: 'Puffy Smoke', need: 0 },
@@ -2428,6 +2564,8 @@ const TRAILS = [
   { id: 'sparks', name: 'Storm Sparks', ach: 'king', extra: 'spark', col: '#fff6a0', glow: '#fff36b' },
   { id: 'ink', name: 'Kraken Ink', ach: 'kraken', col: '#c79be0', glow: '#b05bd6' },
   { id: 'gold', name: 'Pirate Gold', ach: 'pirates', extra: 'doub', col: '#fff3b0', glow: '#ffd93d' },
+  { id: 'goo', name: 'Nebula Goo', ach: 'gobble', extra: 'goo', col: '#efd6ff', glow: '#d08cff' },
+  { id: 'cstar', name: 'Star Lines', ach: 'stargazer', extra: 'cstar', col: '#fff6c8', glow: '#ffe58a' },
 ];
 const trailUnlocked = tr => tr.ach ? !!S.ach[tr.ach] : Object.keys(S.ach).length >= tr.need;
 const curTrail = () => { const tr = TRAILS.find(x => x.id === S.trail); return tr && trailUnlocked(tr) ? tr : TRAILS[0]; };
@@ -2439,6 +2577,13 @@ function trailCol(tr, inAir, i) {
 function trailExtra(tr, x, py, vx, vy) {
   if (!tr.extra) return;
   const k = tr.extra;
+  if (k === 'cstar') { // little stars that join up behind you like a constellation
+    if (!chance(0.5)) return;
+    const p = { k, x: x + rand(-34, 34), py: py - rand(0, 24), vx: vx * 0.5 + rand(-30, 30), vy: vy * 0.72, r: rand(5, 9), life: 1.5, t: 0 }, q = G.lastCstar;
+    if (q && q.t < q.life * 0.6 && G.parts.includes(q) && Math.hypot(q.x - p.x, q.py - p.py) < 320) p.prev = q;
+    G.lastCstar = p; G.parts.push(p); return;
+  }
+  if (k === 'goo') { G.parts.push({ k, x: x + rand(-8, 8), py, vx: vx * 0.5 + rand(-50, 50), vy: vy * 0.5, r: rand(6, 10), life: rand(0.7, 1.1), t: 0, rot: rand(0, TAU), col: pick(['#d08cff', '#ff8ad0', '#b98cff']) }); return; }
   if (k === 'spark') { for (let j = 0; j < 2; j++) G.parts.push({ k: 'spark', x, py, vx: vx + rand(-90, 90), vy: vy + rand(-60, 60), r: rand(2, 4), life: 0.35, t: 0, col: pick(['#fff36b', '#ffffff']) }); return; }
   G.parts.push({ k, x: x + rand(-8, 8), py, vx: vx * 0.6 + rand(-40, 40), vy: vy * 0.6, r: k === 'bubble' ? rand(7, 12) : rand(8, 12), life: rand(0.6, 1.0), t: 0, col: k === 'heart' ? pick(['#ff5a8a', '#ff9fc0', '#f15bb5']) : k === 'star4' ? pick(['#ffd93d', '#fff3b0', '#ffffff']) : '#bfe9ff', rot: rand(-0.4, 0.4) });
 }
@@ -3334,6 +3479,10 @@ function prepareRocket() {
   R.wish = null; R.wishT = rand(3, 5.5); R.wishN = 0; R.wishOk = 0;
   const cd = CONDS[R.cond];
   if (cd.thrustMul) { G.st = Object.assign({}, G.st, { thrust: G.st.thrust * cd.thrustMul }); }
+  // cheer squad: after two misses on a new frontier stop, the whole town cheers you on (+4% thrust per miss, up to +20%)
+  const tries = route && route.fr && !routeDone(route.id) && S.frTries ? S.frTries[route.id] || 0 : 0;
+  R.cheer = tries >= 2 ? Math.min(0.2, 0.04 * (tries - 1)) : 0;
+  if (R.cheer) G.st = Object.assign({}, G.st, { thrust: G.st.thrust * (1 + R.cheer) });
   R.startPy = R.py;
   R.trace = { a: [], x: [], f: [] }; R.traceT = 0; R.ghostBeat = false;
   R.boss = null; R.bossN = 0; R.bossOk = { storm: !S.seen.boss_storm || chance(0.4), whale: !S.seen.boss_whale || chance(0.45), pirates: !S.seen.boss_pirates || chance(0.4), kraken: !S.seen.boss_kraken || chance(0.4), bandit: !S.seen.boss_bandit || chance(0.45), gobble: !S.seen.boss_gobble || chance(0.5) };
@@ -3359,6 +3508,7 @@ function enterLaunch() {
   const cd = CONDS[G.R.cond];
   if (G.R.daily) { const d = G.R.daily, tw = TWISTS[d.twist]; toast(`<b>Special delivery:</b> ${d.cargo} to ${fmtAlt(d.target)}<br><b>${tw.name}:</b> ${tw.fx} · <b>${cd.name}:</b> ${cd.fx}`, 4200); }
   else if (cd && cd.fx) toast(`<b>${cd.name}:</b> ${cd.fx}`, 3000);
+  if (G.R.cheer) toast(`<b>Cheer squad:</b> ${pick(['Pip’s whole family is', 'All of Pebbleton is', 'Ada and Buckley are', 'Mayor Plum is'])} cheering you on! Thrust +${Math.round(G.R.cheer * 100)}%`, 3400);
   if (G.R.route && !G.R.paxOk && G.R.route.pax > 0) {
     toast(`${G.R.route.to} needs <b>${G.R.route.pax} seats</b>. Add <b>Passenger Seats</b> in the Cabin tab!`);
   }
@@ -4395,6 +4545,15 @@ function updateFlight(dt) {
   // --- milestones
   const zi = zoneIndex(R.alt);
   if (zi > R.zi) { R.zi = zi; banner(ZONES[zi].name, '#bff8ff', 2.2, 'NOW ENTERING'); sfx.zone(); if (zi === 3 && !S.seen.space) { S.seen.space = 1; S.pendingSpace = true; } }
+  if (R.chartT) for (const k in R.chartT) R.chartT[k] += dt; // found constellations draw their lines in
+  if (R.alt > 10000000 && chartsOpen() && !R.crashed) { // constellations past the Edge
+    S.charted = S.charted || {}; R.charts = R.charts || [];
+    for (const ch of STAR_CHARTS) if (R.alt >= ch.alt && !S.charted[ch.id]) {
+      S.charted[ch.id] = 1; R.charts.push(ch.id); R.chartT = R.chartT || {}; R.chartT[ch.id] = 0;
+      banner(ch.name, '#ffe58a', 2.6, 'NEW CONSTELLATION!'); sfx.chime(); sfx.constellation(); confetti(R.x, R.py + 120, 50); floater(R.x, R.py + 90, 'Starlight: +2% thrust from now on', '#ffe58a', 16);
+      if (R.faces.length) R.bubble = { s: pick(['It looks just like it!', 'Write that down!', 'Ooooh, pretty!', 'Our very own stars!']), t: 0 };
+    }
+  }
   if (R.alt > 990000 && !R.teaSeen) { R.teaSeen = 1; if (R.faces.length) R.bubble = { s: pick(['Is that... a TEAPOT?', 'Who left a teapot up here?', 'Tea break in space!']), t: 0 }; }
   if (R.alt > 1350000 && !R.pipWave) { R.pipWave = 1; banner('Pip\u2019s home planet!', '#c8ffb0', 2.6, 'THE WHOLE FAMILY IS WAVING'); sfx.cheer(); if (!S.seen.pipPlanet) { S.seen.pipPlanet = 1; } }
   if (R.daily && !R.dailyDone && R.alt >= R.daily.target) { R.dailyDone = true; banner('SPECIAL DELIVERED!', '#f15bb5', 2); sfx.cheer(); buzz([30, 40, 30]); confetti(R.x, R.py, 50); fireworks(R.x, R.py + 40, 3); floater(R.x, R.py + 80, `${R.daily.to} got ${R.daily.cargo}!`, '#ffd6e6', 18); }
@@ -5026,6 +5185,9 @@ function computeResult() {
   if (record) rows.push(['New record bonus', Math.round(altPay * 0.25)]);
   if (st.gift) rows.push(['Gift shop sales', st.gift]);
   if (st.museum) rows.push(['Space Museum tickets', 40000 * st.museum]);
+  { const found = (R.charts || []).map(id => STAR_CHARTS.find(c => c.id === id)).filter(Boolean); // one row each, or one row for a big haul
+    if (found.length > 2) rows.push([`${found.length} new constellations`, found.reduce((a, c) => a + c.reward, 0)]);
+    else for (const ch of found) rows.push([`Constellation: ${ch.name}`, ch.reward]); }
   if (st.catcher && R.boosterDropped) { // the tower catches the spent boosters; the yard shows the catch when you get back
     const both = R.visStage === 2;
     rows.push([both ? 'Booster + stage catch' : 'Booster catch', Math.round(STAT.recover(st.catcher) * (both ? 1.5 : 1))]);
@@ -5033,7 +5195,7 @@ function computeResult() {
   }
   if (R.foundLost) { const it = LOST.find(x => x.id === R.foundLost); rows.push([`Found ${it.name}`, Math.round(80 + coinValue(it.min) * 40)]); }
   const rivalWon = R.rivalBeat && G.rival && !R.crashed ? G.rival.c : null;
-  if (rivalWon) rows.push([`Beat Baron Vroom’s ${rivalWon.name}`, rivalWon.prize]);
+  if (rivalWon) rows.push([rivalWho(rivalWon) === 'ember' ? `Beat Ember: ${rivalWon.name}` : `Beat Baron Vroom’s ${rivalWon.name}`, rivalWon.prize]);
   let dailyPaid = false;
   if (R.daily && R.dailyDone && S.daily && S.daily.day === R.daily.day && !S.daily.done) {
     const y = dayKey(new Date(Date.now() - 864e5));
@@ -5048,7 +5210,7 @@ function computeResult() {
   if (line > 1) { const base = rows.reduce((a, x) => a + x[1], 0); rows.push([`Line #${line} bonus +${(line - 1) * 50}%`, Math.round(base * 0.5 * (line - 1))]); }
   const jobsPaid = settleJobs(R, rows);
   const total = rows.reduce((s, x) => s + x[1], 0);
-  const core = rows.reduce((s, x) => s + (x[0].startsWith('Job:') || x[0].startsWith('Beat Baron') || x[0] === 'First delivery bonus!' || x[0].startsWith('Special delivery') ? 0 : x[1]), 0);
+  const core = rows.reduce((s, x) => s + (x[0].startsWith('Job:') || x[0].startsWith('Beat Baron') || x[0].startsWith('Beat Ember') || x[0] === 'First delivery bonus!' || x[0].startsWith('Special delivery') ? 0 : x[1]), 0);
   S.avg.total = S.avg.total * 0.65 + core * 0.35;
   const badges = [];
   if (R.delivered) badges.push('Delivered!');
@@ -5061,6 +5223,7 @@ function computeResult() {
   if (R.smashed >= 3) badges.push(`${R.smashed} smashed`);
   if (R.wishOk) badges.push(R.wishOk > 1 ? `${R.wishOk} wishes granted` : 'Wish granted');
   if (R.foundLost) badges.push('Lost item found');
+  if (R.charts && R.charts.length) badges.push(R.charts.length > 1 ? `${R.charts.length} constellations` : 'Constellation found');
   if (rivalWon) badges.push('Rival beaten');
   if ((R.nearMiss || 0) >= 3) badges.push(`${R.nearMiss} close calls`);
   if (jobsPaid) badges.push(jobsPaid > 1 ? `${jobsPaid} jobs done` : 'Job done');
@@ -5076,6 +5239,8 @@ function computeResult() {
   if (R.delivered && R.faces) { S.met = S.met || {}; for (const f of R.faces) if (GUESTS[f]) S.met[f] = (S.met[f] || 0) + 1; }
   if (R.delivered && r && r.id === 'x5') S.met.ember = (S.met.ember || 0) + 1; // she moves into the shed
   if (alt > S.bestAlt) S.bestAlt = alt;
+  if (r && r.fr && !R.delivered && !routeDone(r.id)) { S.frTries = S.frTries || {}; S.frTries[r.id] = (S.frTries[r.id] || 0) + 1; }
+  if (r && R.delivered && S.frTries) delete S.frTries[r.id];
   if (r && R.delivered) {
     const rec = S.routes[r.id] || { done: false, stars: 0, runs: 0 };
     rec.done = true; rec.stars = Math.max(rec.stars, stars); rec.runs++;
@@ -5146,6 +5311,9 @@ const ACH = [
   { id: 'bandit', name: 'Lost Luggage Hero', desc: 'Catch the Comet Bandit and win the luggage back', test: () => (S.stats.bandit || 0) >= 1, reward: 30000 },
   { id: 'statue', name: 'Pebbleton’s Pride', desc: 'Build the Golden Ada Statue', test: () => lvl('statue') > 0, reward: 1000000 },
   { id: 'town', name: 'Town Planner', desc: 'Finish every Pebbleton town project', test: () => UPGRADES.filter(u => u.br === 'town').every(u => lvl(u.id) >= u.max), reward: 3000000 },
+  { id: 'dragonrace', name: 'Faster Than a Dragon', desc: 'Win all three of Ember’s sky races', test: () => !!(S.rival && S.rival.e3), reward: 5000000 },
+  { id: 'stargazer', name: 'Stargazer', desc: 'Find a constellation past the Edge of the Map', test: () => chartedN() >= 1, reward: 600000 },
+  { id: 'atlas', prog: () => [chartedN(), STAR_CHARTS.length], name: 'Sky Atlas', desc: 'Find all eight constellations', test: () => chartedN() >= STAR_CHARTS.length, reward: 6000000 },
   { id: 'gobble', name: 'Unslurpable', desc: 'Escape the Gobble Nebula without a scratch', test: () => (S.stats.gobble || 0) >= 1, reward: 400000 },
   { id: 'kraken', name: 'Eight-Arm Escape', desc: 'Slip past every arm of the Space Kraken', test: () => S.stats.kraken >= 1, reward: 20000 },
   { id: 'guide', prog: () => [GUIDE.filter(guideSeen).length, GUIDE.length], name: 'Sky Spotter', desc: 'Fill every page of the Sky Guide', test: () => GUIDE.every(guideSeen), reward: 50000 },
@@ -5166,6 +5334,9 @@ const ACH = [
 const T_ = (t, fs = 12) => `<text x="32" y="${28 + fs * 0.36}" text-anchor="middle" font-size="${fs}" font-weight="900" font-family="Fredoka, 'Arial Rounded MT Bold', Nunito, sans-serif" fill="${INK}" stroke="none">${t}</text>`;
 const T_KM = (n, fs) => `<text x="32" y="${27.5 + fs * 0.1}" text-anchor="middle" font-size="${fs}" font-weight="900" font-family="Fredoka, 'Arial Rounded MT Bold', Nunito, sans-serif" fill="${INK}" stroke="none">${n}</text><text x="32" y="38" text-anchor="middle" font-size="7.5" font-weight="800" font-family="Fredoka, 'Arial Rounded MT Bold', Nunito, sans-serif" fill="#5b4e72" stroke="none">km</text>`;
 const ACH_SYM = {
+  dragonrace: '<path d="M14 40c6-2 10-8 14-14l6 4c-4 6-8 10-14 14z" fill="#7be0c0" stroke-width="2.5"/><circle cx="36" cy="22" r="8" fill="#7be0c0" stroke-width="2.5"/><circle cx="38" cy="20" r="2.4" fill="#fff" stroke-width="1.5"/><path d="M33 14l-1-6 5 4M40 14l2-6 2 6" fill="#ffd93d" stroke-width="2"/><path d="M44 28l8 2-6 4" fill="#ffd93d" stroke-width="2"/><path d="M12 22h8M10 28h7M14 16h6" stroke="#4d96ff" stroke-width="2.5"/>',
+  stargazer: '<path d="M14 40L24 22 36 30 48 14" fill="none" stroke="#e0a800" stroke-width="2.5" stroke-dasharray="0"/><path d="M14 36l1.6 3.4 3.4 1.6-3.4 1.6L14 46l-1.6-3.4L9 41l3.4-1.6zM24 17l1.6 3.4 3.4 1.6-3.4 1.6L24 27l-1.6-3.4L19 22l3.4-1.6zM36 25l1.6 3.4 3.4 1.6-3.4 1.6L36 35l-1.6-3.4L31 30l3.4-1.6zM48 9l1.6 3.4 3.4 1.6-3.4 1.6L48 19l-1.6-3.4L43 14l3.4-1.6z" fill="#fff6c8" stroke-width="1.5"/>',
+  atlas: '<path d="M14 16l12-4 12 4 12-4v30l-12 4-12-4-12 4z" fill="#2a1450" stroke-width="2.5"/><path d="M26 12v30M38 16v30" stroke-width="2"/><path d="M18 34l5-9 8 5 6-10 7 6" fill="none" stroke="#ffd93d" stroke-width="2"/><circle cx="18" cy="34" r="1.8" fill="#fff6c8" stroke="none"/><circle cx="23" cy="25" r="1.8" fill="#fff6c8" stroke="none"/><circle cx="31" cy="30" r="1.8" fill="#fff6c8" stroke="none"/><circle cx="37" cy="20" r="1.8" fill="#fff6c8" stroke="none"/><circle cx="44" cy="26" r="1.8" fill="#fff6c8" stroke="none"/>',
   fly1: '<path d="M32 15c5 4 7 9 7 13v6H25v-6c0-4 2-9 7-13z" fill="#fff6e5"/><circle cx="32" cy="25" r="2.6" fill="#4d96ff" stroke-width="2"/><path d="M25 30l-4 6h4M39 30l4 6h-4" fill="#ff5a5f" stroke-width="2"/><path d="M29 35l3 5 3-5" fill="#ff9f43" stroke-width="2"/>',
   perf5: '<circle cx="32" cy="28" r="12" fill="#fff"/><circle cx="32" cy="28" r="7.5" fill="#ff5a5f" stroke-width="2.5"/><circle cx="32" cy="28" r="3" fill="#fff" stroke-width="2"/>',
   coins500: '<circle cx="32" cy="28" r="11" fill="#ffd93d"/><circle cx="32" cy="28" r="6.5" stroke="#e0a800" stroke-width="2.5"/>',
@@ -5333,6 +5504,7 @@ function render() {
   ctx.fillStyle = sg; ctx.fillRect(0, 0, W, H);
   drawStars(alt);
   if (alt > 700000) drawFrontierSky(alt);
+  if (alt > 9000000 && chartsOpen()) drawStarChartsSky(alt);
   drawSunAndPlanets(alt);
   // shake
   let sx = 0, sy = 0;
@@ -5483,11 +5655,27 @@ function drawStars(alt) {
   ctx.restore();
 }
 // ---- the frontier skies: nebula clouds, aurora curtains and, at the very end, the old map's parchment
+// constellations drift past as you climb through them; charted ones glow gold and draw their lines in
+function drawStarChartsSky(alt) {
+  const la = Math.log(Math.max(1, alt)), size = Math.min(W, H) * 0.2;
+  STAR_CHARTS.forEach((ch, i) => {
+    const d = la - Math.log(ch.alt); if (d < -0.09 || d > 0.07) return;
+    const y = H * 0.36 + d * H * 9, x = W / 2 + (i % 2 ? 1 : -1) * Math.min(W * 0.2, 240);
+    const a = clamp((0.09 + d) / 0.03, 0, 1) * clamp((0.07 - d) / 0.03, 0, 1);
+    const lit = !!(S.charted && S.charted[ch.id]), R = G.R, ct = R && R.chartT && R.chartT[ch.id] != null ? R.chartT[ch.id] : null;
+    ctx.save(); ctx.globalAlpha = a * (lit ? 1 : 0.8); ctx.translate(x, y);
+    if (lit) { const g = ctx.createRadialGradient(0, 0, 4, 0, 0, size * 1.4); g.addColorStop(0, 'rgba(255,229,138,.22)'); g.addColorStop(1, 'rgba(255,229,138,0)'); ctx.fillStyle = g; circ(ctx, 0, 0, size * 1.4); ctx.fill(); }
+    drawChartShape(ctx, ch, size, ct == null ? 1 : clamp((ct - 0.2) / 2, 0, 1), lit, G.t);
+    if (lit) { ctx.globalAlpha *= ct == null ? 1 : clamp((ct - 2.3) / 0.6, 0, 1); text(ctx, ch.name, 0, size * 1.2, Math.max(14, size * 0.15), '#ffe58a', 'center', INK, 3); }
+    ctx.restore();
+  });
+}
 function drawFrontierSky(alt) {
   const z = G.cam.z, py = G.cam.py * z, la = Math.log10(Math.max(alt, 1));
   const nebK = smooth(invLerp(5.9, 6.0, la)) * (1 - smooth(invLerp(6.42, 6.55, la)));   // 0.8M -> 1M, gone by 3.5M
   const aurK = smooth(invLerp(6.32, 6.42, la)) * (1 - smooth(invLerp(6.9, 6.98, la)));   // 2.1M -> 2.6M, gone by 9.5M
-  const mapK = smooth(invLerp(6.82, 6.9, la));                                               // 6.6M -> 8M
+  const deepK = smooth(invLerp(7.19, 7.25, la));                                             // 15.5M -> 17.8M: the parchment gives way to deep night
+  const mapK = smooth(invLerp(6.82, 6.9, la)) * (1 - 0.7 * deepK);                           // 6.6M -> 8M
   ctx.save();
   if (nebK > 0) { // big soft clouds of glowing gas drifting past
     const cols = [[255, 138, 208], [155, 93, 229], [79, 216, 255], [255, 159, 67], [138, 255, 193]];
@@ -5538,6 +5726,15 @@ function drawFrontierSky(alt) {
     for (let i = 0; i < 16; i++) { const a = i * TAU / 16, l = i % 4 === 0 ? cr * 1.0 : i % 2 ? cr * 0.55 : cr * 0.75; ctx.beginPath(); ctx.moveTo(Math.cos(a - 0.12) * cr * 0.1, Math.sin(a - 0.12) * cr * 0.1); ctx.lineTo(Math.cos(a) * l, Math.sin(a) * l); ctx.lineTo(Math.cos(a + 0.12) * cr * 0.1, Math.sin(a + 0.12) * cr * 0.1); ctx.closePath(); ctx.fillStyle = i % 2 ? 'rgba(243,226,179,.5)' : '#f3e2b3'; ctx.fill(); }
     ctx.rotate(-G.t * 0.03); text(ctx, 'N', 0, -cr * 1.15, Math.max(12, cr * 0.18), '#f3e2b3', 'center', null);
     ctx.restore();
+  }
+  if (deepK > 0) { // the star atlas: a deep, still night full of twinkling four-point stars
+    for (let i = 0; i < 46; i++) {
+      const x = hash(i * 23 + 5) * W, y = ((hash(i * 41 + 9) * H * 1.3 + py * (0.006 + 0.004 * hash(i * 3))) % (H * 1.3)) - H * 0.15;
+      const tw = 0.55 + 0.45 * Math.sin(G.t * (1 + hash(i * 7) * 2.5) + i * 1.7), r = (1.2 + hash(i * 11) * 2.6) * tw;
+      ctx.globalAlpha = deepK * (0.5 + 0.5 * tw); ctx.fillStyle = i % 5 ? '#ffffff' : '#ffe58a';
+      ctx.beginPath(); ctx.moveTo(x, y - r * 2.2); ctx.quadraticCurveTo(x, y, x + r * 2.2, y); ctx.quadraticCurveTo(x, y, x, y + r * 2.2); ctx.quadraticCurveTo(x, y, x - r * 2.2, y); ctx.quadraticCurveTo(x, y, x, y - r * 2.2); ctx.fill();
+    }
+    ctx.globalAlpha = 1;
   }
   ctx.restore();
 }
@@ -5835,6 +6032,7 @@ function drawTownLandmark(c, id, L, t) {
   }
 }
 function drawGroundLayers(alt, sx, sy) {
+  G.townHit = [];
   const z = G.cam.z;
   const mountain = (G.st || computeStats()).startAlt > 0;
   // distant mountains
@@ -5871,6 +6069,7 @@ function drawGroundLayers(alt, sx, sy) {
       const hy = y2 - (40 + Math.sin(((x + off) / z) * 0.006) * 30 + Math.sin(((x + off) / z) * 0.017) * 14) * z, lift = (58 + (1 - squeeze) * 110) * z; // higher hills on phones, above the crowd and the sign
       spots.push({ id, L, x, hy, lift, mw: 96 * z + lift * 0.5 });
     }
+    G.townHit = spots.map(p => ({ id: p.id, x: p.x, base: p.hy - p.lift * 0.72, s: ts })); // tappable landmarks
     if (spots.length) { // each stands on its own little hill: one outline around all of them (stroke wide, then fill over)
       ctx.save(); ctx.lineJoin = 'round'; ctx.lineWidth = 6; ctx.strokeStyle = INK;
       ctx.beginPath(); for (const p of spots) { ctx.moveTo(p.x - p.mw, p.hy + 30 * z); ctx.bezierCurveTo(p.x - p.mw * 0.72, p.hy - p.lift, p.x + p.mw * 0.72, p.hy - p.lift, p.x + p.mw, p.hy + 30 * z); } ctx.stroke();
@@ -5899,6 +6098,14 @@ const SEASON_POKE = {
 // the little seasonal friend between Ada and the tower: snowman, pumpkins, tulips or sunflowers
 // Baron Vroom hovers over the yard in his gold balloon while a challenge is open (tap him)
 const BARON_TAUNTS = ['My rocket has TWO cup holders!', 'Vroom Rockets: first, best, LOUDEST!', 'Is that a rocket or a teapot?', 'I polish my fins every morning. Twice!', 'Ha! You call that a launch pad?'];
+const EMBER_TAUNTS = ['Race me! Race me! RACE ME!', 'I have been practising my flapping.', 'Your rocket smells like toast. Nice toast.', 'Dragons don’t need fuel. We run on snacks.', 'I napped on your shed. It is very warm.'];
+const emberPerchX = () => Math.max(-246, G.cam.x - W / 2 / G.cam.z + 78); // over the shed, but always on screen
+function drawEmberPerch() { // Ember hovers over the shed roof, waiting for a race
+  const P = G.poke, hop = P.baronT > 0 ? Math.abs(Math.sin(P.baronT * 9)) * 8 : 0, ex = emberPerchX() + Math.sin(G.t * 0.7) * 10, epy = 186 + Math.sin(G.t * 1.6) * 7 + hop;
+  ctx.save(); ctx.translate(ex, -epy); ctx.scale(1.15, 1.15); drawDragonling(ctx, { dir: 1, seed: 0.37, col: '#7be0c0' }, G.t); ctx.restore();
+  ctx.save(); ctx.translate(ex - 4, -epy - 44); ctx.rotate(-0.08); rr(ctx, -30, -11, 60, 22, 7); fillStroke(ctx, '#ffd93d', 3); text(ctx, 'RACE?', 0, 1, 13, INK, 'center', null); ctx.restore();
+  if (P.baronT > 0) speechBubble(ctx, P.baronLine, ex + 70, -epy - 40, clamp(P.baronT * 3, 0, 1) * clamp((2.8 - P.baronT) * 6, 0, 1), 150, true);
+}
 function drawBaronBalloon() {
   const P = G.poke, bpy = 196 + Math.sin(G.t * 1.2 + 1) * 8, bx = 228 + Math.sin(G.t * 0.5) * 8, hop = P.baronT > 0 ? Math.abs(Math.sin(P.baronT * 9)) * 6 : 0;
   ctx.save(); ctx.translate(bx, -bpy); ctx.rotate(Math.sin(G.t * 0.9) * 0.05); ctx.scale(0.62, 0.62); ink(ctx, 3);
@@ -6150,7 +6357,7 @@ function drawGround() {
     }
   }
   if (G.mode === 'hangar') drawBannerPlane();
-  if (G.mode === 'hangar' && rivalLive() && !mountain) drawBaronBalloon();
+  if (G.mode === 'hangar' && rivalLive() && !mountain) { if (rivalWho(rivalLive()) === 'ember') drawEmberPerch(); else drawBaronBalloon(); }
   // ---- launch pad
   rr(ctx, -80, -4, 160, 22, 5); fillStroke(ctx, '#c9ced8');
   ctx.save(); rr(ctx, -80, -4, 160, 22, 5); ctx.clip(); ctx.fillStyle = '#ffd93d'; for (let i = -10; i < 10; i++) { ctx.beginPath(); ctx.moveTo(i * 22, 18); ctx.lineTo(i * 22 + 11, 18); ctx.lineTo(i * 22 + 22, -4); ctx.lineTo(i * 22 + 11, -4); ctx.fill(); } ctx.restore();
@@ -6235,11 +6442,33 @@ const ADA_QUIPS = [
   'If it explodes, we call it a learning flight.', 'My knitting club wants a ride. Heaven help us.', 'Don’t tell Mayor Plum, but I drew this on a napkin.',
 ];
 const ROCKET_POKES = ['Boing!', 'Hey!', 'Hee hee!', 'Stop, that tickles!', 'Are we there yet?', 'Vroom vroom!', 'Again!', '*rattle rattle*'];
+const TOWN_POKES = {
+  fountain: () => ['Plink! Another wish in the fountain.', 'Someone wished for a pony. In space.', 'Splish! Wishes pay out better here.'],
+  wheel: () => ['Wheeee! Round and round!', 'Best view of the launch pad in town!', 'The top car can see Pip’s planet. Allegedly.'],
+  museum: () => [`On display: ${S.flights} flights of history`, `Today’s exhibit: your ${fmtAlt(S.bestAlt)} record!`, 'Please do not lick the moon rock.'],
+  observ: () => chartsOpen() ? [`${chartedN()} of ${STAR_CHARTS.length} constellations found`, nextChart() ? `Next up: ${nextChart().name}` : 'The whole sky atlas, all in gold!'] : ['The telescope points at the Edge of the Map.', 'They say the stars make pictures out past the Edge…'],
+  port: () => ['Now boarding: everyone!', 'Next departure: whenever you hit LAUNCH.', 'Mind the gap between the pad and the sky.'],
+  statue: () => ['Ada’s statue gleams. Someone polished the nose.', 'A pigeon sits on the statue’s goggles. Rude.', '“There’s always further!” says the plaque.'],
+};
+const TOWN_POKE_SFX = { fountain: () => sfx.coin(2), wheel: () => sfx.whoosh(), museum: () => sfx.paper(), observ: () => sfx.chime(), port: () => sfx.honk(), statue: () => sfx.ach() };
+function pokeTown(h) {
+  const z = G.cam.z, P = G.poke;
+  if ((P.town || 0) > 0.35) return;
+  P.town = 1; G.townPop = { id: h.id, t: 1.2 };
+  TOWN_POKE_SFX[h.id] && TOWN_POKE_SFX[h.id]();
+  const lines = TOWN_POKES[h.id] ? TOWN_POKES[h.id]() : null; if (!lines) return;
+  const line = pick(lines), fs = clamp((W - 24) / (line.length * 0.6), 10, 14.5), size = fs / z, half = line.length * fs * 0.3 + 10; // keep the whole line on screen
+  const sx = clamp(h.x, Math.min(W / 2, half), Math.max(W / 2, W - half)), sy = Math.max(110, h.base - 112 * h.s);
+  floater(G.cam.x + (sx - W / 2) / z, G.cam.py + (H * G.cam.anchor - sy) / z, line, '#ffd93d', size);
+}
 function pokeHangar(sx, sy) {
   const z = G.cam.z, wx = G.cam.x + (sx - W / 2) / z, wpy = G.cam.py + (H * G.cam.anchor - sy) / z;
   const st = G.st || computeStats(), town = !(st.startAlt > 0), P = G.poke;
   const look = G.look || rocketLook(), d = rocketDims(look), rs = G.rocketScale;
   const rh = (d.BL + d.NH + d.BH) * rs;
+  let townTap = null, td = 1e9; // the nearest landmark under the finger; it wins beside the rocket's slim body
+  for (const h of G.townHit || []) { const dx = Math.abs(sx - h.x); if (dx < 46 * h.s && sy < h.base + 8 * h.s && sy > h.base - 125 * h.s && dx < td) { townTap = h; td = dx; } }
+  if (townTap && Math.abs(wx) > (d.BW / 2 + 8) * rs) { pokeTown(townTap); return true; }
   if (Math.abs(wx) < (d.BW / 2 + d.FW + 10) * rs && wpy > 0 && wpy < rh + 20) {
     P.rocket = 1; S.stats.pokes = (S.stats.pokes || 0) + 1;
     sfx.boing(); if (chance(0.3)) sfx.honk();
@@ -6248,7 +6477,14 @@ function pokeHangar(sx, sy) {
     if (S.stats.pokes === 25) { checkAchievements(); if (S.pendingAch && S.pendingAch.length) { for (const id of S.pendingAch) achToast(id); sfx.ach(); S.pendingAch = []; UI.refresh(); } saveGame(); }
     return true;
   }
-  if (town && rivalLive() && Math.abs(wx - 228) < 28 && wpy > 150 && wpy < 225) {
+  if (townTap) { pokeTown(townTap); return true; } // Pebbleton's landmarks on the hills
+  if (town && rivalLive() && rivalWho(rivalLive()) === 'ember' && Math.abs(wx - emberPerchX()) < 44 && wpy > 150 && wpy < 245) {
+    const rv = rivalLive(), opts = EMBER_TAUNTS.concat([`First to ${fmtAlt(rv.alt)} wins!`]);
+    let line = pick(opts); if (line === P.baronLine) line = pick(opts);
+    P.baronLine = line; P.baronT = 2.8; for (let i = 0; i < 5; i++) setTimeout(() => sfx.talk(1.35), i * 70);
+    return true;
+  }
+  if (town && rivalLive() && rivalWho(rivalLive()) === 'baron' && Math.abs(wx - 228) < 28 && wpy > 150 && wpy < 225) {
     const rv = rivalLive(), opts = BARON_TAUNTS.concat([`Beat ${fmtAlt(rv.alt)} first, then we talk!`]);
     let line = pick(opts); if (line === P.baronLine) line = pick(opts);
     P.baronLine = line; P.baronT = 2.8; for (let i = 0; i < 6; i++) setTimeout(() => sfx.talk(0.75), i * 70);
@@ -6360,7 +6596,7 @@ function drawCatcher(px) {
   ctx.save(); ctx.translate(ex, ey); ctx.rotate(a); ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(4, -7); ctx.lineWidth = 4; ctx.strokeStyle = INK; ctx.stroke(); ctx.restore();
   ctx.lineWidth = 3; ctx.fillStyle = '#c9ced8'; circ(ctx, px, py, 4.5); ctx.fill(); ctx.stroke();
 }
-function updatePokes(dt) { const P = G.poke; for (const k of ['rocket', 'ada', 'crowd', 'shed', 'rocketLineT', 'mail', 'guestT', 'deco', 'baronT']) if (P[k] > 0) P[k] = Math.max(0, P[k] - dt); }
+function updatePokes(dt) { const P = G.poke; for (const k of ['rocket', 'ada', 'crowd', 'shed', 'rocketLineT', 'mail', 'guestT', 'deco', 'baronT', 'town']) if (P[k] > 0) P[k] = Math.max(0, P[k] - dt); }
 function wrapText(str, maxW) { const words = str.split(' '); const out = []; let line = ''; for (const w of words) { const t = line ? line + ' ' + w : w; if (ctx.measureText(t).width > maxW && line) { out.push(line); line = w; } else line = t; } if (line) out.push(line); return out; }
 // world markers (record line, rival tag) fade while they slide behind the top HUD, so they never run through the numbers
 function hudFade(wy) { const m = ctx.getTransform(), sy = (m.d * wy + m.f) / DPR, band = (G.hudB || 130) + 6; return 0.12 + 0.88 * clamp((sy - band) / 50, 0, 1); }
@@ -6472,6 +6708,13 @@ function drawParticle(p) {
   else if (p.k === 'heart') { ctx.globalAlpha = 1 - k; ctx.translate(p.x, -p.py); ctx.rotate(p.rot); const r = p.r * (1 + k * 0.4); ink(ctx, 2); ctx.beginPath(); ctx.moveTo(0, r * 0.9); ctx.bezierCurveTo(-r * 1.6, -r * 0.2, -r * 0.6, -r * 1.4, 0, -r * 0.5); ctx.bezierCurveTo(r * 0.6, -r * 1.4, r * 1.6, -r * 0.2, 0, r * 0.9); fillStroke(ctx, p.col, 2); }
   else if (p.k === 'star4') { ctx.globalAlpha = 1 - k; ctx.translate(p.x, -p.py); ctx.rotate(p.rot + k * 3); const r = p.r * (1.2 - k * 0.5); ctx.beginPath(); for (let j = 0; j < 8; j++) { const a = j / 8 * TAU, rr2 = j % 2 ? r * 0.35 : r; ctx.lineTo(Math.cos(a) * rr2, Math.sin(a) * rr2); } ctx.closePath(); ink(ctx, 1.5); fillStroke(ctx, p.col, 1.5); }
   else if (p.k === 'bubble') { ctx.globalAlpha = (1 - k) * 0.9; const r = p.r * (1 + k * 0.6); circ(ctx, p.x, -p.py, r); ctx.fillStyle = 'rgba(191,233,255,.45)'; ctx.fill(); ctx.lineWidth = 2.5; ctx.strokeStyle = '#3d8fd1'; ctx.stroke(); ctx.fillStyle = '#fff'; circ(ctx, p.x - r * 0.35, -p.py - r * 0.35, r * 0.22); ctx.fill(); }
+  else if (p.k === 'cstar') {
+    const a = 1 - clamp((k - 0.55) / 0.45, 0, 1), q = p.prev;
+    if (q && q.t < q.life) { ctx.globalAlpha = 0.75 * Math.min(a, 1 - clamp((q.t / q.life - 0.55) / 0.45, 0, 1)); ctx.strokeStyle = '#ffe58a'; ctx.lineWidth = 2; ctx.lineCap = 'round'; ctx.beginPath(); ctx.moveTo(p.x, -p.py); ctx.lineTo(q.x, -q.py); ctx.stroke(); }
+    ctx.globalAlpha = a; ctx.translate(p.x, -p.py); const r = p.r * (0.85 + 0.15 * Math.sin(p.t * 9 + p.x));
+    ctx.fillStyle = '#fff6c8'; ctx.beginPath(); ctx.moveTo(0, -r * 2); ctx.quadraticCurveTo(0, 0, r * 2, 0); ctx.quadraticCurveTo(0, 0, 0, r * 2); ctx.quadraticCurveTo(0, 0, -r * 2, 0); ctx.quadraticCurveTo(0, 0, 0, -r * 2); ctx.fill();
+  }
+  else if (p.k === 'goo') { ctx.globalAlpha = 1 - k; ctx.translate(p.x, -p.py); const r = p.r * (1 + k * 0.5), w = 1 + 0.18 * Math.sin(p.t * 12 + p.rot); ctx.scale(w, 2 - w); ink(ctx, 2); circ(ctx, 0, 0, r); fillStroke(ctx, p.col, 2); ctx.fillStyle = 'rgba(255,255,255,.75)'; circ(ctx, -r * 0.35, -r * 0.35, r * 0.25); ctx.fill(); }
   else if (p.k === 'doub') { ctx.globalAlpha = 1 - k * k; ctx.translate(p.x, -p.py); const sq = Math.abs(Math.cos(p.t * 9 + p.r)); ink(ctx, 2); ctx.beginPath(); ctx.ellipse(0, 0, p.r * Math.max(0.15, sq), p.r, 0, 0, TAU); fillStroke(ctx, '#ffd93d', 2); if (sq > 0.5) { ctx.strokeStyle = '#e0a800'; ctx.beginPath(); ctx.ellipse(0, 0, p.r * sq * 0.55, p.r * 0.55, 0, 0, TAU); ctx.stroke(); } }
   else if (p.k === 'feather') { ctx.globalAlpha = 1 - k; ctx.translate(p.x, -p.py); ctx.rotate(p.rot); ink(ctx, 2); ctx.beginPath(); ctx.ellipse(0, 0, 7, 3, 0, 0, TAU); fillStroke(ctx, p.col, 2); }
   else if (p.k === 'debris') {
@@ -6496,7 +6739,8 @@ function updateParticles(dt) {
     else if (p.k === 'spark') { p.vx *= 0.93; p.vy *= 0.93; }
     else if (p.k === 'fw') { p.vx *= 0.955; p.vy *= 0.955; p.vy -= 70 * dt; }
     else if (p.k === 'shell') { p.vy -= 260 * dt; if (p.t + dt >= p.life && !p.popped) { p.popped = 1; burst(p); } }
-    else if (p.k === 'heart' || p.k === 'star4' || p.k === 'bubble') { p.vx *= 0.95; p.vy *= 0.95; p.vy += 30 * dt; }
+    else if (p.k === 'heart' || p.k === 'star4' || p.k === 'bubble' || p.k === 'goo') { p.vx *= 0.95; p.vy *= 0.95; p.vy += 30 * dt; }
+    else if (p.k === 'cstar') { p.vx *= 0.97; p.vy *= 0.97; }
     else if (p.k === 'doub') { p.vx *= 0.95; p.vy *= 0.95; p.vy -= 60 * dt; }
   }
   G.parts = G.parts.filter(p => p.t < p.life);
@@ -6524,7 +6768,22 @@ const RIVAL = [
   { id: 'v5', after: 'r6', alt: 420000, prize: 12000, name: 'Vroom-MAX', lv: 9,
     intro: [['baron', 'This is it. The Vroom-MAX, built with my entire fortune.'], ['baron', '420 kilometres! If you beat this, I... I don’t know what I’ll do!'], ['ada', 'Go on, dear. One last time!']],
     lose: [['baron', 'You beat the Vroom-MAX. You actually beat it.'], ['baron', 'Fine. You run the finest rocket line in the sky. May I have your autograph?'], ['ada', 'Come and watch our next launch, Baron. Front row!']] },
+  // ---- Ember's sky races, after the Edge of the Map: she flies alongside on her own wings
+  { id: 'e1', who: 'ember', after: 'x5', alt: 12000000, prize: 1500000, name: 'Sky Race', lv: 0,
+    intro: [['ember', 'Rawr! I mean... hello again. Everybody says your rocket is the fastest thing in the sky.'], ['ember', 'But I am a DRAGON. Dragons are the fastest thing in the sky. Race me to 12,000 km!'], ['ada', 'Oh, this should be fun. Mind her tail, sweetpea.']],
+    lose: [['ember', 'Hmph. I wasn’t even flapping properly. Again! After my nap.']] },
+  { id: 'e2', who: 'ember', after: 'x5', alt: 16000000, prize: 3000000, name: 'Comet Race', lv: 0,
+    intro: [['ember', 'I ate seven comets for breakfast. I am VERY fast now.'], ['ember', 'Sixteen thousand kilometres. Winner is Queen of the Sky!'], ['pip', 'Beep! Can a rocket be a queen?']],
+    lose: [['ember', 'Fine. You are Queen of the Sky. Or King. Or Rocket.'], ['ember', 'One more race. The big one. I will practise flapping.']] },
+  { id: 'e3', who: 'ember', after: 'x5', alt: 21000000, prize: 6000000, name: 'The Big Race', lv: 0,
+    intro: [['ember', 'This is it. All the way into the Star Atlas: 21,000 km. My whole family is watching from the Edge.'], ['ada', 'Give it everything, dear. There’s always further!']],
+    lose: [['ember', '...You won. You really, truly won.'], ['ember', 'I will tell all the dragons. Some of them will cry. I might cry a little bit too.'], ['ada', 'Come inside, dear, there’s cocoa. Even the fastest dragon in the sky needs cocoa.']] },
 ];
+const RIVAL_LINES = {
+  baron: { go: ['Eat my exhaust!', 'Ta-ta, slowpoke!', 'Vroom VROOM!'], pass: ['WHAT?!', 'Hey! No fair!', 'How are you so fast?!'], top: 'Top THAT!', lost: ['NOOOO!', 'My beautiful rocket!', 'Impossible!'] },
+  ember: { go: ['Rawr! Catch me!', 'Flap flap FLAP!', 'Byeee, slowpoke!'], pass: ['Hey! Wait for me!', 'How?! You don’t even have wings!', 'My wings are tired!'], top: 'Beat THAT, rocket!', lost: ['Rawwwr...', 'No fair, you have ENGINES!', 'I need a nap.'] },
+};
+const rivalWho = c => (c && c.who) || 'baron';
 function rivalCur() { if ((S.line || 1) > 1) return null; S.rival = S.rival || {}; return RIVAL.find(c => routeDone(c.after) && !S.rival[c.id]) || null; }
 const rivalLive = () => { const c = rivalCur(); return c && S.seen['rival_' + c.id] ? c : null; };
 // the rival's flight: a scripted climb paced against your own rocket, so it feels like a race
@@ -6553,12 +6812,13 @@ function updateRival(R, dt) {
   const rv = G.rival; if (!rv || R.crashed) return;
   if (rv.sayT > 0) rv.sayT -= dt;
   const gp = ghostAt(rv, R.time);
-  if (R.time > 0.6) rivalSay(rv, 'go', pick(['Eat my exhaust!', 'Ta-ta, slowpoke!', 'Vroom VROOM!']));
-  if (R.time > 2.5 && R.alt > gp.alt + 40 && gp.up && !rv.said.go2) { rv.said.go2 = 1; rv.say = pick(['WHAT?!', 'Hey! No fair!', 'How are you so fast?!']); rv.sayT = 2; }
-  if (R.time > rv.T && !R.rivalBeat) rivalSay(rv, 'top', 'Top THAT!');
+  const RL = RIVAL_LINES[rivalWho(rv.c)];
+  if (R.time > 0.6) rivalSay(rv, 'go', pick(RL.go));
+  if (R.time > 2.5 && R.alt > gp.alt + 40 && gp.up && !rv.said.go2) { rv.said.go2 = 1; rv.say = pick(RL.pass); rv.sayT = 2; }
+  if (R.time > rv.T && !R.rivalBeat) rivalSay(rv, 'top', RL.top);
   if (!R.rivalBeat && R.time > 1 && R.alt > rv.alt) {
-    R.rivalBeat = true; rv.say = pick(['NOOOO!', 'My beautiful rocket!', 'Impossible!']); rv.sayT = 2.4;
-    banner('BARON VROOM BEATEN!', '#ffd93d', 2.2, 'Prize: ' + fmtMoney(rv.c.prize)); sfx.record(); confetti(R.x, R.py + 80, 30);
+    R.rivalBeat = true; rv.say = pick(RL.lost); rv.sayT = 2.4;
+    banner(rivalWho(rv.c) === 'ember' ? 'YOU OUTFLEW EMBER!' : 'BARON VROOM BEATEN!', '#ffd93d', 2.2, 'Prize: ' + fmtMoney(rv.c.prize)); sfx.record(); confetti(R.x, R.py + 80, 30);
   }
 }
 function drawRivalRocket() {
@@ -6574,23 +6834,33 @@ function drawRivalRocket() {
     const sy = above ? (small ? 168 : 196) : H - (small ? 120 : 70);
     ctx.save(); ctx.setTransform(DPR, 0, 0, DPR, 0, 0); ctx.globalAlpha = gp.fade;
     ink(ctx, 3); circ(ctx, sx, sy, 15); fillStroke(ctx, '#3a3554', 3);
-    ctx.save(); ctx.translate(sx, sy + 1); drawFace(ctx, 'baron', 10, above ? 'joy' : 'scared', G.t); ctx.restore();
+    ctx.save(); ctx.translate(sx, sy + 1); drawFace(ctx, rivalWho(rv.c), 10, above ? 'joy' : 'scared', G.t); ctx.restore();
     ctx.beginPath(); if (above) { ctx.moveTo(sx - 7, sy - 18); ctx.lineTo(sx, sy - 27); ctx.lineTo(sx + 7, sy - 18); } else { ctx.moveTo(sx - 7, sy + 18); ctx.lineTo(sx, sy + 27); ctx.lineTo(sx + 7, sy + 18); } ctx.closePath(); fillStroke(ctx, '#ffd93d', 2.5);
     text(ctx, (above ? '+' : '−') + fmtAlt(Math.abs(gp.alt - R.alt)), sx + 22, sy + 1, small ? 12 : 14, '#ffd93d', 'left', INK, 3);
     if (rv.sayT > 0 && rv.say) speechBubble(ctx, rv.say, sx + 10, sy + (above ? 52 : -32), clamp(rv.sayT * 3, 0, 1), 120, true);
     ctx.restore();
     return;
   }
-  const look = rv.look || (rv.look = rivalLook(rv.c.lv)), rs = G.rocketScale;
-  ctx.save();
-  ctx.translate(rx, -gpy); ctx.scale(rs, rs);
-  ctx.globalAlpha = 0.92 * gp.fade;
-  drawRocket(ctx, look, { t: G.t, throttle: gp.up ? 0.85 : 0, faces: ['baron'], mood: R.rivalBeat ? 'scared' : 'joy', stage: 1, boostersOn: false, dropsOn: false });
-  ctx.restore();
-  const d = rocketDims(look), tagY = -gpy - (d.BL + d.NH + d.BH) * rs - 14;
+  const rs = G.rocketScale, ember = rivalWho(rv.c) === 'ember';
+  let tagY;
+  if (ember) { // Ember races on her own wings, tilted up into the climb with a sparkly wake
+    ctx.save(); ctx.translate(rx, -gpy); ctx.globalAlpha = 0.95 * gp.fade;
+    for (let i = 1; i <= 5; i++) { ctx.globalAlpha = 0.95 * gp.fade * (1 - i / 6); ctx.fillStyle = i % 2 ? '#ffe58a' : '#7be0c0'; circ(ctx, Math.sin(G.t * 6 + i) * 6 * rs, (26 + i * 16) * rs, (5 - i * 0.6) * rs); ctx.fill(); }
+    ctx.globalAlpha = 0.95 * gp.fade; ctx.rotate(-1.25 + Math.sin(G.t * 2) * 0.06); ctx.scale(1.55 * rs, 1.55 * rs);
+    drawDragonling(ctx, { dir: 1, seed: 0.37, col: '#7be0c0' }, G.t);
+    ctx.restore(); tagY = -gpy - 62 * rs;
+  } else {
+    const look = rv.look || (rv.look = rivalLook(rv.c.lv));
+    ctx.save();
+    ctx.translate(rx, -gpy); ctx.scale(rs, rs);
+    ctx.globalAlpha = 0.92 * gp.fade;
+    drawRocket(ctx, look, { t: G.t, throttle: gp.up ? 0.85 : 0, faces: ['baron'], mood: R.rivalBeat ? 'scared' : 'joy', stage: 1, boostersOn: false, dropsOn: false });
+    ctx.restore();
+    const d = rocketDims(look); tagY = -gpy - (d.BL + d.NH + d.BH) * rs - 14;
+  }
   ctx.save(); ctx.globalAlpha = gp.fade * hudFade(tagY);
   ctx.scale(1 / z, 1 / z);
-  text(ctx, 'BARON VROOM', rx * z, tagY * z, 12, '#ffd93d', 'center', INK, 3);
+  text(ctx, ember ? 'EMBER' : 'BARON VROOM', rx * z, tagY * z, 12, '#ffd93d', 'center', INK, 3);
   if (rv.sayT > 0 && rv.say) speechBubble(ctx, rv.say, rx * z, tagY * z - 20, clamp(rv.sayT * 3, 0, 1), 120, true);
   ctx.restore();
 }
@@ -7112,10 +7382,11 @@ function placeToasts() {
   const box = $('toasts'), sc = $('statcard'), sd = document.querySelector('#scr-hangar .side');
   box.style.left = box.style.width = box.style.top = '';
   if (!document.body.classList.contains('in-hangar') || !sc || !sc.offsetParent || !sd) return;
-  const a = sc.getBoundingClientRect(), b = sd.getBoundingClientRect(), gap = b.left - a.right - 24;
-  if (b.left < 300) return;
+  // a folded menu is a small card down in the corner: the notes can use the whole width beside the stats card
+  const a = sc.getBoundingClientRect(), right = sd.classList.contains('folded') ? W - 16 : sd.getBoundingClientRect().left, gap = right - a.right - 24;
+  if (right < 300) return;
   if (gap >= 340) { box.style.left = (a.right + 12 + gap / 2) + 'px'; box.style.width = gap + 'px'; return; }
-  box.style.top = (a.bottom + 12) + 'px'; box.style.left = (b.left / 2) + 'px'; box.style.width = (b.left - 32) + 'px';
+  box.style.top = (a.bottom + 12) + 'px'; box.style.left = (right / 2) + 'px'; box.style.width = (right - 32) + 'px';
   return 'below'; // over the yard: keep the stack short
 }
 function toast(html, ms = 3600, pri = false) {
@@ -7128,6 +7399,7 @@ function toast(html, ms = 3600, pri = false) {
   const maxT = W < 600 || H < 520 ? (inFlight ? 1 : 2) : below || inFlight ? 2 : 4; // in flight, keep clear of the zone banners
   // when there are too many, drop ordinary notes before trophies
   while ($('toasts').children.length > maxT) { const box = $('toasts'); ([...box.children].find(c => !c.classList.contains('pri')) || box.firstChild).remove(); }
+  return t;
 }
 
 const Dialog = (() => {
@@ -7179,7 +7451,11 @@ const UI = (() => {
     document.body.classList.toggle('in-hangar', name === 'hangar');
     document.body.classList.toggle('in-flight', name === 'flight');
     for (const k in screens) screens[k].classList.toggle('hidden', k !== name);
-    if (name === 'hangar') refresh();
+    if (name === 'hangar') {
+      refresh();
+      // short phones: point out the bigger menu once
+      if (sheetMode() && H < 760 && S.flights >= 2 && !S.seen.menuTip && menuState() === 'open') { S.seen.menuTip = 1; saveGame(); setTimeout(() => { if (current === 'hangar') menuTip = toast('<b>Tip:</b> ▴ on the menu tab makes it bigger, ▾ folds it away.', 5200); }, 1200); }
+    }
   }
   function overlay(id, on) { $(id).classList.toggle('hidden', !on); }
 
@@ -7215,13 +7491,74 @@ const UI = (() => {
   // ---------- hangar
   function refresh() {
     $('money').textContent = fmtMoney(S.money);
+    applyMenu();
     renderHeadBtns();
     renderTabs();
     renderTree();
     renderDetail();
     renderRouteChip();
     renderStatCard();
+    measurePanel();
   }
+  // ---------- the menu folds away to show the yard (F); on phones it also opens tall, so the tree is easier to browse
+  const MENU_STEPS = ['fold', 'open', 'full'];
+  function sheetMode() { return W <= 820 && H > 520; } // the same test as the CSS bottom-sheet layout
+  function menuState() { const m = S.settings.menu; return m === 'fold' ? 'fold' : m === 'full' && sheetMode() ? 'full' : 'open'; }
+  function readyCount() { let n = 0; for (const u of UPGRADES) if (upState(u) === 'open' && upCost(u) <= S.money) n++; return n; }
+  function stepMenu(d) {
+    const i = MENU_STEPS.indexOf(menuState()), to = MENU_STEPS[clamp(i + d, 0, sheetMode() ? 2 : 1)];
+    if (to === menuState()) return;
+    S.settings.menu = to; saveGame(); sfx.tab();
+    if (menuTip) { menuTip.remove(); menuTip = null; } // got it
+    applyMenu(true); renderTabs(); renderTree(); measurePanel(); placeToasts();
+  }
+  function toggleMenu() { stepMenu(menuState() === 'fold' ? 1 : -1 - (menuState() === 'full')); }
+  function applyMenu(anim) {
+    const side = document.querySelector('#scr-hangar .side'), m = menuState();
+    side.classList.toggle('folded', m === 'fold'); side.classList.toggle('full', m === 'full');
+    document.body.classList.toggle('menu-fold', m === 'fold');
+    if (anim) { side.classList.remove('pop'); void side.offsetWidth; side.classList.add('pop'); }
+    renderFold();
+  }
+  const CHEV = { up: 'M6 15l6-6 6 6', down: 'M6 9l6 6 6-6', left: 'M15 6l-6 6 6 6', right: 'M9 6l6 6-6 6' };
+  let swipeY = null, swiped = 0, menuTip = null;
+  function renderFold() {
+    const bar = $('fold-bar'), m = menuState(), sheet = sheetMode();
+    bar.innerHTML = ''; bar.className = 'fold-bar ' + (sheet ? 'sheet' : 'edge');
+    const btn = (dir, d, label) => {
+      const b = el('button', 'fold-btn', `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"><path d="${CHEV[dir]}"/></svg>`);
+      b.title = label + ' (F)'; b.setAttribute('aria-label', label);
+      b.addEventListener('click', e => { e.stopPropagation(); if (performance.now() < swiped) return; AudioSys.init(); stepMenu(d); });
+      bar.appendChild(b);
+    };
+    if (sheet) {
+      if (m !== 'fold') btn('down', -1, m === 'full' ? 'Smaller menu' : 'Fold the menu away');
+      if (m !== 'full') btn('up', 1, m === 'fold' ? 'Open the menu' : 'Bigger menu');
+    } else btn(m === 'fold' ? 'left' : 'right', m === 'fold' ? 1 : -1, m === 'fold' ? 'Open the menu' : 'Fold the menu away');
+    const n = m === 'fold' ? readyCount() : 0;
+    if (n) bar.appendChild(el('span', 'badge-dot', String(n)));
+    bar.classList.toggle('nudge', !!n);
+  }
+  // on phones the handle also swipes: up for a bigger menu, down to fold it
+  $('fold-bar').addEventListener('pointerdown', e => { swipeY = e.clientY; });
+  window.addEventListener('pointerup', e => {
+    if (swipeY == null) return;
+    const dy = e.clientY - swipeY; swipeY = null;
+    if (!sheetMode() || Math.abs(dy) < 24) return;
+    swiped = performance.now() + 400;
+    stepMenu(dy < 0 ? (dy < -200 ? 2 : 1) : (dy > 200 ? -2 : -1));
+  });
+  window.addEventListener('pointercancel', () => { swipeY = null; });
+  // where the panel sits, so the camera can frame the rocket in the free part of the yard
+  function measurePanel() {
+    const sd = document.querySelector('#scr-hangar .side');
+    if (!sd || !sd.offsetParent) return;
+    // screen rects, so a zoomed panel on a big monitor measures right (the pop animation re-measures when it ends)
+    const sc = $('statcard'), r = sd.getBoundingClientRect();
+    G.panel = { l: r.left, t: r.top, w: r.width, h: r.height, fold: sd.classList.contains('folded'), sheet: sheetMode(), sr: sc && sc.offsetParent ? sc.getBoundingClientRect().right : 0 };
+  }
+  document.querySelector('#scr-hangar .side').addEventListener('animationend', e => { if (e.animationName === 'sidePop') measurePanel(); });
+  function relayout() { applyMenu(); renderTabs(); renderTree(); measurePanel(); }
   function renderHeadBtns() {
     const h = $('head-btns'); h.innerHTML = '';
     const mapB = iconBtn('btn-map', 'map', 'Route map', () => openMap());
@@ -7244,7 +7581,7 @@ const UI = (() => {
   function renderTabs() {
     const t = $('tabs'); t.innerHTML = '';
     const vis = BRANCHES.filter(b => b.unlock());
-    t.classList.toggle('compact', vis.length > 3 && $('tabs').clientWidth < vis.length * 130);
+    t.classList.remove('compact', 'tight', 'tighter');
     if (!vis.find(b => b.id === tab)) tab = vis[0].id;
     for (const b of vis) {
       const d = el('div', 'tab' + (b.id === tab ? ' active' : '') + (!S.tabsSeen[b.id] && b.id !== 'prop' ? ' new-tab' : ''), ICONS[b.icon] + `<span>${b.name}</span>`);
@@ -7258,7 +7595,15 @@ const UI = (() => {
       });
       t.appendChild(d);
     }
-    // keep the open branch in view when the tab row has to scroll (seven branches on a phone)
+    // names on every tab when they fit; then only the open tab's name; then icons sharing the row (no scrolling)
+    const over = () => t.scrollWidth > t.clientWidth + 1;
+    if (over()) t.classList.add('compact');
+    if (over()) {
+      t.classList.add('tight');
+      const a = t.querySelector('.tab.active');
+      if (a && a.offsetWidth + (vis.length - 1) * 35 > t.clientWidth - 14) t.classList.add('tighter');
+    }
+    // keep the open branch in view if the tab row still has to scroll
     const act = t.querySelector('.tab.active');
     if (act) { const r = act.offsetLeft + act.offsetWidth - t.clientWidth + 10; if (t.scrollLeft < r) t.scrollLeft = r; else if (act.offsetLeft - 10 < t.scrollLeft) t.scrollLeft = Math.max(0, act.offsetLeft - 10); }
   }
@@ -7268,17 +7613,22 @@ const UI = (() => {
     const ups = UPGRADES.filter(u => u.br === tab);
     const vis = ups.filter(u => upState(u) !== 'hidden');
     if (!vis.find(u => u.id === sel) && vis.length) sel = vis[0].id;
-    const compact = $('tree').clientHeight < 300;
-    $('tree').classList.toggle('compact', compact);
+    const th = $('tree').clientHeight, tw = $('tree').clientWidth;
+    const compact = th < 300, roomy = !compact && tw >= 460 && th >= 540; // roomy: big buttons on big screens
+    $('tree').classList.toggle('compact', compact); $('tree').classList.toggle('roomy', roomy);
     const rows = Math.max(...vis.map(u => u.pos[1])) + 1;
-    const CW = compact ? 104 : 118;
-    let RH = compact ? 90 : 112, top = compact ? 44 : 52;
+    // columns as wide as the panel allows; on 320 px phones they pull in so the side columns don't need sideways scrolling
+    const CW = compact ? clamp(Math.floor((tw - 96) / 2), 90, 104) : Math.min(roomy ? 180 : 150, Math.max(118, Math.floor((tw - 40) / 3)));
+    let RH = compact ? 90 : 112, top = compact ? 44 : 56; // room for the selection ring on the top row
+    // roomy trees space their rows to the panel (the same for every tab, so switching tabs doesn't jump) and sit centred
+    if (roomy) { RH = clamp(Math.floor((th - 170) / 3), 126, 158); top = 64 + Math.max(0, Math.floor((th - 170 - 3 * RH) / 2)); }
+    const off = roomy ? 47 : 36;
     // a two-row tree on a small phone: pull the rows together so the bottom labels aren't cut off by the
     // panel edge (only when that makes it fit; deeper trees keep their spacing and scroll)
     if (compact && rows === 2) { const fit = $('tree').clientHeight - 42 - 54; if (fit < RH && fit >= 74) { RH = fit; top = 42; } }
-    const wInner = Math.max(380, $('tree').clientWidth);
+    const wInner = Math.max(2 * CW + 96, tw);
     const offX = (wInner - CW * 3) / 2 + CW / 2;
-    const hInner = rows * RH + 20 + (vis.length < ups.length ? 34 : 0);
+    const hInner = (roomy ? top + (rows - 1) * RH + 100 : rows * RH + 20) + (vis.length < ups.length ? 34 : 0);
     inner.style.width = wInner + 'px'; inner.style.height = hInner + 'px';
     svg.setAttribute('viewBox', `0 0 ${wInner} ${hInner}`);
     const P = u => [offX + u.pos[0] * CW, top + u.pos[1] * RH];
@@ -7290,7 +7640,7 @@ const UI = (() => {
         const [x1, y1] = P(ru), [x2, y2] = P(u);
         const met = lvl(rid) >= (u.req.find(r => r[0] === rid)[1]);
         const my = (y1 + y2) / 2;
-        lines += `<path d="M${x1} ${y1 + 36} C ${x1} ${my}, ${x2} ${my}, ${x2} ${y2 - 36}" stroke="${met ? '#2b2240' : 'rgba(43,34,64,.3)'}" stroke-width="${met ? 5 : 4}" fill="none" stroke-linecap="round" ${met ? '' : 'stroke-dasharray="2 9"'}/>`;
+        lines += `<path d="M${x1} ${y1 + off} C ${x1} ${my}, ${x2} ${my}, ${x2} ${y2 - off}" stroke="${met ? '#2b2240' : 'rgba(43,34,64,.3)'}" stroke-width="${met ? 5 : 4}" fill="none" stroke-linecap="round" ${met ? '' : 'stroke-dasharray="2 9"'}/>`;
       }
     }
     svg.innerHTML = lines;
@@ -7338,6 +7688,7 @@ const UI = (() => {
     else fx.innerHTML = `${L ? u.fx(L) : (u.fx(0) === 'None' ? 'Not installed' : u.fx(0))} → <b>${u.fx(L + 1)}</b>`;
     body.appendChild(fx);
     if (s === 'locked') body.appendChild(el('div', 'note', reqText(u)));
+    if (s === 'open' && matchMedia(WIDE_MQ).matches) { const hp = heightPreview(u); if (hp) body.appendChild(el('div', 'est', `<small>Next level: est. height</small><span>~${fmtAlt(hp[0])} → <b>~${fmtAlt(hp[1])}</b></span>`)); }
     if (u.fork) { const other = UPGRADES.find(x => x.fork === u.fork && x.id !== u.id); body.appendChild(el('div', 'note', s === 'forkout' ? `You picked ${other.name}. Swap to switch paths.` : `Fork: pick this OR ${other.name}`)); }
     d.appendChild(body);
     const act = el('div', 'dact');
@@ -7360,6 +7711,16 @@ const UI = (() => {
     }
     if (autoUnlocked()) act.appendChild(autoButton());
     d.appendChild(act);
+  }
+  // what one more level would do to the estimated height (shown where the details have a column of their own)
+  const WIDE_MQ = '(min-width:1180px) and (min-height:600px),(min-width:700px) and (max-width:820px) and (min-height:900px)';
+  function estHeight() { const st = computeStats(); return simulateFlight(st, { launchQ: 1.3, pax: paxForRoute(flightRoute(), st).pax }).alt; }
+  function heightPreview(u) {
+    const L = lvl(u.id); if (L >= u.max) return null;
+    const a = estHeight(), had = u.id in S.up; let b = a;
+    S.up[u.id] = L + 1;
+    try { b = estHeight(); } finally { if (had) S.up[u.id] = L; else delete S.up[u.id]; }
+    return b - a > Math.max(30, a * 0.01) ? [a, b] : null;
   }
   // ---------- auto-upgrade: one tap buys the best upgrades you can afford (and a second tap within a few seconds undoes it)
   let autoUndo = null, autoKey = '', autoCache = [];
@@ -7465,7 +7826,7 @@ const UI = (() => {
     let kind, name, sub, warn = false, icon;
     fixDailyRoute();
     if (S.route === 'daily') { const d = todaysDaily(); kind = 'Daily special'; name = d.cargo.charAt(0).toUpperCase() + d.cargo.slice(1); sub = `${fmtAlt(d.target)} · ${TWISTS[d.twist].name}`; icon = 'parcel'; }
-    else if (!r) { kind = 'Free flight'; name = 'Just go high!'; sub = `Best: ${fmtAlt(S.bestAlt)}`; icon = 'gate'; }
+    else if (!r) { const nc = chartsOpen() && nextChart(); kind = nc ? 'Star hunt' : 'Free flight'; name = nc ? nc.name : 'Just go high!'; sub = nc ? `Fly past ${fmtAlt(nc.alt)}` : `Best: ${fmtAlt(S.bestAlt)}`; icon = 'gate'; }
     else {
       const done = routeDone(r.id);
       kind = done ? 'Regular service' : (r.id === 'r0' ? 'Mission' : 'Next route');
@@ -7477,7 +7838,7 @@ const UI = (() => {
     }
     const ic = routeIconCanvas(icon, 40); ic.className = 'rc-ico'; ic.style.width = '40px'; ic.style.height = '40px';
     c.appendChild(ic);
-    const t = el('div', 'rc-t', `<div class="rc-k">${kind}</div><div class="rc-n">${name}</div><div class="rc-s" style="${warn ? 'color:#d63a3f' : ''}">${sub}</div>`);
+    const t = el('div', 'rc-t', `<div class="rc-k">${kind}</div><div class="rc-n${name.replace(/<span class="rc-pre">.*?<\/span>/, '').length > 14 ? ' long' : ''}">${name}</div><div class="rc-s" style="${warn ? 'color:#d63a3f' : ''}">${sub}</div>`);
     c.appendChild(t);
     c.onclick = () => { sfx.click(); if (routeDone('r0')) openMap(); else toast('Finish the <b>Test Hop</b> first!'); };
   }
@@ -7500,6 +7861,26 @@ const UI = (() => {
   }
 
   // ---------- map
+  function constellationCard() { // the sky atlas past the Edge: found ones in gold, the rest as dashed guesses
+    const n = chartedN(), nc = nextChart(), card = el('div', 'route consts');
+    card.appendChild(el('div', 'c-head', `<div class="r-name">Constellations</div><div class="r-desc">${nc ? `<b>${n} of ${STAR_CHARTS.length}</b> found. Each one lends you <b>+2% thrust</b>. Fly a Free Flight past the Edge to find the rest. Next: <b>${nc.name}</b> at ${fmtAlt(nc.alt)}.` : `All ${STAR_CHARTS.length} found, and their starlight gives you <b>+${2 * STAR_CHARTS.length}% thrust</b>. The whole sky atlas is yours!`}</div>`));
+    const grid = el('div', 'c-grid');
+    STAR_CHARTS.forEach(ch => {
+      const lit = !!(S.charted && S.charted[ch.id]), sz = 64, cnv = document.createElement('canvas');
+      cnv.width = cnv.height = sz * 2; const c = cnv.getContext('2d'); c.scale(2, 2);
+      rr(c, 1.5, 1.5, sz - 3, sz - 3, 12); const g = c.createLinearGradient(0, 0, 0, sz); g.addColorStop(0, lit ? '#2a1450' : '#2b2a3a'); g.addColorStop(1, lit ? '#123c4a' : '#3a3850'); c.fillStyle = g; c.fill();
+      c.save(); c.translate(sz / 2, sz / 2); drawChartShape(c, ch, sz * 0.36, 1, lit, 1.3); c.restore();
+      const cell = el('div', 'c-cell' + (lit ? ' lit' : '')); cell.appendChild(cnv);
+      cell.appendChild(el('div', 'c-n', lit ? ch.name : ch === nc ? fmtAlt(ch.alt) : '???'));
+      grid.appendChild(cell);
+    });
+    card.appendChild(grid);
+    if (nc && S.route !== 'free') {
+      const b = el('button', 'btn blue', 'Free Flight'); b.addEventListener('click', () => { sfx.click(); S.route = 'free'; saveGame(); openMap(); renderRouteChip(); renderStatCard(); });
+      const act = el('div', 'r-act'); act.appendChild(b); card.appendChild(act);
+    }
+    return card;
+  }
   function openMap() {
     const list = $('map-list'); list.innerHTML = '';
     $('scr-map').querySelector('h2').textContent = 'Route Map';
@@ -7549,6 +7930,7 @@ const UI = (() => {
       frWrap = el('div', 'skymap'); list.appendChild(frWrap);
       lockedShown = 0;
       FRONT_ROUTES.forEach(routeCard);
+      if (chartsOpen()) list.appendChild(constellationCard());
     }
     if (dailyUnlocked()) {
       const d = todaysDaily(), tw = TWISTS[d.twist], cd = CONDS[d.cond];
@@ -7571,11 +7953,11 @@ const UI = (() => {
       list.appendChild(card);
     }
     if (routeDone('r0')) {
-      const cur = S.route === 'free';
+      const cur = S.route === 'free', nc = chartsOpen() && nextChart();
       const card = el('div', 'route' + (cur ? ' cur' : ''));
       const ic = routeIconCanvas('gate', 64); ic.classList.add('r-ico'); ic.style.width = '64px'; ic.style.height = '64px';
       card.appendChild(ic);
-      card.appendChild(el('div', 'r-main', `<div class="r-name">Free Flight</div><div class="r-desc">No passengers, no destination. Just you, the sky, and your record (${fmtAlt(S.bestAlt)}).</div>`));
+      card.appendChild(el('div', 'r-main', `<div class="r-name">Free Flight</div><div class="r-desc">No passengers, no destination. Just you, the sky, and your record (${fmtAlt(S.bestAlt)}).${nc ? ` Next constellation: <b>${nc.name}</b> at ${fmtAlt(nc.alt)}.` : ''}</div>`));
       const b = el('button', 'btn ' + (cur ? 'go' : 'blue'), cur ? 'Selected' : 'Pick');
       b.addEventListener('click', () => { sfx.click(); S.route = 'free'; saveGame(); openMap(); renderRouteChip(); renderStatCard(); });
       const act = el('div', 'r-act'); act.appendChild(b); card.appendChild(act);
@@ -7599,7 +7981,7 @@ const UI = (() => {
   }
   function startNewLine() {
     for (const p of PAINTS) if (paintUnlocked(p)) S.seen['paintown_' + p.id] = 1;
-    const keep = { lost: S.lost, lostTries: S.lostTries, mail: S.mail, mailGot: S.mailGot, met: S.met, daily: S.daily ? Object.assign({}, S.daily, { target: 0 }) : undefined, ach: S.ach, stats: S.stats, rec: S.rec, log: S.log, settings: S.settings, seen: S.seen, viewed: S.viewed, tabsSeen: S.tabsSeen, paint: S.paint, trail: S.trail, earned: S.earned, flights: S.flights, avg: S.avg, line: (S.line || 1) + 1 };
+    const keep = { lost: S.lost, lostTries: S.lostTries, mail: S.mail, mailGot: S.mailGot, met: S.met, daily: S.daily ? Object.assign({}, S.daily, { target: 0 }) : undefined, ach: S.ach, stats: S.stats, rec: S.rec, log: S.log, settings: S.settings, seen: S.seen, viewed: S.viewed, tabsSeen: S.tabsSeen, paint: S.paint, trail: S.trail, earned: S.earned, flights: S.flights, avg: S.avg, charted: S.charted, line: (S.line || 1) + 1 };
     S = Object.assign(defaultSave(), keep);
     S.seen.endCredits = 0; S.pendingLine = true;
     checkAchievements(); saveGame();
@@ -7868,7 +8250,7 @@ const UI = (() => {
       const c = cnv.getContext('2d'); c.scale(2, 2); rr(c, 2, 2, 60, 60, 14); c.fillStyle = '#bfe9ff'; c.fill(); c.lineWidth = 3; c.strokeStyle = INK; c.stroke();
       c.translate(32, 34); c.scale(0.42, 0.42); const L = Object.assign(rocketLook(), { paint: p }); drawRocket(c, L, { t: 0, faces: [] });
       card.appendChild(cnv);
-      card.appendChild(el('div', 'r-main', `<div class="r-name">${p.name}</div><div class="r-meta">${ok ? '<span class="chip ok">Unlocked</span>' : `<span class="chip pay">${p.end ? 'Finish the story' : p.route ? 'Fly to ' + routeById(p.route).to : p.lost ? 'Lost & Found reward' : p.stars + ' ★'}</span>`}</div>`));
+      card.appendChild(el('div', 'r-main', `<div class="r-name">${p.name}</div><div class="r-meta">${ok ? '<span class="chip ok">Unlocked</span>' : `<span class="chip pay">${p.end ? 'Finish the story' : p.route ? 'Fly to ' + routeById(p.route).to : p.lost ? 'Lost & Found reward' : p.statue ? 'Build Ada’s statue' : p.atlas ? 'Find all 8 constellations' : p.stars + ' ★'}</span>`}</div>`));
       const act = el('div', 'r-act');
       if (ok) { const b = el('button', 'btn ' + (cur ? 'go' : 'blue'), cur ? 'Wearing' : 'Paint'); b.addEventListener('click', () => { sfx.buy(); S.paint = p.id; saveGame(); G.look = rocketLook(); G.hangarPop = 1; openPaint(); }); act.appendChild(b); }
       card.appendChild(act);
@@ -7962,7 +8344,7 @@ const UI = (() => {
       const lw = el('div', 'code-row'); lw.appendChild(lb);
       col.appendChild(el('div', 'small-note', `<b>Your stats</b><br>${fmtInt(S.flights)} flights · best ${fmtAlt(S.bestAlt)}. Records, totals and a chart of your flights are in the Logbook.`)); col.appendChild(lw);
     }
-    col.appendChild(el('div', 'small-note', 'Skyhop Express · every picture, sound and tune is generated by code.<br>Steer: ←&nbsp;→ / A&nbsp;D, tap sides' + (tiltSupported() ? ' or tilt' : '') + ' · Boost:&nbsp;Space' + (lvl('dash') ? ' · Dash:&nbsp;double&#8209;tap' : '') + ' · Pause:&nbsp;P' + (matchMedia('(hover: hover)').matches || PAD.idx >= 0 ? '<br>Workshop: arrow keys pick, B buys, U auto-upgrades, Q/E switch tabs, Esc closes. Game controllers work too.' : '')));
+    col.appendChild(el('div', 'small-note', 'Skyhop Express · every picture, sound and tune is generated by code.<br>Steer: ←&nbsp;→ / A&nbsp;D, tap sides' + (tiltSupported() ? ' or tilt' : '') + ' · Boost:&nbsp;Space' + (lvl('dash') ? ' · Dash:&nbsp;double&#8209;tap' : '') + ' · Pause:&nbsp;P' + (matchMedia('(hover: hover)').matches || PAD.idx >= 0 ? '<br>Workshop: arrow keys pick, B buys, U auto-upgrades, Q/E switch tabs, F folds the menu, Esc closes. Game controllers work too.' : '')));
     overlay('scr-settings', true);
   }
   function openCode(mode) {
@@ -8122,6 +8504,8 @@ const UI = (() => {
     if (frontierOpen() && !S.seen.frontier && S.seen.endCredits && !lines.length) { S.seen.frontier = 1; lines.push(...STORY.frontier); }
     if (townOpen() && !S.seen.town && !lines.length) { S.seen.town = 1; lines.push(...STORY.town); }
     if (lvl('statue') > 0 && !S.seen.statue && !lines.length) { S.seen.statue = 1; lines.push(...STORY.statue); confetti(TOWN_SPOTS.statue, 260, 80); }
+    if (chartedN() >= STAR_CHARTS.length && !S.seen.atlas && !lines.length) { S.seen.atlas = 1; S.seen.stars1 = 1; lines.push(...STORY.atlas); confetti(0, 220, 90); }
+    if (chartedN() >= 1 && !S.seen.stars1 && !lines.length) { S.seen.stars1 = 1; lines.push(...STORY.stars1); }
     if (jobsUnlocked() && !S.seen.jobs) { S.seen.jobs = 1; fillJobs(); S.jobsNew = 3; lines.push(...STORY.jobs); }
     if (dailyUnlocked() && !S.seen.dailyIntro && !lines.length && (S.line || 1) === 1) { S.seen.dailyIntro = 1; lines.push(...STORY.daily); }
     if (S.pendingAch && S.pendingAch.length) { for (const id of S.pendingAch) achToast(id); sfx.ach(); S.pendingAch = []; }
@@ -8140,7 +8524,7 @@ const UI = (() => {
   $('btn-launch').addEventListener('click', () => { AudioSys.init(); sfx.click(); enterLaunch(); });
   soundBtns($('title-tools'));
 
-  return { openLetter, showScreen, overlay, refresh, renderTree, showResults, openMap, openPause, announceNew, flushPending, showCredits, navTree, navTab, buySel, runAuto, get current() { return current; } };
+  return { openLetter, showScreen, overlay, refresh, renderTree, relayout, toggleMenu, showResults, openMap, openPause, announceNew, flushPending, showCredits, navTree, navTab, buySel, runAuto, get current() { return current; } };
 })();
 
 function goHangar(skipFlush) {
@@ -8202,6 +8586,7 @@ window.addEventListener('keydown', e => {
     if (e.code === 'KeyQ' || e.code === 'KeyE') { UI.navTab(e.code === 'KeyQ' ? -1 : 1); return; }
     if (e.code === 'KeyB') { UI.buySel(); return; }
     if (e.code === 'KeyU') { UI.runAuto(); return; }
+    if (e.code === 'KeyF') { UI.toggleMenu(); return; }
   }
   if (e.code === 'Escape' || e.code === 'KeyP') { if (inGame) setPaused(!G.paused); return; }
   if (G.paused) return;
@@ -8248,14 +8633,14 @@ document.addEventListener('visibilitychange', () => {
   if (document.hidden) { if (G.mode === 'flight' || G.mode === 'launch') setPaused(true); AudioSys.suspend(); saveGame(); }
   else AudioSys.resume();
 });
-window.addEventListener('resize', () => { resize(); if (UI.current === 'hangar') UI.renderTree(); });
+window.addEventListener('resize', () => { resize(); if (UI.current === 'hangar') UI.relayout(); });
 
 // ---- gamepads: buttons act like keys, so every screen that takes Space or Escape works the same way
 // A = Space (launch, afterburner, next), B = Escape (close a panel, back to the workshop), X = buy,
 // Start = pause, d-pad = arrow keys (double-tap dashes; picks upgrades in the workshop),
 // bumpers dash straight away (switch tabs in the workshop), left stick steers
 const PAD = { axis: 0, side: 0, vside: 0, prev: {}, idx: -1 };
-const PAD_KEYS = { 0: 'Space', 1: 'Escape', 2: 'KeyB', 3: 'KeyU', 9: 'KeyP', 12: 'ArrowUp', 13: 'ArrowDown', 14: 'ArrowLeft', 15: 'ArrowRight' };
+const PAD_KEYS = { 0: 'Space', 1: 'Escape', 2: 'KeyB', 3: 'KeyU', 8: 'KeyF', 9: 'KeyP', 12: 'ArrowUp', 13: 'ArrowDown', 14: 'ArrowLeft', 15: 'ArrowRight' };
 const padHangar = () => G.mode === 'hangar' && UI.current === 'hangar';
 const padTap = code => { padKey(code, true); padKey(code, false); };
 function padKey(code, down) {
@@ -8318,8 +8703,16 @@ function updateIdleCamera(dt) {
   const z = G.cam.z || worldZoom();
   let tx = 0, ty = py, ta = 0.64;
   if (G.mode === 'hangar') {
-    if (H <= 520) { const panelW = Math.min(440, W * 0.54); const rsx = (W - panelW - 16) / 2; tx = -(rsx - W / 2) / z; ta = 0.78; }
-    else if (W > 820) { const panelW = Math.min(580, W * 0.54); const rsx = (W - panelW - 32) / 2 + 10; tx = -(rsx - W / 2) / z; ta = 0.6; }
+    const P = G.panel;
+    if (P && P.sheet) { ty = py * 0.95; ta = clamp((P.t - 42 - ty * z) / H, 0.04, 0.7); } // pad just above the sheet and its handle
+    else if (P) {
+      // between the stats card and the panel when there's room, so the tower doesn't hide behind the card
+      const rsx = P.fold ? W * (H <= 520 ? 0.4 : 0.45) : Math.max((P.l - 16) / 2 + 10, Math.min((P.sr + P.l) / 2, P.l - 120));
+      tx = -(rsx - W / 2) / z; ta = H <= 520 ? 0.78 : 0.6;
+      if (P.fold) ta = Math.min(ta, (P.t - 14 - ty * z) / H); // phones on their side: the pad stands just above the folded card
+    }
+    else if (H <= 520) { const panelW = Math.min(440, W * 0.54); const rsx = (W - panelW - 16) / 2; tx = -(rsx - W / 2) / z; ta = 0.78; }
+    else if (W > 820) { const panelW = Math.min(640, W * 0.58); const rsx = (W - panelW - 32) / 2 + 10; tx = -(rsx - W / 2) / z; ta = 0.6; }
     else { ta = 0.24; ty = py * 0.95; }
   } else if (G.mode === 'title') { ta = 0.72; }
   G.cam.x += (tx - G.cam.x) * Math.min(1, dt * 4);
@@ -8413,7 +8806,7 @@ UI.showScreen('title');
 if (S.seen.intro) {
   $('btn-start').textContent = 'Continue';
   const nr = nextRoute(), nDone = MAIN_ROUTES.filter(r => routeDone(r.id)).length, fDone = FRONT_ROUTES.filter(r => routeDone(r.id)).length;
-  $('title-foot').innerHTML = `Welcome back! ${S.flights} flights · best <b>${fmtAlt(S.bestAlt)}</b> · ${frontierOpen() ? `frontier ${fDone}/${FRONT_ROUTES.length}` : `${nDone}/${MAIN_ROUTES.length} routes`}${nr ? ` · next: <b>${nr.to}</b>` : ' · the whole map!'}`;
+  $('title-foot').innerHTML = `Welcome back! ${S.flights} flights · best <b>${fmtAlt(S.bestAlt)}</b> · ${frontierOpen() ? `frontier ${fDone}/${FRONT_ROUTES.length}` : `${nDone}/${MAIN_ROUTES.length} routes`}${nr ? ` · next: <b>${nr.to}</b>` : chartsOpen() ? ` · constellations <b>${chartedN()}/${STAR_CHARTS.length}</b>` : ' · the whole map!'}`;
   if (dailyUnlocked()) { const d = todaysDaily(); const pill = document.createElement('div'); pill.className = 'title-daily'; pill.innerHTML = d.done ? `Today's special delivered! Come back tomorrow.` : `Today's special: <b>${d.cargo}</b> for ${d.to} · ${fmtAlt(d.target)}${dailyStreakAlive() ? ` · ${dailyStreakAlive()}-day streak` : ''}`; document.querySelector('#scr-title .tagline').after(pill); }
 }
 Music.play('title');
