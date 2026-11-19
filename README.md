@@ -25,7 +25,7 @@ Open `index.html` in any modern browser, or enable GitHub Pages for this repo (S
 - Job Board side jobs (collect coins, skim obstacles, fly clean...) that scale with how you play.
 - Sky forecast before each flight: sunset, night, tailwind, coin shower or ring festival, each with its own bonus.
 - Surprise sky events mid-flight: gold rush, ring road, bird migration, meteor shower, ice storm, jelly bloom.
-- Three sky bosses with their own music: the Storm King (dodge his lightning), Big Blue the sky whale (ride its spout) and the Space Kraken (slip between its arms).
+- Four sky bosses with their own music: the Storm King (dodge his lightning), Big Blue the sky whale (ride its spout), Captain Calico's sky pirates (slide into the green lane before the cannons fire) and the Space Kraken (slip between its arms).
 - Ghost racer: a faded rocket replays your best run on each route.
 - Passenger wishes: riders ask for a ring, a wiggle, a close call or a calm stretch mid-flight. Grant them for comfort and coins.
 - Daily Special: a new delivery every day (same for everyone), with a twist like Glass Cannon, Feather Day or Boss Day, a target height and a day streak.
@@ -35,7 +35,7 @@ Open `index.html` in any modern browser, or enable GitHub Pages for this repo (S
 - Fan mail: thank-you letters with a little gift arrive in the yard's mailbox after deliveries, boss wins and lost-item returns.
 - Route Map with an illustrated panorama of the whole line, from the shed to the Starlight Gate.
 - A pokeable workshop: tap the rocket, Grandma Ada, the crowd or the shed.
-- Paint shop with paint jobs and exhaust trails (rainbow, hearts, stardust, and three earned from the bosses), 30 achievements (two of them secret), a stats panel and shareable postcards of your deliveries.
+- Paint shop with paint jobs and exhaust trails (rainbow, hearts, stardust, and four earned from the bosses), 31 achievements (two of them secret), a stats panel and shareable postcards of your deliveries.
 - After the finale, open a new line (new game plus): start over with a fresh rocket, keep your trophies and cosmetics, and earn +50% per line.
 - Relaxed mode (+2 hearts, fewer hazards), tilt steering on phones, and a calmer-screen option (less shake and flashing).
 - Save codes (Settings): copy your progress from one device and load it on another.
