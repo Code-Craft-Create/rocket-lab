@@ -7034,6 +7034,12 @@ try {
     icons: [{ src: icon(192), sizes: '192x192', type: 'image/png' }, { src: icon(512), sizes: '512x512', type: 'image/png' }] };
   add('manifest', 'data:application/manifest+json,' + encodeURIComponent(JSON.stringify(man)));
 } catch (e) { /* icons are a nice-to-have */ }
+// if something ever breaks, say so once (with the detail, to help bug reports) instead of failing silently
+let errToastShown = false;
+window.addEventListener('error', e => {
+  if (errToastShown || !e || !e.message) return; errToastShown = true;
+  try { saveGame(); toast(`<b>Oops, a gremlin got into the gears.</b> Your progress is saved. <small>(${String(e.message).replace(/[<>&]/g, '').slice(0, 90)})</small>`, 6000, true); } catch (err) { /* nothing more we can do */ }
+});
 requestAnimationFrame(frame);
 
 // debug / test hooks
