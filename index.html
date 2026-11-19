@@ -462,7 +462,7 @@ function defaultSave() {
     seen: {},          // story / disclosure flags
     viewed: {},        // upgrade nodes the player has looked at
     tabsSeen: {},
-    stats: { coins: 0, hits: 0, perfect: 0, rings: 0, smashed: 0, pax: 0, time: 0, jobs: 0, nights: 0, close: 0, pokes: 0 },
+    stats: { coins: 0, hits: 0, perfect: 0, rings: 0, smashed: 0, pax: 0, time: 0, jobs: 0, nights: 0, close: 0, pokes: 0, king: 0, whale: 0 },
     ach: {},
     cond: 'clear', jobs: [], avg: { coins: 8, rings: 0.6, close: 0.6, alt: 500, v: 110, total: 110, smash: 0 },
     settings: { music: true, sfx: true, shake: true, ghost: true },
@@ -652,6 +652,7 @@ const AudioSys = (() => {
       for (let i = 0; i < 7; i++) tone({ type: 'triangle', f: rand(380, 620), f2: rand(650, 950), dur: 0.3, vol: 0.035, delay: rand(0, 0.35) });
       for (let i = 0; i < 10; i++) noise({ dur: 0.04, vol: 0.14, filter: 'highpass', f: 1800, delay: 0.1 + i * 0.09 + rand(0, 0.04) });
     },
+    whale() { tone({ type: 'sine', f: 180, f2: 320, dur: 0.9, vol: 0.16, attack: 0.25 }); tone({ type: 'sine', f: 320, f2: 150, dur: 1.2, vol: 0.12, attack: 0.3, delay: 0.85 }); tone({ type: 'triangle', f: 90, f2: 120, dur: 1.6, vol: 0.06, attack: 0.4 }); },
     creak() { tone({ type: 'sawtooth', f: 110, f2: 190, dur: 0.45, vol: 0.06, filter: 'bandpass', ff: 700, q: 6 }); },
     talk(pitch = 1) { if (!gate('talk', 55)) return; tone({ type: 'triangle', f: rand(300, 420) * pitch, dur: 0.05, vol: 0.06 }); },
   };
@@ -2136,6 +2137,7 @@ function prepareRocket() {
   if (cd.thrustMul) { G.st = Object.assign({}, G.st, { thrust: G.st.thrust * cd.thrustMul }); }
   R.startPy = R.py;
   R.trace = { a: [], x: [] }; R.traceT = 0; R.ghostBeat = false;
+  R.boss = null; R.bossN = 0; R.bossOk = { storm: !S.seen.boss_storm || chance(0.4), whale: !S.seen.boss_whale || chance(0.45) };
   const gh = S.ghosts && S.ghosts[route ? route.id : 'free'];
   G.ghost = S.settings.ghost && gh && gh.a && gh.a.length > 4 ? gh : null;
   G.R = R;
@@ -2271,7 +2273,7 @@ function updateSkyEvent(R, dt, viewTop) {
     if (e.t > e.dur) R.event = null;
     return;
   }
-  if (S.flights < 3 || R.time < 5 || (R.evCount || 0) >= 2) return;
+  if (S.flights < 3 || R.time < 5 || (R.evCount || 0) >= 2 || R.boss) return;
   if (!(R.fuel > 0 || R.dropFuel > 0 || R.vy > 150)) return; // only while climbing hard
   R.evT = (R.evT || 0) + dt;
   if (R.evT < 6 || Math.random() > dt * 0.09) return;
@@ -2283,6 +2285,171 @@ function updateSkyEvent(R, dt, viewTop) {
   R.evCount = (R.evCount || 0) + 1; R.evT = 0;
   banner(d.name, d.col, 2.2, d.sub);
   if (id === 'goldrush') sfx.bigcoin(); else sfx.thunder();
+}
+// ---------------------------------------------------------------- sky bosses: big set-piece encounters at fixed heights
+// They live in screen space (so they keep pace with the climb) and scale with the world zoom.
+const BOSSES = {
+  storm: { name: 'THE STORM KING', sub: 'DODGE HIS LIGHTNING', min: 1500, max: 2900, minFlights: 4, col: '#fff36b', room: 450 },
+  whale: { name: 'BIG BLUE', sub: 'FLY THROUGH THE SPOUT!', min: 9000, max: 22000, minFlights: 0, col: '#9fdcff', room: 2500 },
+};
+function updateBoss(R, dt) {
+  if (R.ended || R.crashed) return;
+  const u = G.cam.z;
+  if (!R.boss) {
+    if (R.bossN >= 2 || R.event || !(R.vy > 120) || R.time < 3) return;
+    for (const id in BOSSES) {
+      const d = BOSSES[id];
+      if (!R.bossOk[id] || R.alt < d.min || R.alt > d.max || S.flights < d.minFlights) continue;
+      // only when the climb has enough steam left for the whole encounter
+      R.bossChk = (R.bossChk || 0) - dt; if (R.bossChk > 0) return;
+      R.bossChk = 0.5;
+      if (predictApogee(R, G.st) < R.alt + d.room) continue;
+      R.bossN++; R.bossOk[id] = false; S.seen['boss_' + id] = 1;
+      const dir = chance(0.5) ? 1 : -1;
+      R.boss = { id, t: 0, dir, hit: false, strikes: [], seed: Math.random(), sx: W / 2, sy: -200 * u, done: false, boosted: false };
+      if (id === 'storm') {
+        const n = G.st.weather ? 3 : 4, at = [1.5, 2.6, 3.6, 4.5];
+        for (let i = 0; i < n; i++) R.boss.strikes.push({ at: at[i], x: 0, st: 'wait', bt: 0, pts: null });
+        sfx.thunder(); G.cam.flash = 0.25; G.cam.flashCol = '#d8d0ff';
+        if (R.faces.length) R.bubble = { s: 'Uh oh...', t: 0 };
+      } else { sfx.whale(); if (R.faces.length) R.bubble = { s: 'Is that a WHALE?!', t: 0 }; }
+      banner(d.name, d.col, 2.4, d.sub);
+      return;
+    }
+    return;
+  }
+  const b = R.boss; b.t += dt;
+  const [rx, ry] = w2s(R.x, R.py);
+  if (b.id === 'storm') {
+    const last = b.strikes[b.strikes.length - 1].at;
+    const enter = smooth(clamp(b.t / 1.0, 0, 1)), leave = smooth(clamp((b.t - last - 0.9) / 1.0, 0, 1));
+    b.sy = lerp(-160 * u, Math.min(Math.max(H * 0.2, 120 + 70 * u), H * G.cam.anchor - 230 * u), enter) - leave * (H * 0.45);
+    b.sx = W / 2 + Math.sin(b.t * 0.8 + b.seed * 6) * Math.min(W * 0.22, 220 * u);
+    const halfW = 30 * u + 12 * G.rocketScale * u;
+    for (const k of b.strikes) {
+      if (k.st === 'wait' && b.t >= k.at - 0.95) { k.st = 'warn'; k.x = clamp(rx + rand(-18, 18) * u, 40, W - 40); sfx.beep(false); }
+      if (k.st === 'warn' && b.t >= k.at) {
+        k.st = 'bolt'; k.bt = 0.32; k.pts = [];
+        const y0 = b.sy + 40 * u, y1 = H + 40, n = 9;
+        for (let i = 0; i <= n; i++) { const tt = i / n; k.pts.push([lerp(b.sx, k.x, Math.min(1, tt * 3)) + (i && i < n ? rand(-16, 16) * u : 0), lerp(y0, y1, tt)]); }
+        sfx.zap(); sfx.thunder(); G.cam.flash = 0.18; G.cam.flashCol = '#fff6a0'; G.cam.shake = Math.max(G.cam.shake, 6);
+        if (Math.abs(rx - k.x) < halfW && !R.crashed) {
+          const hpBefore = R.hp, shieldBefore = R.shieldOn;
+          hitRocket({ x: R.x, py: R.py + 120, cloud: true, slow: 0.1, dmg: 1 }, true);
+          if (R.hp < hpBefore || shieldBefore) b.hit = true;
+        } else floater(R.x + (rx < k.x ? -50 : 50), R.py + 20, 'Dodged!', '#fff36b', 16);
+      }
+      if (k.st === 'bolt') { k.bt -= dt; if (k.bt <= 0) k.st = 'gone'; }
+    }
+    if (!b.paid && b.strikes.every(k => k.st === 'gone')) {
+      b.paid = true;
+      if (!b.hit) {
+        const v = coinValue(R.alt) * 15; R.coinCash += v; R.coins += 15; S.stats.coins += 15; S.stats.king++;
+        banner('STORM KING DODGED!', '#fff36b', 2.2, '+' + fmtMoney(v)); sfx.bigcoin(); confetti(R.x, R.py + 80, 40);
+      }
+    }
+    if (b.t > last + 2.0) R.boss = null;
+  } else if (b.id === 'whale') {
+    const pass = 6.5, startY = -120 * u, endY = H + 220 * u;
+    b.sy = lerp(startY, endY, b.t / pass);
+    b.sx = W / 2 - b.dir * Math.min(W * 0.18, 160 * u) + b.dir * b.t * 26 * u;
+    b.spout = b.t > 0.6 && (b.t % 1.9) < 1.2;
+    const hx = b.sx + b.dir * 34 * u, hy = b.sy - 50 * u;
+    b.hole = [hx, hy];
+    if (b.spout && !b.boosted && Math.abs(rx - hx) < 40 * u && ry < hy + 10 * u && ry > hy - 230 * u) {
+      b.boosted = true; S.stats.whale++;
+      const boost = Math.max(80, Math.abs(R.vy) * 0.25);
+      R.vy += boost; R.comfort = Math.min(1, R.comfort + 0.25); R.mood = 'joy'; R.moodT = 2.5;
+      sfx.ring(4); sfx.whale(); G.cam.shake = Math.max(G.cam.shake, 5);
+      floater(R.x, R.py + 40, 'WHALE BOOST!', '#9fdcff', 24);
+      sparks(R.x, R.py - 20, 24, ['#9fdcff', '#ffffff', '#4d96ff']);
+      for (let i = 0; i < 3; i++) spawnCoins(R.x + rand(-120, 120), R.py + 260 + i * 220);
+    }
+    if (b.sy > endY - 1) R.boss = null;
+  }
+}
+function drawBoss() {
+  const R = G.R;
+  if (!R || !R.boss || G.mode !== 'flight') return;
+  const b = R.boss, u = G.cam.z;
+  ctx.save(); ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+  if (b.id === 'storm') {
+    // warnings and bolts first (behind the king)
+    for (const k of b.strikes) {
+      if (k.st === 'warn') {
+        const p = clamp((b.t - (k.at - 0.95)) / 0.95, 0, 1), hw = 30 * u;
+        ctx.save(); ctx.globalAlpha = 0.18 + 0.22 * p + (Math.sin(G.t * 30) > 0 ? 0.12 : 0);
+        ctx.fillStyle = '#fff36b'; ctx.fillRect(k.x - hw, b.sy, hw * 2, H - b.sy);
+        ctx.globalAlpha = 0.9; ctx.setLineDash([12, 10]); ctx.lineWidth = 3; ctx.strokeStyle = '#fff36b';
+        ctx.beginPath(); ctx.moveTo(k.x - hw, b.sy + 30 * u); ctx.lineTo(k.x - hw, H); ctx.moveTo(k.x + hw, b.sy + 30 * u); ctx.lineTo(k.x + hw, H); ctx.stroke();
+        ctx.restore();
+      }
+      if (k.st === 'bolt' && k.pts) {
+        ctx.save(); ctx.lineJoin = 'miter'; ctx.globalAlpha = clamp(k.bt / 0.15, 0, 1);
+        ctx.shadowColor = '#fff36b'; ctx.shadowBlur = 24; ctx.strokeStyle = '#fff36b'; ctx.lineWidth = 14 * Math.max(0.6, u);
+        ctx.beginPath(); k.pts.forEach((pt, i) => i ? ctx.lineTo(pt[0], pt[1]) : ctx.moveTo(pt[0], pt[1])); ctx.stroke();
+        ctx.shadowBlur = 0; ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 5 * Math.max(0.6, u); ctx.stroke();
+        ctx.restore();
+      }
+    }
+    const charging = b.strikes.some(k => k.st === 'warn'), zapping = b.strikes.some(k => k.st === 'bolt');
+    ctx.translate(b.sx, b.sy); ctx.scale(u * 1.25, u * 1.25);
+    ctx.rotate(Math.sin(G.t * 1.7) * 0.04);
+    drawCloud(ctx, 0, 0, 240, 120, 7, zapping ? '#9a96c0' : '#5a5578', '#3a3554', 3);
+    ink(ctx, 3);
+    // crown
+    ctx.save(); ctx.translate(0, -62); ctx.rotate(-0.12);
+    ctx.beginPath(); ctx.moveTo(-36, 10); ctx.lineTo(-40, -22); ctx.lineTo(-20, -6); ctx.lineTo(0, -30); ctx.lineTo(20, -6); ctx.lineTo(40, -22); ctx.lineTo(36, 10); ctx.closePath(); fillStroke(ctx, '#ffd93d', 3);
+    ctx.fillStyle = '#ff5a5f'; circ(ctx, 0, 0, 5); ctx.fill(); ctx.stroke(); ctx.fillStyle = '#4d96ff'; circ(ctx, -22, 3, 4); ctx.fill(); ctx.stroke(); circ(ctx, 22, 3, 4); ctx.fill(); ctx.stroke();
+    ctx.restore();
+    // face
+    const glow = charging && Math.sin(G.t * 24) > 0;
+    for (const sd of [-1, 1]) {
+      ctx.fillStyle = glow ? '#fff36b' : '#fff'; ctx.beginPath(); ctx.ellipse(sd * 26, -12, 13, 10, 0, 0, TAU); ctx.fill(); ctx.stroke();
+      ctx.fillStyle = INK; circ(ctx, sd * 24 + clamp((w2s(R.x, R.py)[0] - b.sx) / 60, -4, 4), -10, 4.5); ctx.fill();
+      ctx.lineWidth = 5; ctx.beginPath(); ctx.moveTo(sd * 44, -32); ctx.lineTo(sd * 12, -22); ctx.stroke(); ctx.lineWidth = 3;
+    }
+    // mustache + mouth
+    ctx.beginPath(); ctx.moveTo(0, 8); ctx.quadraticCurveTo(-18, 2, -30, 14); ctx.quadraticCurveTo(-14, 12, 0, 14); ctx.quadraticCurveTo(14, 12, 30, 14); ctx.quadraticCurveTo(18, 2, 0, 8); fillStroke(ctx, '#e8e8f0', 2.5);
+    if (zapping) { ctx.beginPath(); ctx.ellipse(0, 26, 12, 9, 0, 0, TAU); fillStroke(ctx, '#2b2240', 2.5); }
+    else { ctx.beginPath(); ctx.arc(0, 32, 12, -2.6, -0.5); ctx.stroke(); }
+    if (charging) { ctx.strokeStyle = '#fff36b'; ctx.lineWidth = 3; for (const sd of [-1, 1]) { const xx = sd * (100 + Math.sin(G.t * 40) * 6); ctx.beginPath(); ctx.moveTo(xx, -10); ctx.lineTo(xx + sd * 10, 4); ctx.lineTo(xx, 8); ctx.lineTo(xx + sd * 12, 24); ctx.stroke(); } }
+  } else if (b.id === 'whale') {
+    ctx.translate(b.sx, b.sy); ctx.scale(u, u);
+    // spout
+    if (b.spout) {
+      const k = clamp(((b.t % 1.9)) / 0.25, 0, 1), hgt = 210 * k;
+      ctx.save(); ctx.translate(b.dir * 34, -50);
+      ctx.globalAlpha = 0.85; ink(ctx, 3);
+      ctx.beginPath(); ctx.moveTo(-10, 0); ctx.quadraticCurveTo(-16, -hgt * 0.5, -26, -hgt); ctx.lineTo(26, -hgt); ctx.quadraticCurveTo(16, -hgt * 0.5, 10, 0); ctx.closePath(); fillStroke(ctx, '#bfe9ff', 3);
+      ctx.fillStyle = '#ffffff'; for (let i = 0; i < 9; i++) { const a = G.t * 3 + i; circ(ctx, Math.sin(a * 2.3) * 30, -hgt + Math.sin(a) * 12 - 6, 6 + (i % 3) * 2); ctx.fill(); ctx.stroke(); }
+      if (!b.boosted) { ctx.globalAlpha = 0.6 + Math.sin(G.t * 10) * 0.3; text(ctx, '▲', 0, -hgt - 30, 26, '#ffffff'); }
+      ctx.restore();
+    }
+    ctx.save(); ctx.scale(b.dir, 1); ink(ctx, 3.5);
+    const sw = Math.sin(G.t * 2.2) * 0.18;
+    // tail
+    ctx.save(); ctx.translate(-120, -6); ctx.rotate(sw);
+    ctx.beginPath(); ctx.moveTo(0, 0); ctx.quadraticCurveTo(-30, -6, -52, -38); ctx.quadraticCurveTo(-40, -8, -64, 6); ctx.quadraticCurveTo(-36, 8, -52, 34); ctx.quadraticCurveTo(-26, 10, 0, 12); ctx.closePath(); fillStroke(ctx, '#4d96ff', 3.5);
+    ctx.restore();
+    // body
+    ctx.beginPath(); ctx.moveTo(-124, 0); ctx.bezierCurveTo(-90, -62, 60, -78, 112, -26); ctx.bezierCurveTo(140, 4, 120, 48, 70, 52); ctx.bezierCurveTo(10, 60, -80, 40, -124, 12); ctx.closePath(); fillStroke(ctx, '#4d96ff', 3.5);
+    ctx.save(); ctx.clip(); ctx.fillStyle = '#d4ecff'; ctx.beginPath(); ctx.ellipse(30, 52, 110, 34, -0.05, 0, TAU); ctx.fill();
+    ctx.strokeStyle = 'rgba(43,34,64,.35)'; ctx.lineWidth = 2.5; for (let i = 0; i < 5; i++) { ctx.beginPath(); ctx.moveTo(-30 + i * 26, 30); ctx.lineTo(-24 + i * 26, 56); ctx.stroke(); }
+    ctx.fillStyle = 'rgba(255,255,255,.25)'; ctx.beginPath(); ctx.ellipse(10, -40, 60, 12, -0.1, 0, TAU); ctx.fill();
+    ctx.restore();
+    ctx.beginPath(); ctx.moveTo(-124, 0); ctx.bezierCurveTo(-90, -62, 60, -78, 112, -26); ctx.bezierCurveTo(140, 4, 120, 48, 70, 52); ctx.bezierCurveTo(10, 60, -80, 40, -124, 12); ctx.closePath(); ctx.lineWidth = 3.5; ctx.stroke();
+    // flipper
+    ctx.save(); ctx.translate(20, 34); ctx.rotate(0.5 + Math.sin(G.t * 3) * 0.25); ctx.beginPath(); ctx.ellipse(0, 18, 12, 26, 0, 0, TAU); fillStroke(ctx, '#3a7fe0', 3); ctx.restore();
+    // face
+    ctx.fillStyle = '#fff'; circ(ctx, 78, -6, 10); ctx.fill(); ctx.stroke(); ctx.fillStyle = INK; circ(ctx, 81, -5, 5); ctx.fill(); ctx.fillStyle = '#fff'; circ(ctx, 83, -8, 1.8); ctx.fill();
+    ctx.beginPath(); ctx.moveTo(84, 18); ctx.quadraticCurveTo(102, 28, 118, 12); ctx.stroke();
+    ctx.fillStyle = '#ff9fc0'; ctx.globalAlpha = 0.6; ctx.beginPath(); ctx.ellipse(92, 8, 8, 4, 0, 0, TAU); ctx.fill(); ctx.globalAlpha = 1;
+    // blowhole
+    ctx.beginPath(); ctx.ellipse(34, -50, 7, 3, 0, 0, TAU); ctx.fillStyle = INK; ctx.fill();
+    ctx.restore();
+  }
+  ctx.restore();
 }
 function spawnChunk(y0, y1) {
   const R = G.R, st = G.st;
@@ -2297,6 +2464,7 @@ function spawnChunk(y0, y1) {
   for (const type in z.spawn) {
     let rate = z.spawn[type] * k * ease;
     if (type === 'storm') rate *= 1 - 0.3 * st.weather;
+    if (R.boss) rate *= 0.35; // keep the set piece readable
     const n = Math.floor(rate) + (Math.random() < rate % 1 ? 1 : 0);
     for (let i = 0; i < n; i++) spawnObstacle(type, cx + rand(-spread, spread), rand(y0, y1));
   }
@@ -2377,6 +2545,7 @@ function updateFlight(dt) {
   const viewTop = G.cam.py + (H * G.cam.anchor) / G.cam.z;
   while (G.spawnY < viewTop + 700) { spawnChunk(G.spawnY, G.spawnY + 200); G.spawnY += 200; }
   updateSkyEvent(R, dt, viewTop);
+  updateBoss(R, dt);
   // --- entities
   updateObstacles(dt);
   updatePickups(dt);
@@ -2447,6 +2616,7 @@ function predictApogee(R, st) {
 }
 function autoDodge() {
   const R = G.R; let push = 0;
+  if (R.boss && R.boss.id === 'storm') { const rx = w2s(R.x, R.py)[0], u = G.cam.z; for (const k of R.boss.strikes) if (k.st === 'warn' && Math.abs(rx - k.x) < 70 * u) push += (rx >= k.x ? 1 : -1) * 1.5; }
   for (const o of G.obs) {
     if (o.harmless || o.dead) continue;
     const dy = o.py - R.py; if (dy < 0 || dy > 320) continue;
@@ -2817,6 +2987,8 @@ const ACH = [
   { id: 'stars10', prog: () => [ROUTES.filter(r => (S.routes[r.id] || {}).stars >= 3).length, ROUTES.length], name: 'Perfect Line', desc: 'Get 3 stars on every route', test: () => ROUTES.every(r => (S.routes[r.id] || {}).stars >= 3), reward: 60000 },
   { id: 'km1000', prog: () => [S.bestAlt / 1000, 1000, ' km'], name: 'Thousand Club', desc: 'Reach 1,000 km', test: () => S.bestAlt >= 1000000, reward: 100000 },
   { id: 'km2500', prog: () => [S.bestAlt / 1000, 2500, ' km'], name: 'Beyond the Gate', desc: 'Reach 2,500 km in endless mode', test: () => S.bestAlt >= 2500000, reward: 250000 },
+  { id: 'king', name: 'Storm Chaser', desc: 'Dodge every bolt the Storm King throws', test: () => S.stats.king >= 1, reward: 1500 },
+  { id: 'whale', name: 'Whale Rider', desc: 'Catch a boost from Big Blue’s spout', test: () => S.stats.whale >= 1, reward: 2500 },
   { id: 'tickle', secret: true, name: 'Tickle Tank', desc: 'Poke your rocket 25 times in the workshop', test: () => (S.stats.pokes || 0) >= 25, reward: 250 },
   { id: 'fork', name: 'Decisions!', desc: 'Pick your first fork upgrade', test: () => UPGRADES.some(u => u.fork && lvl(u.id) > 0), reward: 500 },
 ];
@@ -2924,6 +3096,7 @@ function render() {
   for (const o of G.obs) drawObstacle(o);
   for (const p of G.picks) drawPickup(p);
   drawGhostRocket();
+  drawBoss();
   drawPlayerRocket();
   for (const p of G.parts) if (!(p.k === 'smoke' || p.k === 'glow' || p.k === 'line')) drawParticle(p);
   for (const f of G.floaters) { const a = 1 - clamp((f.t - 0.6) / 0.5, 0, 1); ctx.globalAlpha = a; text(ctx, f.s, f.x, -f.py - f.t * 40, f.size * (f.t < 0.12 ? 0.6 + f.t * 3.3 : 1), f.col); ctx.globalAlpha = 1; }
@@ -4457,6 +4630,12 @@ function frame() {
 // a simple autopilot used for automated play-testing (window.__skyhop.bot = true)
 function botSteer() {
   const R = G.R; let push = 0;
+  const bs = R.boss;
+  if (bs) {
+    const rx = w2s(R.x, R.py)[0], u = G.cam.z;
+    if (bs.id === 'storm') for (const k of bs.strikes) if (k.st === 'warn' && Math.abs(rx - k.x) < 100 * u) push += (rx >= k.x ? 1 : -1) * 4;
+    if (bs.id === 'whale' && !bs.boosted && bs.hole) push += clamp((bs.hole[0] - rx) / (40 * u), -1.5, 1.5);
+  }
   for (const o of G.obs) {
     if (o.harmless || o.dead) continue;
     const dy = o.py - R.py; if (dy < -20 || dy > 420) continue;
