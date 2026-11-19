@@ -1332,6 +1332,45 @@ function crowdGuests() {
   return Object.keys(S.met).filter(id => FAN_LINES[id] && CHARS[id]).sort((a, b) => (S.met[b] - S.met[a]) || (a < b ? -1 : 1)).slice(0, 5);
 }
 const mailCount = () => (S.mail || []).length;
+// ---- a little banner plane crosses the yard now and then, carrying the news
+const BANNER_PLANE = { idx: -1, msg: '', look: { dir: -1, col: '#ff5a5f' } };
+function bannerMsg() {
+  const opts = [];
+  const nr = nextRoute();
+  if (nr) opts.push(`Next stop: ${nr.to}!`, `Next stop: ${nr.to}!`);
+  if (mailCount()) opts.push('You’ve got mail!');
+  if (hangarDailyOn()) opts.push(`Today’s special: ${todaysDaily().cargo}!`);
+  if (S.stats.pax > 1) opts.push(`${fmtInt(S.stats.pax)} happy passengers!`);
+  if (S.bestAlt > 0) opts.push(`Record height: ${fmtAlt(S.bestAlt)}!`);
+  if (LOST.some(it => lostKnown(it) && !(S.lost && S.lost[it.id]))) opts.push('Lost a hat? Check Lost & Found!');
+  if (S.ended) opts.push('Thank you for flying Skyhop!');
+  opts.push(S.flights >= 3 && (routeDone('r2') || (S.line || 1) > 1) ? 'Fly Skyhop Express!' : 'Ada’s Rockets: est. 1974');
+  return pick(opts);
+}
+function drawBannerPlane() {
+  if (S.flights < 2) return;
+  const B = BANNER_PLANE, period = 30, dur = 14;
+  const idx = Math.floor((G.t + 24) / period), ph = (G.t + 24) % period;
+  if (idx !== B.idx) { B.idx = idx; B.msg = bannerMsg(); B.col = pick(['#ff5a5f', '#4d96ff', '#5fd068', '#ff9f43', '#9b5de5']); B.look.col = B.col; }
+  if (ph > dur) return;
+  const vw = W / G.cam.z;
+  ctx.font = `900 16px ${FONT}`;
+  const tw = ctx.measureText(B.msg).width, bw = tw + 34, bh = 32;
+  const x = G.cam.x + vw / 2 + 120 - (ph / dur) * (vw + bw + 360), py = 268 + Math.sin(G.t * 0.9) * 8;
+  ctx.save(); ctx.translate(x, -py);
+  // rope and banner trail behind the plane
+  const bx = 92, wave = k => Math.sin(G.t * 6 + k * 0.05) * 4;
+  ink(ctx, 2.5); ctx.beginPath(); ctx.moveTo(40, -2); ctx.lineTo(bx, -bh / 2 + wave(0)); ctx.moveTo(40, 2); ctx.lineTo(bx, bh / 2 + wave(0)); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(bx, -bh / 2 + wave(0));
+  for (let k = 0; k <= bw; k += 12) ctx.lineTo(bx + k, -bh / 2 + wave(k));
+  ctx.lineTo(bx + bw, bh / 2 + wave(bw));
+  for (let k = bw; k >= 0; k -= 12) ctx.lineTo(bx + k, bh / 2 + wave(k));
+  ctx.closePath(); fillStroke(ctx, '#fff6e5', 3);
+  ctx.fillStyle = B.col; ctx.fillRect(bx + bw - 8, -bh / 2 + wave(bw) + 2, 5, bh - 4);
+  text(ctx, B.msg, bx + bw / 2 - 3, wave(bw / 2) + 1, 16, INK, 'center', null);
+  drawPlane(ctx, B.look, G.t);
+  ctx.restore();
+}
 const mailboxOn = () => !!(S.mailGot && Object.keys(S.mailGot).length);
 const mailboxX = () => ((G.st || computeStats()).startAlt > 0 ? 212 : -252);
 function mailGift(m) { const g = typeof m.gift === 'function' ? m.gift() : m.gift; return g > 1000 ? Math.round(g / 50) * 50 : Math.round(g / 5) * 5; }
@@ -4250,6 +4289,7 @@ function drawGround() {
     ctx.restore();
     if (!S.seen['daily_' + dayKey()]) { ctx.save(); ctx.globalAlpha = 0.6 + Math.sin(G.t * 5) * 0.4; text(ctx, 'NEW!', bx, -bpy - 34, 13, '#ff5a8a', 'center', INK, 3); ctx.restore(); }
   }
+  if (G.mode === 'hangar') drawBannerPlane();
   // ---- launch pad
   rr(ctx, -80, -4, 160, 22, 5); fillStroke(ctx, '#c9ced8');
   ctx.save(); rr(ctx, -80, -4, 160, 22, 5); ctx.clip(); ctx.fillStyle = '#ffd93d'; for (let i = -10; i < 10; i++) { ctx.beginPath(); ctx.moveTo(i * 22, 18); ctx.lineTo(i * 22 + 11, 18); ctx.lineTo(i * 22 + 22, -4); ctx.lineTo(i * 22 + 11, -4); ctx.fill(); } ctx.restore();
