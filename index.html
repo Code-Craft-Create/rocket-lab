@@ -7396,6 +7396,7 @@ function toast(html, ms = 3600, pri = false) {
   const maxT = W < 600 || H < 520 ? (inFlight ? 1 : 2) : below || inFlight ? 2 : 4; // in flight, keep clear of the zone banners
   // when there are too many, drop ordinary notes before trophies
   while ($('toasts').children.length > maxT) { const box = $('toasts'); ([...box.children].find(c => !c.classList.contains('pri')) || box.firstChild).remove(); }
+  return t;
 }
 
 const Dialog = (() => {
@@ -7450,7 +7451,7 @@ const UI = (() => {
     if (name === 'hangar') {
       refresh();
       // short phones: point out the bigger menu once
-      if (sheetMode() && H < 760 && S.flights >= 2 && !S.seen.menuTip && menuState() === 'open') { S.seen.menuTip = 1; saveGame(); setTimeout(() => { if (current === 'hangar') toast('<b>Tip:</b> ▴ on the menu tab makes it bigger, ▾ folds it away.', 5200); }, 1200); }
+      if (sheetMode() && H < 760 && S.flights >= 2 && !S.seen.menuTip && menuState() === 'open') { S.seen.menuTip = 1; saveGame(); setTimeout(() => { if (current === 'hangar') menuTip = toast('<b>Tip:</b> ▴ on the menu tab makes it bigger, ▾ folds it away.', 5200); }, 1200); }
     }
   }
   function overlay(id, on) { $(id).classList.toggle('hidden', !on); }
@@ -7505,6 +7506,7 @@ const UI = (() => {
     const i = MENU_STEPS.indexOf(menuState()), to = MENU_STEPS[clamp(i + d, 0, sheetMode() ? 2 : 1)];
     if (to === menuState()) return;
     S.settings.menu = to; saveGame(); sfx.tab();
+    if (menuTip) { menuTip.remove(); menuTip = null; } // got it
     applyMenu(true); renderTabs(); renderTree(); measurePanel(); placeToasts();
   }
   function toggleMenu() { stepMenu(menuState() === 'fold' ? 1 : -1 - (menuState() === 'full')); }
@@ -7516,7 +7518,7 @@ const UI = (() => {
     renderFold();
   }
   const CHEV = { up: 'M6 15l6-6 6 6', down: 'M6 9l6 6 6-6', left: 'M15 6l-6 6 6 6', right: 'M9 6l6 6-6 6' };
-  let swipeY = null, swiped = 0;
+  let swipeY = null, swiped = 0, menuTip = null;
   function renderFold() {
     const bar = $('fold-bar'), m = menuState(), sheet = sheetMode();
     bar.innerHTML = ''; bar.className = 'fold-bar ' + (sheet ? 'sheet' : 'edge');
