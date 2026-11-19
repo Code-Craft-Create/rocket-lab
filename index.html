@@ -479,7 +479,7 @@ function defaultSave() {
     seen: {},          // story / disclosure flags
     viewed: {},        // upgrade nodes the player has looked at
     tabsSeen: {},
-    stats: { coins: 0, hits: 0, perfect: 0, rings: 0, smashed: 0, pax: 0, time: 0, jobs: 0, nights: 0, close: 0, pokes: 0, king: 0, whale: 0, kraken: 0, daily: 0 },
+    stats: { coins: 0, hits: 0, perfect: 0, rings: 0, smashed: 0, pax: 0, time: 0, jobs: 0, nights: 0, close: 0, pokes: 0, king: 0, whale: 0, kraken: 0, daily: 0, wishes: 0 },
     ach: {},
     cond: 'clear', jobs: [], avg: { coins: 8, rings: 0.6, close: 0.6, alt: 500, v: 110, total: 110, smash: 0 },
     settings: { music: true, sfx: true, shake: true, ghost: true },
@@ -2262,6 +2262,7 @@ function prepareRocket() {
   });
   R.cond = daily ? daily.cond : CONDS[S.cond] ? S.cond : 'clear';
   R.daily = daily; R.dailyDone = false;
+  R.wish = null; R.wishT = rand(3, 5.5); R.wishN = 0; R.wishOk = 0;
   const cd = CONDS[R.cond];
   if (cd.thrustMul) { G.st = Object.assign({}, G.st, { thrust: G.st.thrust * cd.thrustMul }); }
   R.startPy = R.py;
@@ -2862,8 +2863,9 @@ function updateFlight(dt) {
   }
   // --- passenger chatter
   R.bubbleT -= dt;
-  if (R.bubbleT <= 0 && R.faces.length) { R.bubble = { s: chatter(), t: 0 }; R.bubbleT = rand(6, 11); }
+  if (R.bubbleT <= 0 && R.faces.length && !R.wish) { R.bubble = { s: chatter(), t: 0 }; R.bubbleT = rand(6, 11); }
   if (R.bubble) { R.bubble.t += dt; if (R.bubble.t > 2.6) R.bubble = null; }
+  updateWish(R, dt);
   // --- apogee prediction (mission control)
   if (st.control) { R.apT -= dt; if (R.apT <= 0) { R.apT = 0.4; R.apogee = predictApogee(R, st); } }
   // --- audio
@@ -2926,6 +2928,84 @@ const CHATTER = {
   r6: ['Mud bath o’clock!', 'Cucumber slices ready?', 'Fabulous.'],
   r7: ['Here we go!', 'What’s out there?', 'Hold on tight!'],
 };
+// ---- passenger wishes: small optional asks mid-flight (happier riders + bonus coins)
+const WISHES = [
+  { id: 'ring', s: 'Ooh! Fly through a ring!', dur: 14, can: R => G.picks.some(p => p.type === 'ring' && !p.hit && p.py > R.py + 150), v: R => R.rings, ok: (R, w) => R.rings > w.v },
+  { id: 'coins', s: 'Grab 5 coins for my piggy bank!', dur: 12, v: R => R.coins, ok: (R, w) => R.coins >= w.v + 5 },
+  { id: 'calm', s: 'No bumps for 10 seconds, please!', dur: 10, endOk: true, v: R => R.hits, fail: (R, w) => R.hits > w.v },
+  { id: 'wiggle', s: 'Do a wiggle! Left, then right!', dur: 7, v: () => 0, ok: (R, w) => { if (R.steer < -0.5) w.l = 1; if (w.l && R.steer > 0.5) w.r = 1; return w.l && w.r; } },
+  { id: 'close', s: 'Fly close to something! Photo time!', dur: 14, can: R => R.alt < 60000, v: R => R.nearMiss || 0, ok: (R, w) => (R.nearMiss || 0) > w.v },
+];
+const wishesOn = () => routeDone('r1') || (S.line || 1) > 1;
+function updateWish(R, dt) {
+  const w = R.wish;
+  if (!R.pax || !R.faces.length || R.docked || R.delivered || R.ended || !wishesOn()) {
+    if (w && w.d.endOk && w.t > 3 && !(w.d.fail && w.d.fail(R, w))) { w.t = w.d.dur; resolveWish(R, 1); } else R.wish = null;
+    return;
+  }
+  const fight = R.boss && R.boss.id !== 'whale';
+  if (w && fight) { R.wish = null; R.wishN--; R.wishT = rand(3, 6); return; }
+  if (!w) {
+    if (R.wishN >= 2 || fight || R.vy < 40) return;
+    R.wishT -= dt; if (R.wishT > 0) return;
+    const pool = WISHES.filter(d => d.id !== R.lastWish && (!d.can || d.can(R)));
+    if (!pool.length) { R.wishT = 2; return; }
+    const d = pick(pool);
+    R.wish = { d, t: 0, v: d.v(R), who: Math.floor(Math.random() * R.faces.length) };
+    R.wishN++; R.lastWish = d.id; sfx.talk();
+    if (!S.seen.wishTip) { S.seen.wishTip = 1; toast('Passengers make <b>wishes</b>! Grant them for happier riders and bonus coins.', 4200); }
+    return;
+  }
+  w.t += dt;
+  const d = w.d;
+  let res = 0;
+  if (d.ok && d.ok(R, w)) res = 1;
+  else if (d.fail && d.fail(R, w)) res = -1;
+  else if (w.t >= d.dur) res = d.endOk ? 1 : -1;
+  if (res) resolveWish(R, res);
+}
+function resolveWish(R, res) {
+  R.wish = null; R.wishT = rand(7, 12);
+  if (res > 0) {
+    const v = coinValue(R.alt) * 6;
+    R.coins += 6; R.coinCash += v; R.wishOk++; S.stats.wishes = (S.stats.wishes || 0) + 1;
+    R.comfort = Math.min(1, R.comfort + 0.15); R.mood = 'joy'; R.moodT = 2;
+    R.bubble = { s: pick(['Yay! Thank you!', 'Wheee!', 'Best. Flight. Ever!', 'You did it!', 'Ha! Again!']), t: 0 };
+    floater(R.x, R.py + 90, `WISH GRANTED! +${fmtMoney(v)}`, '#ffd6e6', 18);
+    sfx.good(); confetti(R.x, R.py + 40, 18);
+  } else {
+    R.bubble = { s: pick(['Aww...', 'Oh well!', 'Maybe next time.', 'Never mind!']), t: 0 };
+  }
+}
+function drawWishBubble() {
+  const R = G.R, w = R && R.wish; if (!w || R.ended || G.mode !== 'flight') return;
+  const look = G.look || rocketLook(), d = rocketDims(look);
+  const [rx, ry] = w2s(R.x, R.py);
+  const nose = (d.BL / 2 + d.NH) * G.rocketScale * G.cam.z, tail = (d.BL / 2 + d.BH + 46) * G.rocketScale * G.cam.z;
+  const fs = W < 600 ? 13 : 15;
+  ctx.save();
+  ctx.font = `900 ${fs}px ${FONT}`; const tw = ctx.measureText(w.d.s).width;
+  const bw = tw + 52, bh = 40;
+  // sit below the rocket (sky it already passed) so it never hides what's coming; flip above if there's no room
+  const below = ry + tail + bh + 14 < H - 12;
+  const bx = clamp(rx - bw / 2, 10, W - bw - 10), by = below ? ry + tail + 12 : clamp(ry - nose - 92, 120, H - 160);
+  const tx = clamp(rx, bx + 18, bx + bw - 18);
+  ctx.globalAlpha = clamp(w.t * 5, 0, 1);
+  const pulse = 1 + Math.sin(G.t * 6) * 0.025;
+  const ay = below ? by : by + bh;
+  ctx.translate(tx, ay); ctx.scale(pulse, pulse); ctx.translate(-tx, -ay);
+  ink(ctx, 3);
+  rr(ctx, bx, by, bw, bh, 12); fillStroke(ctx, '#fff0f7', 3);
+  if (below) { ctx.beginPath(); ctx.moveTo(tx - 9, by + 1); ctx.lineTo(tx, by - 12); ctx.lineTo(tx + 9, by + 1); ctx.fillStyle = '#fff0f7'; ctx.fill(); ctx.stroke(); ctx.fillStyle = '#fff0f7'; ctx.fillRect(tx - 10, by, 20, 5); }
+  else { ctx.beginPath(); ctx.moveTo(tx - 9, by + bh - 1); ctx.lineTo(tx, by + bh + 12); ctx.lineTo(tx + 9, by + bh - 1); ctx.fillStyle = '#fff0f7'; ctx.fill(); ctx.stroke(); ctx.fillStyle = '#fff0f7'; ctx.fillRect(tx - 10, by + bh - 5, 20, 5); }
+  text(ctx, w.d.s, bx + 40 + tw / 2, by + 15, fs, INK, 'center', null);
+  const who = R.faces[w.who] || R.faces[0];
+  if (who) { ctx.save(); ctx.translate(bx + 21, by + 18); rr(ctx, -13, -13, 26, 24, 8); ctx.fillStyle = '#bfe9ff'; ctx.fill(); ctx.beginPath(); rr(ctx, -13, -13, 26, 24, 8); ctx.clip(); ctx.translate(0, 3); drawFace(ctx, who, 8, 'joy', G.t); ctx.restore(); }
+  const k = 1 - clamp(w.t / w.d.dur, 0, 1);
+  rr(ctx, bx + 40, by + 27, bw - 52, 5, 2.5); ctx.fillStyle = 'rgba(43,34,64,.15)'; ctx.fill();
+  if (k > 0) { rr(ctx, bx + 40, by + 27, (bw - 52) * k, 5, 2.5); ctx.fillStyle = w.d.endOk ? '#5fd068' : '#f15bb5'; ctx.fill(); }
+  ctx.restore();
+}
 function chatter() { const R = G.R; if (R.mood === 'scared') return pick(['Eek!', 'Careful!', 'Yikes!', 'Oof!']); const l = R.route && CHATTER[R.route.id]; return chance(0.6) && l ? pick(l) : pick(CHATTER.generic); }
 
 const TIPS = {
@@ -3158,6 +3238,7 @@ function endFlight(crashed) {
   const R = G.R;
   if (R.ended) return;
   R.ended = true; R.endT = 0;
+  if (R.wish && !crashed) updateWish(R, 0);
   G.mode = 'ending';
   AudioSys.setEngine(0, false);
   if (!crashed) { sfx.chute(); R.chute = true; }
@@ -3226,6 +3307,7 @@ function computeResult() {
   if (R.hits === 0 && R.time > 6) badges.push('No scratches');
   if (R.rings >= 3) badges.push(`${R.rings} boost rings`);
   if (R.smashed >= 3) badges.push(`${R.smashed} smashed`);
+  if (R.wishOk) badges.push(R.wishOk > 1 ? `${R.wishOk} wishes granted` : 'Wish granted');
   if ((R.nearMiss || 0) >= 3) badges.push(`${R.nearMiss} close calls`);
   if (jobsPaid) badges.push(jobsPaid > 1 ? `${jobsPaid} jobs done` : 'Job done');
   if (R.crashed) badges.push('Kaboom');
@@ -3294,6 +3376,7 @@ const ACH = [
   { id: 'whale', name: 'Whale Rider', desc: 'Catch a boost from Big Blue’s spout', test: () => S.stats.whale >= 1, reward: 2500 },
   { id: 'kraken', name: 'Eight-Arm Escape', desc: 'Slip past every arm of the Space Kraken', test: () => S.stats.kraken >= 1, reward: 20000 },
   { id: 'guide', prog: () => [GUIDE.filter(guideSeen).length, GUIDE.length], name: 'Sky Spotter', desc: 'Fill every page of the Sky Guide', test: () => GUIDE.every(guideSeen), reward: 50000 },
+  { id: 'wish10', prog: () => [S.stats.wishes || 0, 10], name: 'Fairy Rocketmother', desc: 'Grant 10 passenger wishes', test: () => (S.stats.wishes || 0) >= 10, reward: 2500 },
   { id: 'daily', name: 'Special Courier', desc: 'Complete a Daily Special delivery', test: () => (S.stats.daily || 0) >= 1, reward: 3000 },
   { id: 'line2', name: 'Franchise', desc: 'Open a second Skyhop line after the finale', test: () => (S.line || 1) >= 2, reward: 5000 },
   { id: 'tickle', secret: true, name: 'Tickle Tank', desc: 'Poke your rocket 25 times in the workshop', test: () => (S.stats.pokes || 0) >= 25, reward: 250 },
@@ -3410,10 +3493,11 @@ function render() {
   // ---- screen space
   ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
   drawCloudLayer(alt, 1.25, 0.35, 2);
+  drawWishBubble();
   if (G.mode === 'flight' || G.mode === 'ending') drawHUD();
   if (G.mode === 'launch') { drawHUD(); drawLaunchGauge(); }
   drawBanners();
-  if (G.cam.flash > 0) { ctx.globalAlpha = clamp(G.cam.flash * 2, 0, 0.8); ctx.fillStyle = G.cam.flashCol; ctx.fillRect(0, 0, W, H); ctx.globalAlpha = 1; }
+  if (G.cam.flash > 0) { ctx.globalAlpha = clamp(G.cam.flash * 2, 0, S.settings.shake ? 0.8 : 0.25); ctx.fillStyle = G.cam.flashCol; ctx.fillRect(0, 0, W, H); ctx.globalAlpha = 1; }
 }
 function drawForecastSign(x, y) {
   const id = nextCondId(), c = CONDS[id];
@@ -4830,7 +4914,7 @@ const UI = (() => {
     };
     row('Music', 'music', v => AudioSys.setMusic(v));
     row('Sound effects', 'sfx', v => AudioSys.setSfx(v));
-    row('Screen shake & buzz', 'shake');
+    row('Shake, flashes & buzz<small>turn off for a calmer screen</small>', 'shake');
     row('Ghost of your best run', 'ghost');
     row('Relaxed mode<small>+2 hearts, fewer hazards</small>', 'relaxed', () => { G.st = computeStats(); refresh(); });
     if (tiltSupported()) row('Tilt to steer<small>tip your phone left and right</small>', 'tilt', (v, sw) => { if (!v) return; enableTilt().then(ok => { if (!ok) { S.settings.tilt = false; sw.classList.remove('on'); saveGame(); toast('Tilt needs motion access: allow it in your browser'); } else toast('Tilt on! Hold your phone the way you like at launch.'); }); });
