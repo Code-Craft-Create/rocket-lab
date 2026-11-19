@@ -1116,6 +1116,10 @@ const STORY = {
     ['ada', 'Buckley says it was "fine". Now the town wants real rides! I’ve set up a Launch Site branch for you.'],
     ['plum', 'Ahem! Mayor Plum here. I demand a latte at the Cloud Nine Café. Immediately. Please.'],
   ],
+  daily: [
+    ['ada', 'Ooh, the phone’s ringing off the hook! Folks want special deliveries: cakes, pianos, even a goldfish.'],
+    ['ada', 'A new Daily Special comes in every day. Look for the pink balloon over the yard, or check the Route Map!'],
+  ],
   newline: [
     ['plum', 'Ahem! Splendid news! Every town in the valley wants a Skyhop line of its own.'],
     ['ada', 'So we start again with a shiny new rocket, sweetpea. Same sky, bigger crowds.'],
@@ -5090,6 +5094,7 @@ const UI = (() => {
     if (S.pendingSpace) { S.pendingSpace = false; lines.push(...STORY.space); }
     if (S.pendingFork) { S.pendingFork = false; lines.push(...STORY.fork); }
     if (jobsUnlocked() && !S.seen.jobs) { S.seen.jobs = 1; fillJobs(); S.jobsNew = 3; lines.push(...STORY.jobs); }
+    if (dailyUnlocked() && !S.seen.dailyIntro && !lines.length && (S.line || 1) === 1) { S.seen.dailyIntro = 1; lines.push(...STORY.daily); }
     if (S.pendingAch && S.pendingAch.length) { for (const id of S.pendingAch) { const a = ACH.find(x => x.id === id); toast(`Achievement: <b>${a.name}</b> +${fmtMoney(a.reward)}`); } sfx.ach(); S.pendingAch = []; }
     saveGame();
     Dialog.play(lines, () => { refresh(); if (S.ended && !S.seen.endCredits) { S.seen.endCredits = 1; saveGame(); showCredits(); } if (then) then(); });
