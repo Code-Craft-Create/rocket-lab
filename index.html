@@ -265,7 +265,7 @@ button{font-family:var(--font)}
 .route .r-act{flex:0 0 auto}
 .skymap{margin:0 0 14px;line-height:0}.skymap canvas{display:block;max-width:100%;border-radius:14px;box-shadow:0 4px 0 var(--ink)}
 .route-link{position:absolute;left:44px;width:6px;height:18px;background:repeating-linear-gradient(var(--ink) 0 4px,transparent 4px 8px);top:-18px}
-.route:first-child .route-link{display:none}
+.route-link{display:none} /* a lone dash between cards read as a stray mark */
 
 /* ---------- Results ---------- */
 #scr-results .panel{max-width:440px}
@@ -370,7 +370,7 @@ body.in-hangar #toasts{left:calc((100vw - min(580px,54vw) - 16px)/2)}
 #cd-box{width:100%;height:120px;font:600 12px/1.35 ui-monospace,Menlo,Consolas,monospace;border:3px solid var(--ink);border-radius:12px;padding:8px 10px;resize:none;background:#fff;color:var(--ink);word-break:break-all}
 .code-row{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
 #scr-pause .panel,#scr-settings .panel,#scr-confirm .panel{max-width:380px;align-items:stretch}
-.menu-col{display:flex;flex-direction:column;gap:12px;padding:6px 18px 20px}
+.menu-col{display:flex;flex-direction:column;gap:12px;padding:6px 18px 20px;overflow-y:auto;min-height:0}
 .toggle-row{display:flex;justify-content:space-between;align-items:center;font-weight:800;font-size:18px;background:#fff;border:4px solid var(--ink);border-radius:14px;padding:8px 12px}
 .toggle-row small{display:block;font-size:13px;font-weight:700;color:var(--ink2)}
 .toggle-row span{flex:1 1 auto;min-width:0;padding-right:10px}
@@ -531,11 +531,11 @@ function fmtMoney(n) {
 }
 function fmtAlt(m) {
   m = Math.max(0, m);
-  if (m < 10000) return fmtInt(m) + ' m';
-  if (m < 100000) return (m / 1000).toFixed(1) + ' km';
-  return fmtInt(m / 1000) + ' km';
+  if (m < 10000) return fmtInt(m) + '\u00a0m'; // non-breaking space: number and unit never wrap apart
+  if (m < 100000) return (m / 1000).toFixed(1) + '\u00a0km';
+  return fmtInt(m / 1000) + '\u00a0km';
 }
-function fmtSpeed(v) { return fmtInt(Math.abs(v)) + ' m/s'; }
+function fmtSpeed(v) { return fmtInt(Math.abs(v)) + '\u00a0m/s'; }
 
 function hex2rgb(h) { h = h.replace('#', ''); if (h.length === 3) h = h.split('').map(c => c + c).join(''); const n = parseInt(h, 16); return [(n >> 16) & 255, (n >> 8) & 255, n & 255]; }
 function mixRGB(a, b, t) { return [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t, a[2] + (b[2] - a[2]) * t]; }
@@ -5894,7 +5894,7 @@ const UI = (() => {
       const beaten = g.boss && S.stats[g.stat] > 0;
       const fresh = got && !S.seen[guideKey(g)];
       const chips = got ? `<span class="chip ${beaten ? 'ok' : 'pay'}">${g.boss ? (beaten ? 'Beaten!' : 'Boss') : 'Spotted'}</span>${fresh ? '<span class="chip ok">New!</span>' : ''}` : '';
-      card.appendChild(el('div', 'r-main', `<div class="r-name">${got ? g.name : '???'}</div><div class="r-desc">${got ? g.desc : 'Not spotted yet. Lives above ' + fmtAlt(guideMinAlt(g)) + '.'}</div><div class="r-meta">${chips}</div>`));
+      card.appendChild(el('div', 'r-main', `<div class="r-name">${got ? g.name : '???'}</div><div class="r-desc">${got ? g.desc : (guideMinAlt(g) > 0 ? 'Not spotted yet. Lives above ' + fmtAlt(guideMinAlt(g)) + '.' : 'Not spotted yet. Lives near the ground.')}</div><div class="r-meta">${chips}</div>`));
       list.appendChild(card);
     }
     $('scr-map').querySelector('h2').textContent = 'Sky Guide';
