@@ -892,6 +892,9 @@ const AudioSys = (() => {
     jelly() { tone({ type: 'sine', f: 400, f2: 900, dur: 0.25, vol: 0.12 }); },
     chime() { [0, 7, 12, 19].forEach((s, i) => tone({ type: 'sine', f: N(84 + s), dur: 0.35, vol: 0.07, delay: i * 0.04 })); noise({ dur: 0.12, vol: 0.12, filter: 'highpass', f: 5000, q: 0.8 }); },
     eel() { if (!gate('eel', 700)) return; tone({ type: 'square', f: 120, f2: 140, dur: 0.5, vol: 0.035, filter: 'lowpass', ff: 700 }); noise({ dur: 0.5, vol: 0.05, filter: 'bandpass', f: 3000, f2: 2000, q: 6 }); },
+    slurp() { noise({ dur: 1.1, vol: 0.16, filter: 'bandpass', f: 300, f2: 1800, q: 2.5 }); tone({ type: 'sine', f: 220, f2: 420, dur: 1.0, vol: 0.05 }); },
+    splat() { noise({ dur: 0.5, vol: 0.3, filter: 'lowpass', f: 900, f2: 160, q: 1.2 }); tone({ type: 'sine', f: 180, f2: 60, dur: 0.3, vol: 0.18 }); },
+    burp() { tone({ type: 'sine', f: 140, f2: 90, dur: 0.35, vol: 0.2 }); noise({ dur: 0.3, vol: 0.12, filter: 'lowpass', f: 500, q: 2 }); },
     fire() { if (!gate('fire', 160)) return; noise({ dur: 0.35, vol: 0.22, filter: 'lowpass', f: 1400, f2: 300, q: 0.8 }); noise({ dur: 0.12, vol: 0.1, filter: 'bandpass', f: 2500, q: 2 }); },
     warp() { tone({ type: 'sine', f: 200, f2: 1600, dur: 0.8, vol: 0.12 }); noise({ dur: 0.8, vol: 0.15, filter: 'bandpass', f: 300, f2: 5000, q: 4 }); },
     ach() { [0, 4, 7, 12, 16].forEach((s, i) => tone({ type: 'triangle', f: N(79 + s), dur: 0.3, vol: 0.12, delay: i * 0.05 })); },
@@ -1418,6 +1421,8 @@ const MAIL = [
     text: 'Dear friend,\nThe lamp is burning brighter than ever. Last night three starships found their way home by it, and one of them was full of puppies. I’ve sent you the colours of the aurora for your rocket (see the Paint Shop).\n\nKeep your light on.', sign: '— Keeper Lumen' },
   { id: 'x5', from: 'ember', stamp: 'edge', gift: 250000, when: () => routeDone('x5'),
     text: 'Dear Pilot,\nThe shed is SO cozy. The boiler is my favourite thing. Ada says I can’t sleep IN the boiler. I have painted your rocket in my scales (look in the Paint Shop!).\n\nEnclosed: the dragon hoard. It was mostly buttons, but there was a lot of gold under them.', sign: '— Ember (rawr)' },
+  { id: 'gobble', from: 'earl', stamp: 'teapot', gift: 150000, when: () => (S.stats.gobble || 0) > 0,
+    text: 'My dear Pilot,\nI watched you give that greedy Gobble Nebula the slip through my opera glasses. Splendid! The beastly thing once swallowed an entire tea trolley, scones and all.\n\nEnclosed: a reward from the Tea Room Society. Do mind the goo.', sign: '— The Earl of Grey' },
   { id: 'king', from: 'nimbus', stamp: 'storm', gift: 250, when: () => S.stats.king > 0,
     text: 'That was the Storm King! Thirty years I’ve been forecasting him and you just... flew past. The lab took up a collection.\n\nP.S. Dr. Volt would like his hair to lie flat again. Any tips?' },
   { id: 'whale', from: 'luna', stamp: 'observ', gift: 900, when: () => S.stats.whale > 0,
@@ -3289,8 +3294,8 @@ function prepareRocket() {
   if (cd.thrustMul) { G.st = Object.assign({}, G.st, { thrust: G.st.thrust * cd.thrustMul }); }
   R.startPy = R.py;
   R.trace = { a: [], x: [], f: [] }; R.traceT = 0; R.ghostBeat = false;
-  R.boss = null; R.bossN = 0; R.bossOk = { storm: !S.seen.boss_storm || chance(0.4), whale: !S.seen.boss_whale || chance(0.45), pirates: !S.seen.boss_pirates || chance(0.4), kraken: !S.seen.boss_kraken || chance(0.4), bandit: !S.seen.boss_bandit || chance(0.45) };
-  if (daily && daily.twist === 'boss') R.bossOk = { storm: true, whale: true, pirates: true, kraken: true, bandit: true };
+  R.boss = null; R.bossN = 0; R.bossOk = { storm: !S.seen.boss_storm || chance(0.4), whale: !S.seen.boss_whale || chance(0.45), pirates: !S.seen.boss_pirates || chance(0.4), kraken: !S.seen.boss_kraken || chance(0.4), bandit: !S.seen.boss_bandit || chance(0.45), gobble: !S.seen.boss_gobble || chance(0.5) };
+  if (daily && daily.twist === 'boss') R.bossOk = { storm: true, whale: true, pirates: true, kraken: true, bandit: true, gobble: true };
   const gh = S.ghosts && S.ghosts[route ? route.id : 'free'];
   G.ghost = !daily && S.settings.ghost && gh && gh.a && gh.a.length > 4 ? gh : null;
   G.ghostLook = G.ghost && G.ghost.lk ? Object.assign({}, G.ghost.lk, { paint: PAINTS.find(p => p.id === G.ghost.lk.paint) || PAINTS[0] }) : null;
@@ -3514,13 +3519,17 @@ const BOSSES = {
   pirates: { name: 'CAPTAIN CALICO', sub: 'SKY PIRATES! FIND THE GREEN LANE', min: 26000, max: 55000, minFlights: 0, col: '#ff9f43', room: 4000, secs: 5.6 },
   kraken: { name: 'THE SPACE KRAKEN', sub: 'SLIP THROUGH THE GAPS', min: 60000, max: 200000, minFlights: 0, col: '#f15bb5', room: 14000 },
   bandit: { name: 'THE COMET BANDIT', sub: 'BUMP HIM 3 TIMES FOR THE LUGGAGE!', min: 220000, max: 600000, minFlights: 0, col: '#7ee081', room: 30000, secs: 11.5 },
+  gobble: { name: 'THE GOBBLE NEBULA', sub: 'DON’T GET SLURPED!', min: 900000, max: 40000000, minFlights: 0, col: '#d08cff', room: 120000, secs: 9.6 },
 };
+const GOB = { slurp: 1.15, warn: 0.75, gap: 2.4 }; // each gulp: slurp, puff the cheeks (stripe shows), then SPIT
+const gobbleS = u => u * 1.2 * Math.min(1, W / 440); // a touch smaller on narrow phones
+const gobbleY = u => Math.min(Math.max(H * 0.2, 120 + 70 * u, (G.hudB || 0) + 90 * gobbleS(u)), H * G.cam.anchor - 240 * u); // big and round: keep it clear of the phone HUD
 const BANDIT_DUR = 11;
 function updateBoss(R, dt) {
   if (R.ended || R.crashed) return;
   const u = G.cam.z;
   if (!R.boss) {
-    if (R.bossN >= 2 || R.event || !(R.vy > 120) || R.time < 3) return;
+    if (R.bossN >= (R.alt > GATE_ALT ? 3 : 2) || R.event || !(R.vy > 120) || R.time < 3) return; // past the Gate there's room for one more
     for (const id in BOSSES) {
       const d = BOSSES[id], forced = DEBUG.forceBoss === id; // __skyhop.DEBUG.forceBoss = 'bandit' for playtests
       if (DEBUG.forceBoss && !forced) continue;
@@ -3548,6 +3557,12 @@ function updateBoss(R, dt) {
         for (let i = 0; i < n; i++) R.boss.strikes.push({ at: 1.6 + i * 1.6, st: 'wait', lanes: null, by: 0 });
         sfx.arr(); sfx.cannon();
         if (R.faces.length) R.bubble = { s: 'PIRATES?! In SPACE?!', t: 0 };
+      } else if (id === 'gobble') {
+        const n = S.settings.relaxed ? 2 : 3;
+        for (let i = 0; i < n; i++) R.boss.strikes.push({ at: 1.0 + i * GOB.gap, st: 'wait', x: 0, bt: 0 });
+        Object.assign(R.boss, { parts: [], pull: 0, ph: 0 });
+        sfx.slurp(); sfx.jelly();
+        if (R.faces.length) R.bubble = { s: 'Is that cloud... licking its lips?', t: 0 };
       } else if (id === 'bandit') {
         Object.assign(R.boss, { bumps: 0, stun: 0, sw: 0, ph: 0, cans: [], canT: 1.6, leaveT: 0 });
         sfx.ufo(); sfx.honk();
@@ -3684,6 +3699,51 @@ function updateBoss(R, dt) {
       }
     }
     if (b.t > last + 3.2) R.boss = null;
+  } else if (b.id === 'gobble') {
+    // the Gobble Nebula hangs overhead and gulps three times: it SLURPS you toward its mouth, puffs its cheeks
+    // (a stripe shows where the goo will land and it stops drifting), then SPITS a beam straight down
+    const last = b.strikes[b.strikes.length - 1].at + GOB.slurp + GOB.warn;
+    const enter = smooth(clamp(b.t / 1.0, 0, 1)), leave = smooth(clamp((b.t - last - 0.7) / 1.0, 0, 1));
+    const hold = b.strikes.some(k => k.st === 'warn' || k.st === 'spit');
+    if (!hold) b.ph += dt * 0.75;
+    b.sy = lerp(-170 * u, gobbleY(u), enter) - leave * (H * 0.5);
+    b.sx = W / 2 + Math.sin(b.ph + b.seed * 6) * Math.min(W * 0.26, 240 * u);
+    const mx = b.sx, my = b.sy + 34 * gobbleS(u), hw = (S.settings.relaxed ? 38 : 46) * u, half = 12 * G.rocketScale * u;
+    b.mouth = [mx, my]; b.hw = hw;
+    let pull = 0;
+    for (const k of b.strikes) {
+      if (k.st === 'wait' && b.t >= k.at) { k.st = 'slurp'; sfx.slurp(); if (R.faces.length && chance(0.5)) R.bubble = { s: pick(['It’s pulling us in!', 'Steer! STEER!', 'Not the mouth!']), t: 0 }; }
+      if (k.st === 'slurp') { pull = Math.max(pull, smooth(clamp((b.t - k.at) / 0.3, 0, 1))); if (b.t >= k.at + GOB.slurp) { k.st = 'warn'; k.x = mx; sfx.beep(false); } }
+      if (k.st === 'warn') { pull = Math.max(pull, 0.55); if (b.t >= k.at + GOB.slurp + GOB.warn) {
+        k.st = 'spit'; k.bt = 0.45; sfx.splat(); G.cam.shake = Math.max(G.cam.shake, 6); G.cam.flash = 0.12; G.cam.flashCol = '#ffd6f5';
+        if (Math.abs(rx - k.x) < hw + half && !R.crashed) {
+          const hpBefore = R.hp, shieldBefore = R.shieldOn;
+          hitRocket({ x: R.x, py: R.py + 100, cloud: true, slow: 0.1, dmg: 1 }, true);
+          if (R.hp < hpBefore || shieldBefore) { b.hit = true; floater(R.x, R.py + 60, 'SPLAT!', '#ff8ad8', 20); }
+        } else floater(R.x + (rx < k.x ? -50 : 50), R.py + 20, pick(['Not slurped!', 'Dodged!', 'Too quick!']), '#e9c6ff', 16);
+      } }
+      if (k.st === 'spit') { k.bt -= dt; if (k.bt <= 0) k.st = 'gone'; }
+    }
+    // the slurp drags the rocket sideways toward the mouth: steer against it (gentler while the stripe shows)
+    b.pull += (pull - b.pull) * Math.min(1, dt * 6);
+    if (b.pull > 0.01 && !R.crashed && R.stun <= 0) {
+      const dxs = mx - rx, str = (S.settings.relaxed ? 120 : 185) * (G.st.lantern ? 0.85 : 1);
+      if (Math.abs(dxs) > 4) R.x += Math.sign(dxs) * str * b.pull * clamp(Math.abs(dxs) / (60 * u), 0.3, 1) * dt;
+    }
+    // stardust streaming into the mouth
+    if (pull > 0.3 && b.parts.length < 70) for (let i = 0; i < 3; i++) { const a = rand(0.15, Math.PI - 0.15), d = rand(0.35, 0.75) * Math.max(W, H) * 0.6; b.parts.push({ x: mx + Math.cos(a) * d, y: my + Math.sin(a) * d, c: pick(['#ffffff', '#ffd6f5', '#c9a6ff', '#ffd93d']) }); }
+    for (const q of b.parts) { const dx = mx - q.x, dy = my - q.y, d = Math.hypot(dx, dy) || 1, v = (260 + 900 * b.pull) * u * dt; q.px = q.x; q.py = q.y; q.x += dx / d * Math.min(v, d); q.y += dy / d * Math.min(v, d); q.done = d < 14 * u; }
+    b.parts = b.parts.filter(q => !q.done);
+    if (!b.paid && b.strikes.every(k => k.st === 'gone')) {
+      b.paid = true;
+      if (!b.hit) {
+        const v = coinValue(R.alt) * 14; R.coinCash += v; R.coins += 14; S.stats.coins += 14; S.stats.gobble = (S.stats.gobble || 0) + 1;
+        banner('NEBULA OUTWITTED!', '#d08cff', 2.2, '+' + fmtMoney(v)); sfx.burp(); sfx.bigcoin(); confetti(R.x, R.py + 80, 40);
+        floater(R.x, R.py + 140, 'BURP!', '#e9c6ff', 22);
+        if (R.faces.length) R.bubble = { s: pick(['Ha! Not today, cloud!', 'Did it just burp?', 'Rude!']), t: 0 };
+      }
+    }
+    if (b.t > last + 1.9) R.boss = null;
   } else if (b.id === 'bandit') {
     // Rascal zigzags overhead and swoops down to your height every couple of seconds:
     // bump into him three times to win the luggage back, and dodge the tin cans he throws
@@ -3768,6 +3828,51 @@ function drawBanditShip(c, t, stunned, lookX = 0) {
   for (let i = 0; i < 7; i++) { const x = (i - 3) * 19, on = Math.sin(t * 10 + i * 1.3) > 0; circ(c, x, 7 - Math.abs(i - 3) * 0.6, 4); fillStroke(c, on ? (i % 2 ? '#ffd93d' : '#ff6fb5') : '#6b6680', 2); }
   // dizzy stars
   if (stunned) for (let i = 0; i < 3; i++) { const a = t * 6 + i * 2.1; text(c, '★', Math.cos(a) * 28, -62 + Math.sin(a) * 6, 14, '#ffd93d', 'center', INK, 2.5); }
+}
+// the Gobble Nebula: a round, hungry puff of stardust with a big mouth.
+// mode: 0 idle grin, 1 slurping (mouth wide), 2 cheeks puffed (about to spit), 3 spitting
+function gobbleShape(c, t) {
+  c.beginPath(); c.moveTo(70, 0); c.arc(0, 0, 70, 0, TAU);
+  for (let i = 0; i < 9; i++) { const a = i / 9 * TAU - Math.PI / 2 + 0.2, r = 30 + (i % 3) * 4 + Math.sin(t * 2.2 + i * 1.7) * 2.5, d = 64; c.moveTo(Math.cos(a) * d + r, Math.sin(a) * d); c.arc(Math.cos(a) * d, Math.sin(a) * d, r, 0, TAU); }
+}
+function drawGobbleBody(c, t, mode, lookX = 0) {
+  const puffK = mode === 2 ? 1 : 0, wob = 1 + Math.sin(t * 3) * 0.015 + puffK * 0.05;
+  c.save(); c.scale(wob, 1 / wob);
+  ink(c, 3);
+  gobbleShape(c, t); c.lineWidth = 7; c.lineJoin = 'round'; c.stroke();
+  const g = c.createRadialGradient(-10, -10, 8, 0, 0, 100); g.addColorStop(0, '#ff9ee0'); g.addColorStop(0.45, '#a463f2'); g.addColorStop(1, '#4a2a8a');
+  c.fillStyle = g; c.fill();
+  // stars and a slow swirl inside
+  c.save(); gobbleShape(c, t); c.clip();
+  c.globalAlpha = 0.35; c.strokeStyle = '#ffd6f5'; c.lineWidth = 6;
+  for (let i = 0; i < 2; i++) { c.beginPath(); for (let k = 0; k < 40; k++) { const a = k * 0.18 + t * 0.4 + i * Math.PI, r = 12 + k * 2.2; k ? c.lineTo(Math.cos(a) * r, Math.sin(a) * r * 0.8) : c.moveTo(Math.cos(a) * r, Math.sin(a) * r * 0.8); } c.stroke(); }
+  c.globalAlpha = 1;
+  for (let i = 0; i < 26; i++) { const x = (hash(i * 3.1) - 0.5) * 200, y = (hash(i * 7.7) - 0.5) * 190, tw = 0.5 + 0.5 * Math.sin(t * 3 + i); c.fillStyle = `rgba(255,255,255,${0.35 + 0.5 * tw})`; circ(c, x, y, 1 + hash(i) * 2.2); c.fill(); }
+  c.restore();
+  ink(c, 3);
+  // eyes: big and shiny, peeking at the rocket; squinting with effort while it puffs
+  for (const sd of [-1, 1]) {
+    const ex = sd * 27, ey = -18;
+    if (mode === 2) { c.lineWidth = 4.5; c.lineCap = 'round'; c.lineJoin = 'round'; c.beginPath(); c.moveTo(ex + sd * 10, ey - 9); c.lineTo(ex - sd * 8, ey); c.lineTo(ex + sd * 10, ey + 9); c.stroke(); c.lineWidth = 3; }
+    else {
+      c.fillStyle = '#fff'; c.beginPath(); c.ellipse(ex, ey, 15, 17, 0, 0, TAU); c.fill(); c.stroke();
+      c.fillStyle = INK; circ(c, ex + lookX, ey + 3, 7.5); c.fill();
+      c.fillStyle = '#fff'; circ(c, ex + lookX - 2.5, ey, 2.6); c.fill(); circ(c, ex + lookX + 2.5, ey + 6, 1.2); c.fill();
+      // mischievous brows
+      c.lineWidth = 4; c.beginPath(); c.moveTo(ex - sd * 14, ey - 26); c.quadraticCurveTo(ex, ey - 30 + (mode === 1 ? -4 : 0), ex + sd * 14, ey - 20); c.stroke(); c.lineWidth = 3;
+    }
+  }
+  // cheeks
+  const cr = mode === 2 ? 20 : 10;
+  for (const sd of [-1, 1]) { c.fillStyle = mode === 2 ? '#ff8ad8' : 'rgba(255,138,216,.7)'; c.beginPath(); c.arc(sd * (mode === 2 ? 44 : 48), 14, cr, 0, TAU); c.fill(); if (mode === 2) c.stroke(); }
+  // mouth
+  c.save(); c.translate(0, 34);
+  if (mode === 1) { const o = 1 + Math.sin(t * 18) * 0.06; c.beginPath(); c.ellipse(0, 0, 24 * o, 22 * o, 0, 0, TAU); fillStroke(c, '#2b1240', 3); c.fillStyle = '#ff6fb5'; c.beginPath(); c.ellipse(0, 12, 13, 7, 0, Math.PI, TAU); c.fill(); }
+  else if (mode === 2) { c.beginPath(); c.arc(0, 0, 6, 0, TAU); fillStroke(c, '#2b1240', 3); }
+  else if (mode === 3) { c.beginPath(); c.ellipse(0, 4, 18, 22, 0, 0, TAU); fillStroke(c, '#2b1240', 3); c.fillStyle = '#ff8ad8'; c.beginPath(); c.ellipse(0, 12, 12, 13, 0, 0, TAU); c.fill(); }
+  else { c.beginPath(); c.arc(0, -10, 24, 0.35, Math.PI - 0.35); c.lineTo(-20, 2); c.closePath(); fillStroke(c, '#2b1240', 3); c.fillStyle = '#fff'; c.fillRect(-12, 0, 7, 6); c.strokeRect(-12, 0, 7, 6); c.fillRect(5, 0, 7, 6); c.strokeRect(5, 0, 7, 6); }
+  c.restore();
+  c.restore();
 }
 function drawStormKingBody(c, charging, zapping, lookX) {
     drawCloud(c, 0, 0, 240, 120, 7, zapping ? '#9a96c0' : '#5a5578', '#3a3554', 3);
@@ -3886,6 +3991,7 @@ const GUIDE = [
   { boss: 'pirates', stat: 'pirates', name: 'Captain Calico', desc: 'A pirate cat in a flying ship, 26 to 55 km up. Red X lanes get cannonballs: slide into a green SAFE lane!' },
   { boss: 'kraken', stat: 'kraken', name: 'The Space Kraken', desc: 'Lurks past 60 km. Fly through the sparkly gap between its arms.' },
   { boss: 'bandit', stat: 'bandit', name: 'Rascal the Comet Bandit', desc: 'A raccoon in a stolen saucer, 220 to 600 km up, with everyone’s luggage. Bump him three times while he swoops low, and dodge his tin cans.' },
+  { boss: 'gobble', stat: 'gobble', name: 'The Gobble Nebula', desc: 'A hungry puff of stardust past 900 km. It slurps you toward its mouth, puffs its cheeks, then spits a goo beam straight down. Steer against the pull and get out of the purple stripe!' },
 ];
 const guideKey = g => g.boss ? 'gb_' + g.boss : 'g_' + g.id;
 const guideNewCount = () => GUIDE.filter(g => guideSeen(g) && !S.seen[guideKey(g)]).length;
@@ -3900,6 +4006,7 @@ function guideIcon(g, locked) {
     else if (g.boss === 'kraken') { c.translate(0, 6); c.scale(0.24, 0.24); drawKrakenHead(c, 0); }
     else if (g.boss === 'pirates') { c.translate(0, 10); c.scale(0.19, 0.19); drawPirateShip(c, 0, false, 0); }
     else if (g.boss === 'bandit') { c.translate(2, 6); c.scale(0.36, 0.36); drawBanditShip(c, 0.3, false, 0); }
+    else if (g.boss === 'gobble') { c.translate(0, 2); c.scale(0.27, 0.27); drawGobbleBody(c, 0.4, 0, 0); }
     else {
       const o = makeObstacle(g.id, 0, 0);
       Object.assign(o, { x: 0, py: 0, dir: 1, seed: 0.37, rot: 0 });
@@ -4016,6 +4123,37 @@ function drawBoss() {
     // the head peeking up from below
     ctx.translate(b.sx, b.sy); ctx.scale(u * 1.2, u * 1.2); ink(ctx, 3.5);
     drawKrakenHead(ctx, clamp((w2s(R.x, R.py)[0] - b.sx) / 50, -6, 6));
+  } else if (b.id === 'gobble') {
+    const [rx, ry] = w2s(R.x, R.py);
+    // the pull: a wavy tether from the rocket to the mouth while it slurps
+    if (b.pull > 0.05 && b.mouth) {
+      const [mx, my] = b.mouth;
+      ctx.save(); ctx.globalAlpha = 0.5 * b.pull; ctx.strokeStyle = '#e9c6ff'; ctx.lineWidth = 3 * Math.max(0.7, u); ctx.setLineDash([8, 10]); ctx.lineDashOffset = -G.t * 90;
+      ctx.beginPath(); ctx.moveTo(rx, ry - 30 * u); ctx.bezierCurveTo(rx + Math.sin(G.t * 9) * 20 * u, (ry + my) / 2, mx - Math.sin(G.t * 7) * 20 * u, (ry + my) / 2, mx, my); ctx.stroke(); ctx.restore();
+    }
+    for (const q of b.parts) { ctx.save(); ctx.strokeStyle = q.c; ctx.globalAlpha = 0.85; ctx.lineWidth = 2.5 * Math.max(0.7, u); ctx.lineCap = 'round'; ctx.beginPath(); ctx.moveTo(q.px == null ? q.x : q.px - (q.x - q.px) * 1.5, q.py == null ? q.y : q.py - (q.y - q.py) * 1.5); ctx.lineTo(q.x, q.y); ctx.stroke(); ctx.restore(); }
+    // stripe where the goo will land, then the goo beam
+    for (const k of b.strikes) {
+      if (k.st === 'warn') {
+        const p = clamp((b.t - (k.at + GOB.slurp)) / GOB.warn, 0, 1), hw = b.hw;
+        ctx.save(); ctx.globalAlpha = 0.16 + 0.24 * p + (Math.sin(G.t * 30) > 0 ? 0.1 : 0);
+        ctx.fillStyle = '#d08cff'; ctx.fillRect(k.x - hw, b.sy, hw * 2, H - b.sy);
+        ctx.globalAlpha = 0.9; ctx.setLineDash([12, 10]); ctx.lineWidth = 3; ctx.strokeStyle = '#f0d4ff';
+        ctx.beginPath(); ctx.moveTo(k.x - hw, b.sy + 60 * u); ctx.lineTo(k.x - hw, H); ctx.moveTo(k.x + hw, b.sy + 60 * u); ctx.lineTo(k.x + hw, H); ctx.stroke();
+        ctx.restore();
+      }
+      if (k.st === 'spit') {
+        const a = clamp(k.bt / 0.2, 0, 1), hw = b.hw * (1 + (0.45 - k.bt) * 0.6), y0 = b.mouth ? b.mouth[1] : b.sy;
+        ctx.save(); ctx.globalAlpha = a;
+        const g = ctx.createLinearGradient(k.x - hw, 0, k.x + hw, 0); g.addColorStop(0, 'rgba(208,140,255,0)'); g.addColorStop(0.2, '#d08cff'); g.addColorStop(0.5, '#ffe6fa'); g.addColorStop(0.8, '#d08cff'); g.addColorStop(1, 'rgba(208,140,255,0)');
+        ctx.fillStyle = g; ctx.beginPath(); ctx.moveTo(k.x - hw * 0.4, y0); ctx.lineTo(k.x + hw * 0.4, y0); ctx.lineTo(k.x + hw, H); ctx.lineTo(k.x - hw, H); ctx.closePath(); ctx.fill();
+        for (let i = 0; i < 10; i++) { const yy = y0 + ((G.t * 900 * u + i * 97) % Math.max(1, H - y0)), xx = k.x + Math.sin(i * 2.3 + G.t * 8) * hw * 0.55; ctx.fillStyle = i % 2 ? '#ffffff' : '#ffd93d'; text(ctx, '✦', xx, yy, 14 * Math.max(0.8, u), ctx.fillStyle, 'center', null); }
+        ctx.restore();
+      }
+    }
+    const mode = b.strikes.some(k => k.st === 'spit') ? 3 : b.strikes.some(k => k.st === 'warn') ? 2 : b.pull > 0.4 ? 1 : 0;
+    ctx.translate(b.sx, b.sy); ctx.scale(gobbleS(u), gobbleS(u)); ctx.rotate(Math.sin(G.t * 1.3) * 0.04);
+    drawGobbleBody(ctx, G.t, mode, clamp((rx - b.sx) / 40, -6, 6));
   } else if (b.id === 'bandit') {
     for (const k of b.cans) { // tin cans
       ctx.save(); ctx.translate(k.x, k.y); ctx.rotate(k.rot); ctx.scale(u, u); ink(ctx, 2.5);
@@ -4278,6 +4416,11 @@ function predictApogee(R, st, noWarp) {
 function autoDodge() {
   const R = G.R; let push = 0;
   if (R.boss && R.boss.id === 'storm') { const rx = w2s(R.x, R.py)[0], u = G.cam.z; for (const k of R.boss.strikes) if (k.st === 'warn' && Math.abs(rx - k.x) < 70 * u) push += (rx >= k.x ? 1 : -1) * 1.5; }
+  if (R.boss && R.boss.id === 'gobble' && R.boss.mouth) { // lean away from the slurp, and well clear of the stripe
+    const bs = R.boss, rx = w2s(R.x, R.py)[0], u = G.cam.z, k = bs.strikes.find(q => q.st === 'warn');
+    if (k) { if (Math.abs(rx - k.x) < bs.hw + 70 * u) return clamp((rx >= k.x ? 1 : -1) * 1.6, -1.6, 1.6); }
+    else if (bs.pull > 0.1) push += Math.sign(rx - bs.mouth[0] || 1) * 0.9 * bs.pull;
+  }
   if (R.boss && R.boss.id === 'bandit') { const [rx, ry] = w2s(R.x, R.py), u = G.cam.z; for (const k of R.boss.cans) if (!k.done && k.y < ry && ry - k.y < 260 * u && Math.abs(k.x - rx) < 50 * u) push += (rx >= k.x ? 1 : -1) * 1.5; }
   if (R.boss && R.boss.id === 'kraken') {
     // line up with the sparkly gap in the next arm before it sweeps past: steer harder the closer it gets,
@@ -4948,6 +5091,7 @@ const ACH = [
   { id: 'rival', name: 'Vroom Vanquished', desc: 'Beat all five of Baron Vroom\u2019s challenges', test: () => !!(S.rival && S.rival.v5), reward: 10000 },
   { id: 'pirates', name: 'Outsailed!', desc: 'Dodge every cannonball from Captain Calico\u2019s ship', test: () => (S.stats.pirates || 0) >= 1, reward: 5000 },
   { id: 'bandit', name: 'Lost Luggage Hero', desc: 'Catch the Comet Bandit and win the luggage back', test: () => (S.stats.bandit || 0) >= 1, reward: 30000 },
+  { id: 'gobble', name: 'Unslurpable', desc: 'Escape the Gobble Nebula without a scratch', test: () => (S.stats.gobble || 0) >= 1, reward: 400000 },
   { id: 'kraken', name: 'Eight-Arm Escape', desc: 'Slip past every arm of the Space Kraken', test: () => S.stats.kraken >= 1, reward: 20000 },
   { id: 'guide', prog: () => [GUIDE.filter(guideSeen).length, GUIDE.length], name: 'Sky Spotter', desc: 'Fill every page of the Sky Guide', test: () => GUIDE.every(guideSeen), reward: 50000 },
   { id: 'wish10', prog: () => [S.stats.wishes || 0, 10], name: 'Fairy Rocketmother', desc: 'Grant 10 passenger wishes', test: () => (S.stats.wishes || 0) >= 10, reward: 2500 },
@@ -4991,6 +5135,7 @@ const ACH_SYM = {
   light: '<path d="M27 40l2-20h6l2 20z" fill="#fff6e5" stroke-width="2.5"/><path d="M28 33h8M28.6 26h6.8" stroke="#ff5a5f" stroke-width="3"/><rect x="28" y="14" width="8" height="6" rx="1.5" fill="#fff6a0" stroke-width="2.2"/><path d="M38 16l7-3M38 19l7 1M26 16l-7-3M26 19l-7 1" stroke="#ffd93d" stroke-width="2"/>',
   edge: '<path d="M18 22h28v16H18z" fill="#f3e2b3" stroke-width="2.5"/><path d="M18 22l3-3 3 3 3-3 3 3 3-3 3 3 3-3 3 3 3-3 3 3" fill="#f3e2b3" stroke-width="2"/><ellipse cx="18" cy="30" rx="3" ry="9" fill="#e6cf98" stroke-width="2"/><ellipse cx="46" cy="30" rx="3" ry="9" fill="#e6cf98" stroke-width="2"/><path d="M25 33c4-4 8 2 12-2" stroke="#6e4a36" stroke-width="2" stroke-dasharray="2 3"/>',
   frontier: '<path d="M32 13l4 9 10 1-8 6 3 10-9-6-9 6 3-10-8-6 10-1z" fill="#2ec4b6" stroke-width="2.5"/><circle cx="32" cy="28" r="3.5" fill="#fff6e5" stroke-width="2"/>',
+  gobble: '<path d="M20 30a12 12 0 0 1 4-14 10 10 0 0 1 16 0 12 12 0 0 1 4 14 10 10 0 0 1-10 9h-4a10 10 0 0 1-10-9z" fill="#a463f2" stroke-width="2.5"/><circle cx="27.5" cy="24" r="3.2" fill="#fff" stroke-width="1.8"/><circle cx="36.5" cy="24" r="3.2" fill="#fff" stroke-width="1.8"/><ellipse cx="32" cy="32.5" rx="4" ry="3.6" fill="#2b1240" stroke-width="1.8"/><path d="M21 15l1 2 2 1-2 1-1 2-1-2-2-1 2-1z" fill="#ffd93d" stroke-width="1.2"/>',
   king: '<path d="M35 14l-9 15h6l-4 12 11-17h-7l4-10z" fill="#fff36b" stroke-width="2.5"/>',
   whale: '<path d="M17 30c0-6 6-10 14-10 7 0 12 4 13 9l5-5c1 3 0 7-3 9 2 1 3 3 2 5-3 0-6-2-7-4-3 4-8 6-14 6-6 0-10-4-10-10z" fill="#6ec3ff" stroke-width="2.4"/><path d="M19 33c4 3 12 3 19 0" stroke-width="1.8"/><circle cx="24" cy="27" r="1.6" fill="' + INK + '" stroke="none"/><path d="M27 18c0-3 1-4 1-4M27 18c-2-2-4-2-4-2M27 18c2-2 4-2 4-2" stroke="#4fd8ff" stroke-width="2"/>',
   rival: '<path d="M23 34h18M26 34V17h12v17" fill="#3a2f4d" stroke-width="2.5"/><rect x="26" y="17" width="12" height="17" fill="#3a2f4d" stroke-width="2.5"/><path d="M26 29h12" stroke="#ff5a5f" stroke-width="3"/><path d="M20 35h24" stroke-width="3.5"/><path d="M24 40c3 0 5-1 8-2 3 1 5 2 8 2" stroke-width="2.5"/>',
@@ -6727,6 +6872,11 @@ function drawLaunchGauge() {
 function drawBanners() {
   const compactB = W < 600 || H < 520;
   let yAcc = Math.max(H * 0.3, W < 600 ? Math.max(126, G.hudB || 0) + 82 : H < 520 ? 140 : 0); // phones: below the tips; landscape: below the coins and faces
+  const bs = G.R && G.R.boss;
+  if (bs && /^(storm|pirates|bandit|gobble)$/.test(bs.id) && H >= 520) { // bosses that hover up top: titles go under them, not across their face
+    const u = G.cam.z, tgt = bs.id === 'gobble' ? gobbleY(u) : Math.min(Math.max(H * 0.2, 120 + 70 * u), H * G.cam.anchor - 240 * u);
+    yAcc = Math.min(Math.max(yAcc, tgt + (bs.id === 'gobble' ? 96 * gobbleS(u) : 92 * u)), H * 0.44);
+  }
   G.banners.forEach((b, i) => {
     const k = b.t / b.dur;
     void i;
@@ -8062,6 +8212,7 @@ function botSteer() {
       const ry = w2s(R.x, R.py)[1];
       for (const k of bs.cans) if (!k.done && k.y < ry && ry - k.y < 320 * u && Math.abs(k.x - rx) < 70 * u) push += (rx >= k.x ? 1 : -1) * 3;
     }
+    if (bs.id === 'gobble' && bs.mouth) { const k = bs.strikes.find(q => q.st === 'warn'); if (k) { if (Math.abs(rx - k.x) < bs.hw + 90 * u) push += (rx >= k.x ? 1 : -1) * 4; } else if (bs.pull > 0.1) push += Math.sign(rx - bs.mouth[0] || 1) * 2 * bs.pull; }
     if (bs.id === 'kraken') { const k = bs.strikes.find(q => q.st === 'come' && q.y < w2s(R.x, R.py)[1] + 10); if (k) push += clamp((k.gx - rx) / (25 * u), -4, 4); }
     if (bs.id === 'pirates' && bs.lane) { const k = bs.strikes.find(q => (q.st === 'warn' || (q.st === 'fire' && !q.hitDone)) && q.lanes); if (k) { let best = null; for (let i = 0; i < 5; i++) if (!k.lanes[i]) { const cx = bs.lane.l0 + (i + 0.5) * bs.lane.lw; if (best == null || Math.abs(cx - rx) < Math.abs(best - rx)) best = cx; } if (best != null) push += clamp((best - rx) / (20 * u), -4, 4); } }
   }
