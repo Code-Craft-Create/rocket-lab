@@ -207,7 +207,7 @@ button{font-family:var(--font)}
   #detail .dicon{width:44px;height:44px}
   #detail .dicon svg{width:32px;height:32px}
   #detail .dact .btn{font-size:14px;padding:6px 8px}
-  .ov-head h2{font-size:23px}
+  .ov-head h2{font-size:21px}
   body #dialog canvas{width:62px;height:62px;border-radius:14px}
   body #dialog .dl-text{font-size:16px}
   .side-foot{gap:8px}
@@ -264,7 +264,7 @@ button{font-family:var(--font)}
 /* ---------- Generic overlay ---------- */
 .overlay{position:absolute;inset:0;z-index:10;background:rgba(30,18,60,.45);display:flex;align-items:center;justify-content:center;padding:16px;backdrop-filter:blur(2px)}
 .overlay .panel{max-width:560px;width:100%;max-height:100%;display:flex;flex-direction:column}
-.ov-head{display:flex;align-items:center;justify-content:space-between;padding:12px 16px 8px}
+.ov-head{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 16px 8px}
 .ov-head h2{font-size:28px;font-weight:900}
 .ov-body{padding:4px 16px 16px;overflow:auto}
 
@@ -6559,7 +6559,7 @@ const UI = (() => {
     list.appendChild(el('div', 'small-note', `You have <b>${ts} ★</b>. Earn stars by keeping passengers comfy on each route (3 per route).`));
     { // name your rocket: shown on the launch pad, the banner plane and postcards
       const row = el('div', 'name-row'), inp = document.createElement('input'), dice = el('button', 'btn small blue', 'Random');
-      inp.maxLength = 18; inp.placeholder = 'Name your rocket'; inp.value = S.rocketName || ''; inp.setAttribute('aria-label', 'Rocket name');
+      inp.maxLength = 18; inp.placeholder = 'Rocket name'; inp.value = S.rocketName || ''; inp.setAttribute('aria-label', 'Rocket name');
       const setName = v => { S.rocketName = v.replace(/\s+/g, ' ').trim().slice(0, 18); saveGame(); };
       inp.addEventListener('input', () => setName(inp.value));
       inp.addEventListener('keydown', e => { if (e.key === 'Enter') inp.blur(); });
