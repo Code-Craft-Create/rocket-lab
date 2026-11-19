@@ -2978,6 +2978,9 @@ const WISHES = [
   { id: 'calm', s: 'No bumps for 10 seconds, please!', dur: 10, endOk: true, v: R => R.hits, fail: (R, w) => R.hits > w.v },
   { id: 'wiggle', s: 'Do a wiggle! Left, then right!', dur: 7, v: () => 0, ok: (R, w) => { if (R.steer < -0.5) w.l = 1; if (w.l && R.steer > 0.5) w.r = 1; return w.l && w.r; } },
   { id: 'close', s: 'Fly close to something! Photo time!', dur: 14, can: R => R.alt < 60000, v: R => R.nearMiss || 0, ok: (R, w) => (R.nearMiss || 0) > w.v },
+  { id: 'boost', s: 'Hit the BOOST! I want to feel it!', dur: 8, can: R => G.st.ab && R.abCd <= 0 && R.fuel > 0, v: () => 0, ok: R => R.abT > 0 },
+  { id: 'star', s: 'Catch that lucky star!', dur: 12, can: R => G.picks.some(p => p.type === 'star' && p.py > R.py + 150), v: R => R.starsGot, ok: (R, w) => R.starsGot > w.v },
+  { id: 'smash', s: 'Smash something! For science!', dur: 14, can: () => G.st.ram > 0, v: R => R.smashed, ok: (R, w) => R.smashed > w.v },
 ];
 const wishesOn = () => routeDone('r1') || (S.line || 1) > 1;
 function updateWish(R, dt) {
