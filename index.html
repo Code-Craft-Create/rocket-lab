@@ -1170,6 +1170,127 @@ const MAIL = [
   { id: 'cat', from: 'cat', gift: () => 200 + S.avg.total * 0.7, when: () => S.flights >= 35,
     text: 'Meow. Meow meow.\nMrrrp.\n\n(The envelope also holds a feather, some fluff and a few coins. You keep the coins.)', sign: '— Sir Whiskers (paw print)' },
 ];
+// ---- Lost & Found: things your passengers dropped float in the sky. Catch them and return them!
+const LOST = [
+  { id: 'hat', owner: 'plum', name: 'Mayor Plum’s top hat', short: 'hat', min: 900, max: 2600, hint: 'Blew off over Pebbleton during a ribbon-cutting.', gift: 300,
+    text: 'My hat! My beautiful hat! I have worn it to every ribbon-cutting since I was elected. The Council has declared today Hat Day. A small reward is enclosed.', sign: 'Mayor Plum (properly dressed again)' },
+  { id: 'umbrella', owner: 'nimbus', name: 'Nimbus’s umbrella', short: 'umbrella', min: 2500, max: 5500, hint: 'Snatched away by a gust near Thunderhead Station.', gift: 500,
+    text: 'My umbrella! I’ve been forecasting rain for weeks just so I’d have an excuse to buy a new one. Now I don’t have to. Here’s what I saved.' },
+  { id: 'page', owner: 'luna', name: 'Luna’s notebook', short: 'notebook', min: 5000, max: 9000, hint: 'Fluttered off the observatory balcony.', gift: 800,
+    text: 'My notebook! It has all my comet notes AND my doodles of Prof. Orion as a potato. Please tell me you didn’t read page 40. Reward enclosed.' },
+  { id: 'mints', owner: 'juno', name: 'Juno’s mint tin', short: 'mints', min: 10000, max: 16000, hint: 'Rattling around below the Skyhook Hotel.', gift: 1200,
+    text: 'The mints! They’re all still there!\n\n...Okay, one is missing. Did you? It’s fine. Here is a thank-you. Romeo says hi.' },
+  { id: 'pancake', owner: 'flo', name: 'Flo’s flying pancake', short: 'pancake', min: 18000, max: 30000, hint: 'Flipped a little too hard at the Satellite Diner.', gift: 2000,
+    text: 'You caught my pancake?! Hon, that thing’s been in orbit since Tuesday. Still fluffy, too. I’m hanging it on the wall. Coins enclosed.' },
+  { id: 'scarf', owner: 'nana', name: 'Nana’s knitted scarf', short: 'scarf', min: 30000, max: 60000, hint: 'Floated away on the way to the Moon.', gift: 3500,
+    text: 'You found the scarf! I knitted it for YOU, dear, so please keep it. Wear it on chilly launches. And here’s a little something for the trouble.' },
+  { id: 'ball', owner: 'kid', name: 'Lulu’s bowling ball', short: 'ball', min: 60000, max: 120000, hint: 'Still rolling after that strike on the Moon.', gift: 6000,
+    text: 'YOU FOUND MY BALL. It was going SO fast. Big Bert says it counts as the longest strike in history, so we are giving you the trophy money!', sign: 'Love, Lulu' },
+  { id: 'pizza', owner: 'chef', name: 'Rosa’s pizza slice', short: 'pizza', min: 120000, max: 220000, hint: 'Slid off a plate somewhere past Mars.', gift: 10000,
+    text: 'My slice! Still warm-ish! Tony says it was HIS slice. It was MY slice. Enclosed: a tip, and a coupon for one whole pizza (Mars delivery not included).' },
+  { id: 'mic', owner: 'diva', name: 'Stella’s microphone', short: 'microphone', min: 220000, max: 400000, hint: 'Dropped during a sound check near Saturn.', gift: 16000,
+    text: 'Darling, my microphone! The tour is saved! I’ll dedicate the first song to you. Enclosed: a reward, and a signed photo of me looking surprised.' },
+  { id: 'yarn', owner: 'cat', name: 'Sir Whiskers’ ball of yarn', short: 'yarn', min: 400000, max: 640000, hint: 'Rolled all the way out to the edge of the map.', gift: 25000,
+    text: 'Meow!!! MRRROW. Purr purr purr purr purr.\n\n(He is very happy. He has already lost it again, under the sofa.)', sign: '— Sir Whiskers, and his human' },
+];
+for (const it of LOST) MAIL.push({ id: 'lost_' + it.id, from: it.owner, gift: it.gift, text: it.text, sign: it.sign, lost: it.id, when: () => !!(S.lost && S.lost[it.id]) });
+const lostKnown = it => !!(S.met && S.met[it.owner]);
+const lostFound = () => LOST.filter(it => S.lost && S.lost[it.id]).length;
+const lostNewCount = () => LOST.filter(it => lostKnown(it) && !S.seen['lost_' + it.id]).length;
+function trySpawnLost(est, cx, spread, y0, y1) {
+  const R = G.R; if (R.lostSpawned || R.boss) return;
+  for (const it of LOST) {
+    if (!lostKnown(it) || (S.lost && S.lost[it.id]) || est < it.min || est > it.max) continue;
+    R.lostRolled = R.lostRolled || {};
+    if (R.lostRolled[it.id]) continue;
+    R.lostRolled[it.id] = 1;
+    S.lostTries = S.lostTries || {};
+    const tries = S.lostTries[it.id] = (S.lostTries[it.id] || 0) + 1;
+    if (!(tries >= 3 || chance(0.5))) continue;
+    R.lostSpawned = it.id;
+    G.picks.push({ type: 'lost', id: it.id, x: cx + rand(-spread * 0.35, spread * 0.35), py: rand(y0, y1), r: 26, seed: Math.random(), vx: 0, vy: 0 });
+    return;
+  }
+}
+function drawLostItem(c, id, t = 0) {
+  c.save(); ink(c, 3); c.lineJoin = 'round'; c.lineCap = 'round';
+  switch (id) {
+    case 'hat':
+      c.beginPath(); c.ellipse(0, 13, 24, 7, 0, 0, TAU); fillStroke(c, '#4a3b6b', 3);
+      rr(c, -14, -17, 28, 30, 4); fillStroke(c, '#4a3b6b', 3);
+      c.fillStyle = '#f15bb5'; c.fillRect(-14, 3, 28, 7); c.beginPath(); c.moveTo(-14, 3); c.lineTo(14, 3); c.moveTo(-14, 10); c.lineTo(14, 10); c.stroke();
+      c.fillStyle = 'rgba(255,255,255,.35)'; c.fillRect(-9, -13, 4, 14);
+      break;
+    case 'umbrella':
+      c.beginPath(); c.moveTo(0, 0); c.lineTo(0, 18); c.arc(-5, 18, 5, 0, Math.PI); c.stroke();
+      c.beginPath(); c.moveTo(-24, 0); c.quadraticCurveTo(-24, -24, 0, -24); c.quadraticCurveTo(24, -24, 24, 0);
+      for (let i = 0; i < 4; i++) { const x0 = 24 - i * 12; c.quadraticCurveTo(x0 - 6, -7, x0 - 12, 0); }
+      c.closePath(); fillStroke(c, '#ff5a5f', 3);
+      c.beginPath(); c.moveTo(0, -24); c.quadraticCurveTo(-7, -12, -12, 0); c.quadraticCurveTo(-6, -7, 0, 0); c.quadraticCurveTo(6, -7, 12, 0); c.quadraticCurveTo(7, -12, 0, -24); c.fillStyle = '#fff6e5'; c.fill(); c.stroke();
+      break;
+    case 'page':
+      rr(c, -16, -20, 32, 40, 4); fillStroke(c, '#9b5de5', 3);
+      rr(c, -10, -16, 22, 32, 2); fillStroke(c, '#fff6e5', 2.5);
+      c.lineWidth = 2; c.beginPath(); for (let i = 0; i < 4; i++) { c.moveTo(-6, -9 + i * 7); c.lineTo(8, -9 + i * 7); } c.stroke();
+      for (let i = 0; i < 5; i++) { c.beginPath(); c.arc(-16, -15 + i * 7.5, 3, 0, TAU); fillStroke(c, '#c9ced8', 2); }
+      break;
+    case 'mints':
+      c.beginPath(); c.ellipse(0, 4, 21, 9, 0, 0, TAU); fillStroke(c, '#2ec4b6', 3);
+      c.beginPath(); c.ellipse(0, -2, 21, 9, 0, 0, TAU); fillStroke(c, '#4fd8ff', 3);
+      c.beginPath(); c.ellipse(0, -2, 13, 5, 0, 0, TAU); fillStroke(c, '#bff8ff', 2);
+      for (let i = 0; i < 3; i++) { c.beginPath(); c.arc(-14 + i * 14, -12 - (i === 1 ? 4 : 0), 4, 0, TAU); fillStroke(c, '#ffffff', 2); }
+      break;
+    case 'pancake':
+      for (let i = 2; i >= 0; i--) { c.beginPath(); c.ellipse(0, 10 - i * 8, 22, 8, 0, 0, TAU); fillStroke(c, i === 2 ? '#f2c27a' : '#e8a85c', 3); }
+      c.beginPath(); c.moveTo(-14, -8); c.quadraticCurveTo(-16, 6, -12, 8); c.quadraticCurveTo(-8, 4, -9, -6); c.fillStyle = '#a0522d'; c.fill();
+      rr(c, -6, -17, 12, 8, 2); fillStroke(c, '#ffd93d', 2.5);
+      break;
+    case 'scarf': {
+      c.beginPath(); c.moveTo(-24, -10); c.bezierCurveTo(-8, -26, 6, 8, 22, -8); c.lineWidth = 16; c.strokeStyle = INK; c.stroke();
+      c.lineWidth = 11; c.strokeStyle = '#ff5a5f'; c.stroke();
+      c.lineCap = 'butt'; c.setLineDash([5, 7]); c.strokeStyle = '#fff6e5'; c.stroke(); c.setLineDash([]); c.lineCap = 'round';
+      c.lineWidth = 2.5; c.strokeStyle = INK; c.beginPath();
+      for (let i = 0; i < 4; i++) { c.moveTo(-28 + i * 3, -6 + i * 2); c.lineTo(-30 + i * 3, 4 + i * 2); c.moveTo(20 + i * 3, -3 + i); c.lineTo(20 + i * 3, 8 + i); }
+      c.stroke();
+      break;
+    }
+    case 'ball':
+      circ(c, 0, 0, 20); fillStroke(c, '#3a7be0', 3);
+      c.fillStyle = INK; circ(c, -6, -7, 3.2); c.fill(); circ(c, 3, -9, 3.2); c.fill(); circ(c, -1, 0, 3.6); c.fill();
+      c.fillStyle = 'rgba(255,255,255,.4)'; c.beginPath(); c.ellipse(8, 8, 6, 3, -0.7, 0, TAU); c.fill();
+      break;
+    case 'pizza':
+      c.beginPath(); c.moveTo(0, 24); c.lineTo(-20, -12); c.lineTo(20, -12); c.closePath(); fillStroke(c, '#ffd36b', 3);
+      rr(c, -23, -20, 46, 10, 5); fillStroke(c, '#d98b3a', 3);
+      for (const [x, y] of [[-7, -3], [6, -1], [0, 10]]) { circ(c, x, y, 4.2); fillStroke(c, '#e2453f', 2); }
+      break;
+    case 'mic':
+      rr(c, -5, -2, 10, 26, 4); fillStroke(c, '#5a4a7a', 3);
+      c.fillStyle = '#f15bb5'; c.fillRect(-5, 4, 10, 4);
+      circ(c, 0, -12, 12); fillStroke(c, '#c9ced8', 3);
+      c.lineWidth = 1.5; c.beginPath(); c.moveTo(-8, -16); c.lineTo(8, -8); c.moveTo(-8, -8); c.lineTo(8, -16); c.moveTo(-11, -12); c.lineTo(11, -12); c.stroke();
+      break;
+    case 'yarn':
+      c.beginPath(); c.moveTo(14, 10); c.bezierCurveTo(26, 18, 18, 26, 28, 26); c.lineWidth = 2.5; c.stroke();
+      circ(c, 0, 0, 18); fillStroke(c, '#ff8ad0', 3);
+      c.lineWidth = 2; c.beginPath(); c.arc(-10, 4, 16, -1.2, 0.6); c.moveTo(-8, -14); c.quadraticCurveTo(6, -4, 4, 16); c.moveTo(-17, -4); c.quadraticCurveTo(0, -8, 14, -12); c.stroke();
+      break;
+  }
+  c.restore();
+}
+function drawLostPick(c, p, t) {
+  const pulse = 1 + Math.sin(t * 5 + p.seed * 6) * 0.08;
+  c.save();
+  const g = c.createRadialGradient(0, 0, 4, 0, 0, 52); g.addColorStop(0, 'rgba(255,240,150,.85)'); g.addColorStop(1, 'rgba(255,217,61,0)');
+  c.fillStyle = g; circ(c, 0, 0, 52 * pulse); c.fill();
+  c.strokeStyle = 'rgba(255,255,255,.8)'; c.lineWidth = 3;
+  for (let i = 0; i < 6; i++) { const a = t * 1.5 + i * TAU / 6; c.beginPath(); c.moveTo(Math.cos(a) * 34, Math.sin(a) * 34); c.lineTo(Math.cos(a) * 44, Math.sin(a) * 44); c.stroke(); }
+  c.translate(0, Math.sin(t * 2 + p.seed * 9) * 4); c.rotate(Math.sin(t * 1.6 + p.seed * 5) * 0.35); c.scale(pulse, pulse);
+  drawLostItem(c, p.id, t);
+  c.restore();
+  // a little "!" tag so it reads as special
+  c.save(); c.translate(26, -34); c.rotate(0.15); rr(c, -9, -12, 18, 22, 6); ink(c, 3); fillStroke(c, '#ffd93d', 3); text(c, '!', 0, -1, 16, INK, 'center', null); c.restore();
+}
 const mailCount = () => (S.mail || []).length;
 const mailboxOn = () => !!(S.mailGot && Object.keys(S.mailGot).length);
 const mailboxX = () => ((G.st || computeStats()).startAlt > 0 ? 212 : -252);
@@ -2943,6 +3064,7 @@ function spawnChunk(y0, y1) {
   if ((S.flights >= 2 || R.alt > 400) && chance(0.07 * k * 3 * (cnd.ringRate || 1))) G.picks.push({ type: 'ring', x: cx + rand(-spread * 0.6, spread * 0.6), py: rand(y0, y1), r: 46, seed: Math.random(), vx: 0, vy: 0, hit: false });
   if (chance((st.repair ? 0.03 + 0.012 * lvl('repair') : 0.012) * k * 3) && R.hp < st.hp) G.picks.push({ type: 'wrench', x: cx + rand(-spread * 0.6, spread * 0.6), py: rand(y0, y1), r: 16, seed: Math.random(), vx: 0, vy: 0 });
   if (chance(0.012 * k * 3)) G.picks.push({ type: 'star', x: cx + rand(-spread * 0.7, spread * 0.7), py: rand(y0, y1), r: 18, seed: Math.random(), vx: 0, vy: 0 });
+  trySpawnLost(est, cx, spread, y0, y1);
 }
 
 // ---------------------------------------------------------------- flight update
@@ -3232,6 +3354,7 @@ const TIPS = {
   fuel: 'Fuel cans top up your tank, and can even re-light a dead engine!',
   wrench: 'Wrenches fix one heart.',
   star: 'A lucky star! Worth a pile of coins.',
+  lost: 'Lost property! Catch it and it goes back to its owner. Check Lost & Found in the trophy book.',
 };
 function tipOnce(type) {
   if (!TIPS[type] || S.seen['tip_' + type]) return;
@@ -3393,6 +3516,11 @@ function updatePickups(dt) {
     if (p.py < camBottom - 200) { p.dead = true; continue; }
     if (R.crashed) continue;
     if (S.flights > 0 && p.py - R.py < 340 && p.py - R.py > 0) tipOnce(p.type);
+    if (p.type === 'lost' && !p.spotted && p.py - R.py < 520 && p.py > R.py) {
+      p.spotted = 1; const it = LOST.find(x => x.id === p.id); sfx.ask();
+      floater(p.x, p.py + 60, 'LOST PROPERTY!', '#ffd93d', 18);
+      if (R.faces && R.faces.length && !R.wish) R.bubble = { s: R.faces.includes(it.owner) ? `My ${it.short}! Grab it!` : `Isn't that ${it.name}?`, t: 0 };
+    }
     if (p.type === 'ring') {
       if (!p.hit && Math.abs(dx) < p.r * 0.8 && Math.abs(dy) < 26) {
         p.hit = true; R.rings++; S.stats.rings++;
@@ -3424,6 +3552,13 @@ function updatePickups(dt) {
         sfx.fuel(); floater(p.x, p.py + 20, '+FUEL', '#ff9f43', 18);
       } else if (p.type === 'wrench') {
         R.hp = Math.min(st.hp, R.hp + 1); sfx.repair(); floater(p.x, p.py + 20, '+1 ♥', '#5fd068', 18);
+      } else if (p.type === 'lost') {
+        const it = LOST.find(x => x.id === p.id);
+        S.lost = S.lost || {}; S.lost[it.id] = 1; R.foundLost = it.id;
+        R.comfort = Math.min(1, R.comfort + 0.1); R.mood = 'joy'; R.moodT = 2;
+        if (R.faces && R.faces.includes(it.owner)) R.bubble = { s: 'My ' + it.short + '! Thank you!', t: 0 };
+        sfx.wish(); confetti(p.x, p.py, 30); G.slow = 0.5; G.slowT = 0.25;
+        floater(p.x, p.py + 30, 'FOUND THE ' + it.short.toUpperCase() + '!', '#ffd93d', 22);
       } else if (p.type === 'star') {
         const v = coinValue(R.alt) * 25; R.coins += 25; R.coinCash += v; R.starsGot++; sfx.bigcoin(); confetti(p.x, p.py, 24);
         floater(p.x, p.py + 20, `STAR! +${fmtMoney(v)}`, '#ffd93d', 22);
@@ -3485,6 +3620,7 @@ function computeResult() {
   const record = alt > S.bestAlt && S.flights > 0;
   if (record) rows.push(['New record bonus', Math.round(altPay * 0.25)]);
   if (st.gift) rows.push(['Gift shop sales', st.gift]);
+  if (R.foundLost) { const it = LOST.find(x => x.id === R.foundLost); rows.push([`Found ${it.name}`, Math.round(120 + coinValue(it.min) * 60)]); }
   let dailyPaid = false;
   if (R.daily && R.dailyDone && S.daily && S.daily.day === R.daily.day && !S.daily.done) {
     const y = dayKey(new Date(Date.now() - 864e5));
@@ -3510,6 +3646,7 @@ function computeResult() {
   if (R.rings >= 3) badges.push(`${R.rings} boost rings`);
   if (R.smashed >= 3) badges.push(`${R.smashed} smashed`);
   if (R.wishOk) badges.push(R.wishOk > 1 ? `${R.wishOk} wishes granted` : 'Wish granted');
+  if (R.foundLost) badges.push('Lost item found');
   if ((R.nearMiss || 0) >= 3) badges.push(`${R.nearMiss} close calls`);
   if (jobsPaid) badges.push(jobsPaid > 1 ? `${jobsPaid} jobs done` : 'Job done');
   if (R.crashed) badges.push('Kaboom');
@@ -3582,6 +3719,7 @@ const ACH = [
   { id: 'guide', prog: () => [GUIDE.filter(guideSeen).length, GUIDE.length], name: 'Sky Spotter', desc: 'Fill every page of the Sky Guide', test: () => GUIDE.every(guideSeen), reward: 50000 },
   { id: 'wish10', prog: () => [S.stats.wishes || 0, 10], name: 'Fairy Rocketmother', desc: 'Grant 10 passenger wishes', test: () => (S.stats.wishes || 0) >= 10, reward: 2500 },
   { id: 'guests20', prog: () => [guestsMet(), 20], name: 'Famous Friends', desc: 'Fly 20 different passengers (see the Guestbook)', test: () => guestsMet() >= 20, reward: 15000 },
+  { id: 'lost5', prog: () => [lostFound(), 5], name: 'Sky Detective', desc: 'Return 5 lost items (see Lost & Found)', test: () => lostFound() >= 5, reward: 8000 },
   { id: 'daily', name: 'Special Courier', desc: 'Complete a Daily Special delivery', test: () => (S.stats.daily || 0) >= 1, reward: 3000 },
   { id: 'line2', name: 'Franchise', desc: 'Open a second Skyhop line after the finale', test: () => (S.line || 1) >= 2, reward: 5000 },
   { id: 'tickle', secret: true, name: 'Tickle Tank', desc: 'Poke your rocket 25 times in the workshop', test: () => (S.stats.pokes || 0) >= 25, reward: 250 },
@@ -4210,6 +4348,7 @@ function drawPickup(p) {
   else if (p.type === 'wrench') drawWrench(ctx, p, G.t);
   else if (p.type === 'ring') drawRing(ctx, p, G.t);
   else if (p.type === 'star') drawStar(ctx, p, G.t);
+  else if (p.type === 'lost') drawLostPick(ctx, p, G.t);
   ctx.restore();
 }
 function drawParticle(p) {
@@ -4696,7 +4835,8 @@ const UI = (() => {
     const mapB = iconBtn('btn-map', 'map', 'Route map', () => openMap());
     if ((routeDone('r0') && ROUTES.some(r => routeUnlocked(r) && !routeDone(r.id) && !S.seen['map_' + r.id])) || (dailyUnlocked() && !S.seen['daily_' + dayKey()])) mapB.appendChild(el('span', 'badge-dot', '!'));
     const ach = iconBtn('btn-ach', 'trophy', 'Achievements & Sky Guide', () => openAch());
-    if (guideNewCount() + guestNewCount()) ach.appendChild(el('span', 'badge-dot', String(guideNewCount() + guestNewCount())));
+    const bookNew = guideNewCount() + guestNewCount() + lostNewCount();
+    if (bookNew) ach.appendChild(el('span', 'badge-dot', String(bookNew)));
     const paint = iconBtn('btn-paint', 'brush', 'Paint shop', () => openPaint());
     if (PAINTS.some(p => paintUnlocked(p) && !S.seen['paint_' + p.id] && p.id !== 'classic') || TRAILS.some(t => t.id !== 'smoke' && trailUnlocked(t) && !S.seen['trail_' + t.id])) paint.appendChild(el('span', 'badge-dot', '!'));
     if (routeDone('r1') || (S.line || 1) > 1 || TRAILS.some(t => t.id !== 'smoke' && trailUnlocked(t))) h.append(paint);
@@ -4966,7 +5106,7 @@ const UI = (() => {
   }
   function startNewLine() {
     for (const p of PAINTS) if (paintUnlocked(p)) S.seen['paintown_' + p.id] = 1;
-    const keep = { mail: S.mail, mailGot: S.mailGot, met: S.met, daily: S.daily ? Object.assign({}, S.daily, { target: 0 }) : undefined, ach: S.ach, stats: S.stats, settings: S.settings, seen: S.seen, viewed: S.viewed, tabsSeen: S.tabsSeen, paint: S.paint, trail: S.trail, earned: S.earned, flights: S.flights, avg: S.avg, line: (S.line || 1) + 1 };
+    const keep = { lost: S.lost, lostTries: S.lostTries, mail: S.mail, mailGot: S.mailGot, met: S.met, daily: S.daily ? Object.assign({}, S.daily, { target: 0 }) : undefined, ach: S.ach, stats: S.stats, settings: S.settings, seen: S.seen, viewed: S.viewed, tabsSeen: S.tabsSeen, paint: S.paint, trail: S.trail, earned: S.earned, flights: S.flights, avg: S.avg, line: (S.line || 1) + 1 };
     S = Object.assign(defaultSave(), keep);
     S.seen.endCredits = 0; S.pendingLine = true;
     checkAchievements(); saveGame();
@@ -4982,6 +5122,7 @@ const UI = (() => {
     const nn = guideNewCount();
     mk('Trophies', active === 'ach', openAch); mk('Sky Guide' + (nn && active !== 'guide' ? ` (${nn})` : ''), active === 'guide', openGuide);
     if (guestsMet()) { const gn = guestNewCount(); mk('Guests' + (gn && active !== 'guests' ? ` (${gn})` : ''), active === 'guests', openGuests); }
+    if (LOST.some(lostKnown)) { const ln = lostNewCount(); mk('Lost & Found' + (ln && active !== 'lost' ? ` (${ln})` : ''), active === 'lost', openLost); }
     return row;
   }
   function openGuide() {
@@ -5001,6 +5142,32 @@ const UI = (() => {
     list.prepend(el('div', 'small-note', seen >= GUIDE.length ? `All ${GUIDE.length} spotted. What a book!` : `${seen} / ${GUIDE.length} spotted. Fly higher to fill the book!`));
     list.prepend(bookTabs('guide'));
     for (const g of GUIDE) if (guideSeen(g)) S.seen[guideKey(g)] = 1;
+    saveGame(); renderHeadBtns();
+    $('map-list').parentElement.scrollTop = 0;
+    overlay('scr-map', true);
+  }
+  function openLost() {
+    const list = $('map-list'); list.innerHTML = '';
+    for (const it of LOST) {
+      const known = lostKnown(it), got = !!(S.lost && S.lost[it.id]);
+      const card = el('div', 'route' + (known ? '' : ' locked'));
+      const cnv = document.createElement('canvas'); cnv.width = 128; cnv.height = 128;
+      const c = cnv.getContext('2d'); c.scale(2, 2); c.translate(32, 32);
+      rr(c, -30, -30, 60, 60, 14); c.fillStyle = got ? '#fff3b0' : known ? '#bfe9ff' : '#cfc6b4'; c.fill(); c.lineWidth = 3; c.strokeStyle = INK; c.stroke();
+      if (known) { c.save(); c.scale(0.95, 0.95); if (!got) c.globalAlpha = 0.45; drawLostItem(c, it.id, 0); c.restore(); if (!got) text(c, '?', 18, 18, 18, INK, 'center', '#fff', 3); }
+      else text(c, '?', 0, 2, 30, '#8f8577', 'center', null);
+      const ico = el('div', 'r-ico'); ico.appendChild(cnv); cnv.style.width = '64px'; cnv.style.height = '64px'; card.appendChild(ico);
+      const fresh = known && !S.seen['lost_' + it.id];
+      const chips = got ? '<span class="chip ok">Returned!</span>' : known ? `<span class="chip pax">${fmtAlt(it.min)} – ${fmtAlt(it.max)}</span>${fresh ? '<span class="chip ok">New!</span>' : ''}` : '';
+      const desc = got ? `Back with ${CHARS[it.owner].name}. Thank you!` : known ? it.hint + ' Look for it at this height.' : 'Fly more passengers to hear about this one.';
+      card.appendChild(el('div', 'r-main', `<div class="r-name">${known ? it.name : '???'}</div><div class="r-desc">${desc}</div><div class="r-meta">${chips}</div>`));
+      list.appendChild(card);
+    }
+    $('scr-map').querySelector('h2').textContent = 'Lost & Found';
+    const n = lostFound();
+    list.prepend(el('div', 'small-note', n >= LOST.length ? 'Everything is back where it belongs. What a hero!' : `${n} / ${LOST.length} returned. Your passengers keep dropping things! Lost items float at the heights shown. Catch them on the way up.`));
+    list.prepend(bookTabs('lost'));
+    for (const it of LOST) if (lostKnown(it)) S.seen['lost_' + it.id] = 1;
     saveGame(); renderHeadBtns();
     $('map-list').parentElement.scrollTop = 0;
     overlay('scr-map', true);
@@ -5264,7 +5431,8 @@ const UI = (() => {
     fc.save(); rr(fc, -29, -29, 58, 58, 14); fc.clip(); fc.fillStyle = C.col || '#ff5a5f'; fc.beginPath(); fc.ellipse(0, 36, 24, 16, 0, 0, TAU); fc.fill(); fc.stroke(); fc.translate(0, 2); drawFace(fc, m.from, 18, 'happy', 0); fc.restore();
     const sc = $('lt-stamp').getContext('2d'); sc.setTransform(1, 0, 0, 1, 0, 0); sc.clearRect(0, 0, 100, 100);
     const sg = sc.createLinearGradient(0, 0, 0, 100); sg.addColorStop(0, '#9fdcff'); sg.addColorStop(1, '#ffe7b3'); sc.fillStyle = sg; sc.fillRect(0, 0, 100, 100);
-    if (m.stamp) sc.drawImage(routeIconCanvas(m.stamp, 64), 10, 8, 80, 80);
+    if (m.lost) { sc.save(); sc.translate(50, 46); sc.scale(1.5, 1.5); drawLostItem(sc, m.lost, 0); sc.restore(); }
+    else if (m.stamp) sc.drawImage(routeIconCanvas(m.stamp, 64), 10, 8, 80, 80);
     else { sc.save(); sc.translate(50, 54); sc.scale(1.6, 1.6); drawFace(sc, m.from, 18, 'joy', 0); sc.restore(); }
     sc.globalAlpha = 0.55; sc.strokeStyle = INK; sc.lineWidth = 3; sc.beginPath(); for (let i = 0; i < 3; i++) { sc.moveTo(6, 70 + i * 9); sc.bezierCurveTo(30, 62 + i * 9, 60, 78 + i * 9, 96, 70 + i * 9); } sc.stroke(); sc.globalAlpha = 1;
     $('lt-name').textContent = C.name;
@@ -5509,7 +5677,7 @@ window.__skyhop = {
   setLevel(id, l) { S.up[id] = l; G.look = rocketLook(); G.st = computeStats(); if (UI.current === 'hangar') UI.refresh(); },
   done(id) { S.routes[id] = { done: true, stars: 3, runs: 1 }; const nx = nextRoute(); S.route = nx ? nx.id : 'free'; },
   start: startGame, launch(v = 0.8) { $('scr-results').classList.add('hidden'); if (G.mode !== 'launch') enterLaunch(); G.launch.v = v; doLaunch(); },
-  hangar: () => goHangar(true), reset() { resetSave(); },
+  hangar: () => goHangar(true), reset() { resetSave(); }, LOST, drawLostItem,
   daily() { return todaysDaily(); },
   teleport(alt) { const R = G.R; if (!R) return; R.alt = alt; R.maxAlt = Math.max(R.maxAlt, alt); },
   save: saveGame, music: Music, audio: AudioSys, sfxTest() { const errs = []; for (const k in AudioSys.sfx) { try { AudioSys.sfx[k](); } catch (e) { errs.push(k + ':' + e.message); } } return errs; },
