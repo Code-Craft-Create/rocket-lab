@@ -145,6 +145,12 @@ button{font-family:var(--font)}
 #detail .dact{flex:0 0 auto;display:flex;flex-direction:column;gap:6px;align-items:stretch;justify-content:center;align-self:center}
 #detail .dact .btn{font-size:17px;padding:8px 14px}
 #detail .note{font-size:12px;font-weight:800;color:var(--purple)}
+.btn.auto{display:flex;align-items:center;justify-content:center;gap:4px;background:#ead9ff;font-size:14px;padding:5px 10px;border-radius:13px;box-shadow:0 4px 0 var(--ink)}
+.btn.auto svg{width:20px;height:20px;flex:0 0 auto;margin:-3px 0}
+.btn.auto.undo{background:#fff1b8}
+.btn.auto .an{background:var(--ink);color:var(--yellow);border-radius:999px;font-size:11px;padding:0 6px;line-height:16px}
+@media (max-width:820px),(max-height:520px){.btn.auto{font-size:13px;padding:4px 8px}.btn.auto svg{width:17px;height:17px}}
+@media (max-height:520px){#detail .dact{flex-direction:row;align-items:center}}
 .side-foot{display:flex;gap:10px;align-items:center;padding:10px 12px 12px;flex:0 0 auto}
 #route-chip{flex:1 1 auto;min-width:0;display:flex;align-items:center;gap:10px;background:#fff;border:4px solid var(--ink);border-radius:16px;padding:6px 10px;cursor:pointer;box-shadow:0 4px 0 var(--ink)}
 #route-chip:active{transform:translateY(3px);box-shadow:0 1px 0 var(--ink)}
@@ -1178,6 +1184,7 @@ const ICONS = {
   b_pad: svgI('<path d="M14 60V8h12v52M14 20h12M14 32h12M14 44h12M14 20l12 12M14 32l12 12" stroke-width="3"/><path d="M40 52c0-18 4-30 8-36 4 6 8 18 8 36z" fill="#fff6e5" stroke-width="3"/><path d="M6 60h54"/>'),
   b_cabin: svgI('<circle cx="32" cy="32" r="24" fill="#c9ced8"/><circle cx="32" cy="32" r="16" fill="#bfe9ff"/><circle cx="27" cy="30" r="2.5" fill="${INK}" stroke="none"/><circle cx="37" cy="30" r="2.5" fill="${INK}" stroke="none"/><path d="M26 37q6 5 12 0" stroke-width="3"/>'),
   // misc
+  wand: svgI('<path d="M12 54L38 28" stroke-width="9" stroke-linecap="round"/><path d="M12 54L38 28" stroke="#9b5de5" stroke-width="4" stroke-linecap="round"/><path d="M44 6l3 9 9 3-9 3-3 9-3-9-9-3 9-3z" fill="#ffd93d"/><path d="M54 32l1.6 4.4 4.4 1.6-4.4 1.6-1.6 4.4-1.6-4.4-4.4-1.6 4.4-1.6z" fill="#fff6e5" stroke-width="2"/><path d="M24 10l1.4 3.6 3.6 1.4-3.6 1.4-1.4 3.6-1.4-3.6-3.6-1.4 3.6-1.4z" fill="#fff6e5" stroke-width="2"/>'),
   lock: svgI('<rect x="12" y="28" width="40" height="30" rx="7" fill="#ffd93d"/><path d="M20 28v-8a12 12 0 0 1 24 0v8"/><circle cx="32" cy="42" r="4" fill="${INK}"/>'),
   map: svgI('<path d="M6 14l16-6 20 6 16-6v42l-16 6-20-6-16 6z" fill="#fff6e5"/><path d="M22 8v42M42 14v42" stroke-width="3"/><path d="M12 38c6-2 8-10 16-10s10 8 22-6" stroke="#ff5a5f" stroke-width="3" stroke-dasharray="4 4"/>'),
   gear: svgI('<path d="M28 4h8l2 8 6 3 7-4 6 6-4 7 3 6 8 2v8l-8 2-3 6 4 7-6 6-7-4-6 3-2 8h-8l-2-8-6-3-7 4-6-6 4-7-3-6-8-2v-8l8-2 3-6-4-7 6-6 7 4 6-3z" fill="#c9ced8" stroke-width="3"/><circle cx="32" cy="32" r="8" fill="#fff"/>'),
@@ -1598,6 +1605,9 @@ const WORKSHOP_NEWS = [
   { t: 'Got a game controller? Plug it in and fly with it. The arrow keys work in the workshop too.', when: () => matchMedia('(hover: hover)').matches },
   { t: 'Word from the Saturn Spa: a raccoon in a stolen saucer is nicking luggage past 220 km. Bump him three times and he’ll give it back!', when: () => S.bestAlt >= 120000 },
   { t: 'New at the Launch Site: Catch Arms! The tower snatches your spent boosters out of the sky so they can fly again.', when: () => upState(UP.catcher) !== 'hidden' },
+  { t: 'Busy day? Tap the purple Auto button next to Buy and I’ll pick the best upgrades for your coins. Tap it again quick to undo. You can make it happen after every flight in Settings.', when: () => autoUnlocked() },
+  { t: 'No more parachutes in space, dear! Up there the rocket does a retro burn, puffs out a heat shield and only opens its chutes once it’s back in the air.', when: () => S.bestAlt >= 10000 },
+  { t: 'I gave the afterburner a proper kick. Hit BOOST and hold on to your hat! It even bowls small stuff out of the way.', when: () => lvl('afterburner') > 0 },
 ];
 const STORY = {
   intro: [
@@ -1844,6 +1854,7 @@ const STAT = {
   seats: l => [1, 2, 3, 4, 6, 8, 10, 12][l],
 };
 
+const autoUnlocked = () => S.flights >= 3 || (S.line || 1) > 1;
 function upCost(u, l = lvl(u.id)) { return Math.round(u.base * Math.pow(u.g, l) / 5) * 5; }
 function forkChoice(fork) { const u = UPGRADES.find(x => x.fork === fork && lvl(x.id) > 0); return u ? u.id : null; }
 function spentOn(u) { let s = 0; for (let i = 0; i < lvl(u.id); i++) s += upCost(u, i); return s; }
@@ -1987,7 +1998,7 @@ const flightOver = R => (R.fuel <= 0 && R.dropFuel <= 0 && R.stage2Fuel <= 0) &&
 function simulateFlight(st, opts = {}) {
   const R = newRocketState(st, opts);
   R.vy = st.kick * (opts.launchQ || 1);
-  let t = 0; const dt = 1 / 30;
+  let t = 0; const dt = opts.dt || 1 / 30;
   while (t < 600) {
     R.events.length = 0;
     const warp = simWarp(R);
@@ -2003,6 +2014,45 @@ function simWarp(R) {
   if (R.alt < 8000 || R.boss) return 1; // no time warp while a boss is on screen
   const k = invLerp(8000, 50000, R.alt);
   return 1 + (coasting ? 4 : 1.5) * k;
+}
+
+// ---------------------------------------------------------- auto-upgrade
+// Picks the upgrades a sensible engineer would buy with the money you have: whatever adds the most height per coin,
+// plus seats when the next route needs them and a fair share of safety, comfort and money-makers along the way.
+const AUTO_W = { // what a level is worth besides height, as if it added this much height (fraction)
+  hull: 0.06, nose: 0, repair: 0.05, shield: 0.06, ram: 0.05, fins: 0.04, magnet: 0.04, radar: 0.035, autododge: 0.05, vector: 0.03, dash: 0.035,
+  afterburner: 0.07, finder: 0.04, scoop: 0.03, control: 0.07, giftshop: 0.05, weather: 0.03, catcher: 0.04, seats: 0.05, comfort: 0.03, snack: 0.04, lounge: 0.06, cargo: 0.05,
+};
+function autoPlan(budget = S.money, maxBuys = 160) {
+  const realUp = S.up, plan = [];
+  S.up = Object.assign({}, realUp);
+  try {
+    let money = budget;
+    const nr = nextRoute(), r = flightRoute();
+    for (let n = 0; n < maxBuys; n++) {
+      // forks are the player's call: auto only levels up a path you've already picked
+      const cands = UPGRADES.filter(u => upState(u) === 'open' && upCost(u) <= money && !(u.fork && !forkChoice(u.fork)));
+      if (!cands.length) break;
+      const st0 = computeStats(), pax = paxForRoute(r, st0).pax;
+      const alt0 = Math.max(50, simulateFlight(st0, { launchQ: 1.15, pax, dt: 1 / 12 }).alt);
+      const needH = nr && alt0 < nr.alt * 1.15 ? 1 : 0.55; // still short of the next stop? height matters most
+      let best = null, bestV = 0;
+      for (const u of cands) {
+        const L = lvl(u.id), cost = upCost(u);
+        S.up[u.id] = L + 1;
+        const st1 = computeStats(), alt1 = simulateFlight(st1, { launchQ: 1.15, pax: paxForRoute(r, st1).pax, dt: 1 / 12 }).alt;
+        S.up[u.id] = L;
+        let v = Math.max(0, Math.log(alt1 / alt0)) * needH + (AUTO_W[u.id] || 0) / (1 + 0.35 * L);
+        if (u.id === 'seats' && nr && nr.pax > (st0.seats || 0)) v += 5; // the next route can't fly without them
+        v /= Math.pow(Math.max(1, cost), 0.65); // cheap and cheerful wins, but a big upgrade that really pays isn't starved
+        if (v > bestV) { bestV = v; best = u; }
+      }
+      if (!best) break;
+      const cost = upCost(best);
+      money -= cost; S.up[best.id] = lvl(best.id) + 1; plan.push({ id: best.id, cost });
+    }
+  } finally { S.up = realUp; }
+  return plan;
 }
 
 // ================================================================ CANVAS + ART
@@ -6532,10 +6582,60 @@ const UI = (() => {
       if (!b.disabled && Object.keys(S.up).filter(k => S.up[k] > 0).length === 0) b.classList.add('wiggle');
       b.addEventListener('click', () => buy(u));
       act.appendChild(b);
-      if (s === 'open' && cost > S.money) act.appendChild(el('div', 'note', `Need ${fmtMoney(cost - S.money)} more`));
+      if (s === 'open' && cost > S.money && !autoUnlocked()) act.appendChild(el('div', 'note', `Need ${fmtMoney(cost - S.money)} more`));
     }
+    if (autoUnlocked()) act.appendChild(autoButton());
     d.appendChild(act);
   }
+  // ---------- auto-upgrade: one tap buys the best upgrades you can afford (and a second tap within a few seconds undoes it)
+  let autoUndo = null, autoKey = '', autoCache = [];
+  function autoPlanCached() { const k = S.money + '|' + JSON.stringify(S.up) + '|' + S.route + '|' + Object.keys(S.routes).length; if (k !== autoKey) { autoKey = k; autoCache = autoPlan(); } return autoCache; }
+  function autoButton() {
+    if (autoUndo && performance.now() < autoUndo.until) {
+      const b = el('button', 'btn auto undo', `${ICONS.wand}<span>Undo</span>`); b.title = 'Put it all back and get your money back';
+      b.addEventListener('click', () => {
+        if (!autoUndo) return;
+        S.up = autoUndo.up; S.money = autoUndo.money; autoUndo = null; sfx.paper(); saveGame();
+        G.look = rocketLook(); G.st = computeStats(); G.hangarPop = 1; toast('Auto-upgrade undone. Your coins are back.'); refresh();
+      });
+      return b;
+    }
+    const plan = autoPlanCached();
+    const b = el('button', 'btn auto', `${ICONS.wand}<span>Auto</span>${plan.length ? `<span class="an">${plan.length}</span>` : ''}`);
+    b.title = plan.length ? `Auto-upgrade: buy ${plan.length} upgrade${plan.length > 1 ? 's' : ''} for ${fmtMoney(plan.reduce((a, p) => a + p.cost, 0))}` : 'Auto-upgrade: nothing affordable yet';
+    b.setAttribute('aria-label', b.title);
+    if (!plan.length) b.classList.add('off');
+    b.addEventListener('click', () => runAuto());
+    return b;
+  }
+  function runAuto(quietly) {
+    const plan = autoPlanCached();
+    if (!plan.length) { if (!quietly) { sfx.deny(); toast('Nothing to buy yet. Fly for more coins!'); } return 0; }
+    const pax0 = paxForRoute(flightRoute(), computeStats()).pax;
+    const before = simulateFlight(computeStats(), { launchQ: 1.3, pax: pax0 }).alt;
+    autoUndo = { up: Object.assign({}, S.up), money: S.money, until: performance.now() + 6000 };
+    let spent = 0;
+    for (const p of plan) { const u = UP[p.id]; if (upState(u) !== 'open' || upCost(u) > S.money) break; S.money -= upCost(u); spent += upCost(u); S.up[u.id] = lvl(u.id) + 1; S.viewed[u.id] = 1; }
+    const after = simulateFlight(computeStats(), { launchQ: 1.3, pax: pax0 }).alt;
+    G.look = rocketLook(); G.st = computeStats(); G.hangarPop = 1;
+    // a little shower of purchases over the rocket, rising in pitch
+    const names = {}; for (const p of plan) names[p.id] = (names[p.id] || 0) + 1;
+    const ids = Object.keys(names), py = padRestPy(G.look);
+    ids.forEach((id, i) => setTimeout(() => {
+      if (G.mode !== 'hangar') return;
+      AudioSys.sfx.coin(i * 2); sparks(rand(-30, 30), py + rand(-20, 40), 14, ['#ffd93d', '#ffffff', '#9b5de5'], 300);
+      floater(0, py * 2 + 30 + i * 4, `${UP[id].name}${names[id] > 1 ? ' ×' + names[id] : ''}`, i % 2 ? '#ead9ff' : '#ffd93d', 17);
+    }, 120 + i * 170));
+    setTimeout(() => { if (G.mode === 'hangar') { sfx.buy(); G.hangarPop = 1; } }, 160 + ids.length * 170);
+    $('money-box').classList.remove('bump'); void $('money-box').offsetWidth; $('money-box').classList.add('bump');
+    const gain = after - before;
+    toast(`<b>Auto-upgrade:</b> ${plan.length} upgrade${plan.length > 1 ? 's' : ''} for ${fmtMoney(spent)}${gain > 5 ? ` · about <b>+${fmtAlt(gain)}</b> higher` : ''}`, 4200);
+    S.stats.autos = (S.stats.autos || 0) + 1;
+    checkAchievements(); announceNew(!!quietly); saveGame(); refresh(); flushPendingAch();
+    setTimeout(() => { if (autoUndo && UI.current === 'hangar') renderDetail(); }, 6100);
+    return plan.length;
+  }
+  function flushPendingAch() { if (S.pendingAch && S.pendingAch.length) { for (const id of S.pendingAch) achToast(id); sfx.ach(); S.pendingAch = []; } }
   // keyboard / controller navigation in the workshop: arrows pick a nearby upgrade, Q/E switch tabs, B buys
   function navTree(dx, dy) {
     const vis = UPGRADES.filter(u => u.br === tab && upState(u) !== 'hidden');
@@ -7042,6 +7142,7 @@ const UI = (() => {
     volRow('Sound', 'sfx', 'sfxVol', 'sfx', v => AudioSys.setSfx(v));
     row('Shake, flashes & buzz<small>turn off for a calmer screen</small>', 'shake');
     row('Ghost of your best run', 'ghost');
+    if (autoUnlocked()) row('Auto-upgrade after every flight<small>spends your coins on the best upgrades when you land</small>', 'autoBuy');
     row('Relaxed mode<small>+2 hearts, fewer hazards</small>', 'relaxed', () => { G.st = computeStats(); refresh(); });
     if (tiltSupported()) row('Tilt to steer<small>tip your phone left and right</small>', 'tilt', (v, sw) => { if (!v) return; enableTilt().then(ok => { if (!ok) { S.settings.tilt = false; sw.classList.remove('on'); saveGame(); toast('Tilt needs motion access: allow it in your browser'); } else toast('Tilt on! Hold your phone the way you like at launch.'); }); });
     const mv = el('div', 'code-row');
@@ -7056,7 +7157,7 @@ const UI = (() => {
       const lw = el('div', 'code-row'); lw.appendChild(lb);
       col.appendChild(el('div', 'small-note', `<b>Your stats</b><br>${fmtInt(S.flights)} flights · best ${fmtAlt(S.bestAlt)}. Records, totals and a chart of your flights are in the Logbook.`)); col.appendChild(lw);
     }
-    col.appendChild(el('div', 'small-note', 'Skyhop Express · every picture, sound and tune is generated by code.<br>Steer: ←&nbsp;→ / A&nbsp;D, tap sides' + (tiltSupported() ? ' or tilt' : '') + ' · Boost:&nbsp;Space' + (lvl('dash') ? ' · Dash:&nbsp;double&#8209;tap' : '') + ' · Pause:&nbsp;P' + (matchMedia('(hover: hover)').matches || PAD.idx >= 0 ? '<br>Workshop: arrow keys pick, B buys, Q/E switch tabs, Esc closes. Game controllers work too.' : '')));
+    col.appendChild(el('div', 'small-note', 'Skyhop Express · every picture, sound and tune is generated by code.<br>Steer: ←&nbsp;→ / A&nbsp;D, tap sides' + (tiltSupported() ? ' or tilt' : '') + ' · Boost:&nbsp;Space' + (lvl('dash') ? ' · Dash:&nbsp;double&#8209;tap' : '') + ' · Pause:&nbsp;P' + (matchMedia('(hover: hover)').matches || PAD.idx >= 0 ? '<br>Workshop: arrow keys pick, B buys, U auto-upgrades, Q/E switch tabs, Esc closes. Game controllers work too.' : '')));
     overlay('scr-settings', true);
   }
   function openCode(mode) {
@@ -7153,6 +7254,7 @@ const UI = (() => {
     overlay('scr-results', false);
     G.mode = 'hangar';
     goHangar(true);
+    if (S.settings.autoBuy && autoUnlocked()) setTimeout(() => { if (UI.current === 'hangar' && G.mode === 'hangar') runAuto(true); }, then ? 0 : 450);
     flushPending(then);
   }
   // fan mail
@@ -7230,7 +7332,7 @@ const UI = (() => {
   $('btn-launch').addEventListener('click', () => { AudioSys.init(); sfx.click(); enterLaunch(); });
   soundBtns($('title-tools'));
 
-  return { openLetter, showScreen, overlay, refresh, renderTree, showResults, openMap, openPause, announceNew, flushPending, showCredits, navTree, navTab, buySel, get current() { return current; } };
+  return { openLetter, showScreen, overlay, refresh, renderTree, showResults, openMap, openPause, announceNew, flushPending, showCredits, navTree, navTab, buySel, runAuto, get current() { return current; } };
 })();
 
 function goHangar(skipFlush) {
@@ -7291,6 +7393,7 @@ window.addEventListener('keydown', e => {
     if (nav) { e.preventDefault(); UI.navTree(nav[0], nav[1]); return; }
     if (e.code === 'KeyQ' || e.code === 'KeyE') { UI.navTab(e.code === 'KeyQ' ? -1 : 1); return; }
     if (e.code === 'KeyB') { UI.buySel(); return; }
+    if (e.code === 'KeyU') { UI.runAuto(); return; }
   }
   if (e.code === 'Escape' || e.code === 'KeyP') { if (inGame) setPaused(!G.paused); return; }
   if (G.paused) return;
@@ -7344,7 +7447,7 @@ window.addEventListener('resize', () => { resize(); if (UI.current === 'hangar')
 // Start = pause, d-pad = arrow keys (double-tap dashes; picks upgrades in the workshop),
 // bumpers dash straight away (switch tabs in the workshop), left stick steers
 const PAD = { axis: 0, side: 0, vside: 0, prev: {}, idx: -1 };
-const PAD_KEYS = { 0: 'Space', 1: 'Escape', 2: 'KeyB', 9: 'KeyP', 12: 'ArrowUp', 13: 'ArrowDown', 14: 'ArrowLeft', 15: 'ArrowRight' };
+const PAD_KEYS = { 0: 'Space', 1: 'Escape', 2: 'KeyB', 3: 'KeyU', 9: 'KeyP', 12: 'ArrowUp', 13: 'ArrowDown', 14: 'ArrowLeft', 15: 'ArrowRight' };
 const padHangar = () => G.mode === 'hangar' && UI.current === 'hangar';
 const padTap = code => { padKey(code, true); padKey(code, false); };
 function padKey(code, down) {
@@ -7542,6 +7645,7 @@ window.__skyhop = {
   crash() { if (G.R && G.mode === 'flight') crash(); },
   teleport(alt) { const R = G.R; if (!R) return; R.alt = alt; R.maxAlt = Math.max(R.maxAlt, alt); },
   save: saveGame, music: Music, audio: AudioSys, sfxTest() { const errs = []; for (const k in AudioSys.sfx) { try { AudioSys.sfx[k](); } catch (e) { errs.push(k + ':' + e.message); } } return errs; },
+  autoPlan: (b) => autoPlan(b),
   candidates() { return UPGRADES.filter(u => upState(u) === 'open').map(u => ({ id: u.id, cost: upCost(u) })); },
   buy(id) { const u = UP[id]; const c = upCost(u); if (upState(u) !== 'open' || c > S.money) return false; S.money -= c; S.up[id] = lvl(id) + 1; G.look = rocketLook(); G.st = computeStats(); saveGame(); return true; },
 };
