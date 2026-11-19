@@ -1153,11 +1153,13 @@ const MAIL = [
     text: 'Darling.\nThe spa was divine. My skin is glowing (it might be the ice mud). Enclosed: backstage passes for the tour, and something for your fuel bill.', sign: 'Love and glitter, Stella' },
   { id: 'r7', from: 'pip', stamp: 'gate', gift: 20000, when: () => routeDone('r7'),
     text: 'Dear friend,\nI got home! Through the Gate. It is a long story. Mom says thank you for the ride, and that you are welcome for dinner any time (bring snacks, ours are purple).\n\nEnclosed: one shiny space pebble. Here it is worth a LOT.' },
-  { id: 'king', from: 'nimbus', stamp: 'storm', gift: 400, when: () => S.stats.king > 0,
+  { id: 'pipwave', from: 'pip', gift: 30000, when: () => !!S.seen.pipPlanet,
+    text: 'We saw you fly past our planet! Everyone waved. Did you see us waving? We were the ones waving.\n\nGrandma Pip says you fly very well for someone with only two eyes. Enclosed: the family savings (three pebbles).' },
+  { id: 'king', from: 'nimbus', stamp: 'storm', gift: 250, when: () => S.stats.king > 0,
     text: 'That was the Storm King! Thirty years I’ve been forecasting him and you just... flew past. The lab took up a collection.\n\nP.S. Dr. Volt would like his hair to lie flat again. Any tips?' },
-  { id: 'whale', from: 'luna', stamp: 'observ', gift: 1500, when: () => S.stats.whale > 0,
+  { id: 'whale', from: 'luna', stamp: 'observ', gift: 900, when: () => S.stats.whale > 0,
     text: 'We watched you ride Big Blue’s spout through the big telescope! Prof. Orion says the whale waved at you. I wrote it all down in my notebook, page 212. Here is a little reward from the observatory.' },
-  { id: 'kraken', from: 'bot', stamp: 'mars', gift: 6000, when: () => S.stats.kraken > 0,
+  { id: 'kraken', from: 'bot', stamp: 'mars', gift: 4000, when: () => S.stats.kraken > 0,
     text: 'BEEP. KRAKEN ESCAPED. BEEP BOOP.\nENCLOSED: COINS.\nTHE KRAKEN SAYS NO HARD FEELINGS. IT WAVED ALL EIGHT ARMS. BEEP.' },
   { id: 'fan1', from: 'tourist', gift: () => 80 + S.avg.total * 0.5, when: () => S.flights >= 8,
     text: 'Hi! I watched your launch from the fence. I took 214 photos. In 3 of them you can see the rocket! Here’s a little something for fuel. Keep flying!' },
@@ -1172,25 +1174,25 @@ const MAIL = [
 ];
 // ---- Lost & Found: things your passengers dropped float in the sky. Catch them and return them!
 const LOST = [
-  { id: 'hat', owner: 'plum', name: 'Mayor Plum’s top hat', short: 'hat', min: 900, max: 2600, hint: 'Blew off over Pebbleton during a ribbon-cutting.', gift: 300,
+  { id: 'hat', owner: 'plum', name: 'Mayor Plum’s top hat', short: 'hat', min: 900, max: 2600, hint: 'Blew off over Pebbleton during a ribbon-cutting.', gift: 150,
     text: 'My hat! My beautiful hat! I have worn it to every ribbon-cutting since I was elected. The Council has declared today Hat Day. A small reward is enclosed.', sign: 'Mayor Plum (properly dressed again)' },
-  { id: 'umbrella', owner: 'nimbus', name: 'Nimbus’s umbrella', short: 'umbrella', min: 2500, max: 5500, hint: 'Snatched away by a gust near Thunderhead Station.', gift: 500,
+  { id: 'umbrella', owner: 'nimbus', name: 'Nimbus’s umbrella', short: 'umbrella', min: 2500, max: 5500, hint: 'Snatched away by a gust near Thunderhead Station.', gift: 300,
     text: 'My umbrella! I’ve been forecasting rain for weeks just so I’d have an excuse to buy a new one. Now I don’t have to. Here’s what I saved.' },
-  { id: 'page', owner: 'luna', name: 'Luna’s notebook', short: 'notebook', min: 5000, max: 9000, hint: 'Fluttered off the observatory balcony.', gift: 800,
+  { id: 'page', owner: 'luna', name: 'Luna’s notebook', short: 'notebook', min: 5000, max: 9000, hint: 'Fluttered off the observatory balcony.', gift: 450,
     text: 'My notebook! It has all my comet notes AND my doodles of Prof. Orion as a potato. Please tell me you didn’t read page 40. Reward enclosed.' },
-  { id: 'mints', owner: 'juno', name: 'Juno’s mint tin', short: 'mints', min: 10000, max: 16000, hint: 'Rattling around below the Skyhook Hotel.', gift: 1200,
+  { id: 'mints', owner: 'juno', name: 'Juno’s mint tin', short: 'mints', min: 10000, max: 16000, hint: 'Rattling around below the Skyhook Hotel.', gift: 700,
     text: 'The mints! They’re all still there!\n\n...Okay, one is missing. Did you? It’s fine. Here is a thank-you. Romeo says hi.' },
-  { id: 'pancake', owner: 'flo', name: 'Flo’s flying pancake', short: 'pancake', min: 18000, max: 30000, hint: 'Flipped a little too hard at the Satellite Diner.', gift: 2000,
+  { id: 'pancake', owner: 'flo', name: 'Flo’s flying pancake', short: 'pancake', min: 18000, max: 30000, hint: 'Flipped a little too hard at the Satellite Diner.', gift: 1100,
     text: 'You caught my pancake?! Hon, that thing’s been in orbit since Tuesday. Still fluffy, too. I’m hanging it on the wall. Coins enclosed.' },
-  { id: 'scarf', owner: 'nana', name: 'Nana’s knitted scarf', short: 'scarf', min: 30000, max: 60000, hint: 'Floated away on the way to the Moon.', gift: 3500,
-    text: 'You found the scarf! I knitted it for YOU, dear, so please keep it. Wear it on chilly launches. And here’s a little something for the trouble.' },
-  { id: 'ball', owner: 'kid', name: 'Lulu’s bowling ball', short: 'ball', min: 60000, max: 120000, hint: 'Still rolling after that strike on the Moon.', gift: 6000,
+  { id: 'scarf', owner: 'nana', name: 'Nana’s knitted scarf', short: 'scarf', min: 30000, max: 60000, hint: 'Floated away on the way to the Moon.', gift: 2000,
+    reward: 'the Nana’s Knit paint job', text: 'You found the scarf! I knitted it for YOU, dear, so please keep it. I’ve knitted a matching cover for your rocket, too (look in the Paint Shop). And here’s a little something for the trouble.' },
+  { id: 'ball', owner: 'kid', name: 'Lulu’s bowling ball', short: 'ball', min: 60000, max: 120000, hint: 'Still rolling after that strike on the Moon.', gift: 3500,
     text: 'YOU FOUND MY BALL. It was going SO fast. Big Bert says it counts as the longest strike in history, so we are giving you the trophy money!', sign: 'Love, Lulu' },
-  { id: 'pizza', owner: 'chef', name: 'Rosa’s pizza slice', short: 'pizza', min: 120000, max: 220000, hint: 'Slid off a plate somewhere past Mars.', gift: 10000,
+  { id: 'pizza', owner: 'chef', name: 'Rosa’s pizza slice', short: 'pizza', min: 120000, max: 220000, hint: 'Slid off a plate somewhere past Mars.', gift: 6000,
     text: 'My slice! Still warm-ish! Tony says it was HIS slice. It was MY slice. Enclosed: a tip, and a coupon for one whole pizza (Mars delivery not included).' },
-  { id: 'mic', owner: 'diva', name: 'Stella’s microphone', short: 'microphone', min: 220000, max: 400000, hint: 'Dropped during a sound check near Saturn.', gift: 16000,
-    text: 'Darling, my microphone! The tour is saved! I’ll dedicate the first song to you. Enclosed: a reward, and a signed photo of me looking surprised.' },
-  { id: 'yarn', owner: 'cat', name: 'Sir Whiskers’ ball of yarn', short: 'yarn', min: 400000, max: 640000, hint: 'Rolled all the way out to the edge of the map.', gift: 25000,
+  { id: 'mic', owner: 'diva', name: 'Stella’s microphone', short: 'microphone', min: 220000, max: 400000, hint: 'Dropped during a sound check near Saturn.', gift: 10000,
+    reward: 'the Pop Star paint job', text: 'Darling, my microphone! The tour is saved! I’ll dedicate the first song to you. Enclosed: a reward, a signed photo of me looking surprised, and my stage colours for your rocket (see the Paint Shop).' },
+  { id: 'yarn', owner: 'cat', name: 'Sir Whiskers’ ball of yarn', short: 'yarn', min: 400000, max: 640000, hint: 'Rolled all the way out to the edge of the map.', gift: 16000,
     text: 'Meow!!! MRRROW. Purr purr purr purr purr.\n\n(He is very happy. He has already lost it again, under the sofa.)', sign: '— Sir Whiskers, and his human' },
 ];
 for (const it of LOST) MAIL.push({ id: 'lost_' + it.id, from: it.owner, gift: it.gift, text: it.text, sign: it.sign, lost: it.id, when: () => !!(S.lost && S.lost[it.id]) });
@@ -1208,7 +1210,7 @@ function trySpawnLost(est, cx, spread, y0, y1) {
     const tries = S.lostTries[it.id] = (S.lostTries[it.id] || 0) + 1;
     if (!(tries >= 3 || chance(0.5))) continue;
     R.lostSpawned = it.id;
-    G.picks.push({ type: 'lost', id: it.id, x: cx + rand(-spread * 0.35, spread * 0.35), py: rand(y0, y1), r: 26, seed: Math.random(), vx: 0, vy: 0 });
+    G.picks.push({ type: 'lost', id: it.id, x: cx + (chance(0.5) ? 1 : -1) * rand(spread * 0.25, spread * 0.6), py: rand(y0, y1), r: 26, seed: Math.random(), vx: 0, vy: 0 });
     return;
   }
 }
@@ -1856,10 +1858,12 @@ const PAINTS = [
   { id: 'lava', name: 'Lava Lamp', stars: 15, body: '#ffd93d', accent: '#ff5a2b', pattern: 'dots' },
   { id: 'galaxy', name: 'Galaxy', stars: 18, body: '#3a2470', accent: '#9b5de5', pattern: 'stars' },
   { id: 'retro', name: 'Retro Teal', stars: 21, body: '#f3e2b3', accent: '#2ec4b6', pattern: 'stripes' },
+  { id: 'knit', name: 'Nana’s Knit', stars: 999, lost: 'scarf', body: '#ff5a5f', accent: '#fff6e5', pattern: 'stripes' },
+  { id: 'pop', name: 'Pop Star', stars: 999, lost: 'mic', body: '#7b3fc4', accent: '#ff8ad0', pattern: 'stars' },
   { id: 'gold', name: 'Solid Gold', stars: 24, end: true, body: '#ffd34d', accent: '#ff9f43', pattern: 'shine' },
 ];
 const totalStars = () => Object.values(S.routes).reduce((a, r) => a + (r.stars || 0), 0);
-const paintUnlocked = p => totalStars() >= p.stars || !!S.seen['paintown_' + p.id] || (p.end && (S.ended || (S.line || 1) > 1));
+const paintUnlocked = p => totalStars() >= p.stars || !!(p.lost && S.lost && S.lost[p.lost]) || !!S.seen['paintown_' + p.id] || (p.end && (S.ended || (S.line || 1) > 1));
 // exhaust trails: cosmetic, unlocked by trophies
 const TRAILS = [
   { id: 'smoke', name: 'Puffy Smoke', need: 0 },
@@ -3158,6 +3162,7 @@ function updateFlight(dt) {
   // --- milestones
   const zi = zoneIndex(R.alt);
   if (zi > R.zi) { R.zi = zi; banner(ZONES[zi].name, '#bff8ff', 2.2, 'NOW ENTERING'); sfx.zone(); if (zi === 3 && !S.seen.space) { S.seen.space = 1; S.pendingSpace = true; } }
+  if (R.alt > 1350000 && !R.pipWave) { R.pipWave = 1; banner('Pip\u2019s home planet!', '#c8ffb0', 2.6, 'THE WHOLE FAMILY IS WAVING'); sfx.cheer(); if (!S.seen.pipPlanet) { S.seen.pipPlanet = 1; } }
   if (R.daily && !R.dailyDone && R.alt >= R.daily.target) { R.dailyDone = true; banner('SPECIAL DELIVERED!', '#f15bb5', 2); sfx.cheer(); buzz([30, 40, 30]); confetti(R.x, R.py, 50); floater(R.x, R.py + 80, `${R.daily.to} got ${R.daily.cargo}!`, '#ffd6e6', 18); }
   if (!R.recordShown && R.alt > S.bestAlt) { R.recordShown = true; banner('NEW RECORD!', '#ffd93d', 1.8); sfx.record(); confetti(R.x, R.py, 30); }
   if (R.route && !R.docked && R.alt >= R.route.alt) dock();
@@ -3512,7 +3517,7 @@ function updatePickups(dt) {
   for (const p of G.picks) {
     if (p.dead) continue;
     const dx = R.x - p.x, dy = R.py - p.py, dist = Math.hypot(dx, dy);
-    if (st.magnet && p.type !== 'ring' && dist < st.magnet && !R.crashed) { const pull = (1 - dist / st.magnet) * 900 + 200; p.x += dx / dist * pull * dt; p.py += dy / dist * pull * dt; }
+    if (st.magnet && p.type !== 'ring' && p.type !== 'lost' && dist < st.magnet && !R.crashed) { const pull = (1 - dist / st.magnet) * 900 + 200; p.x += dx / dist * pull * dt; p.py += dy / dist * pull * dt; }
     if (p.py < camBottom - 200) { p.dead = true; continue; }
     if (R.crashed) continue;
     if (S.flights > 0 && p.py - R.py < 340 && p.py - R.py > 0) tipOnce(p.type);
@@ -3620,7 +3625,7 @@ function computeResult() {
   const record = alt > S.bestAlt && S.flights > 0;
   if (record) rows.push(['New record bonus', Math.round(altPay * 0.25)]);
   if (st.gift) rows.push(['Gift shop sales', st.gift]);
-  if (R.foundLost) { const it = LOST.find(x => x.id === R.foundLost); rows.push([`Found ${it.name}`, Math.round(120 + coinValue(it.min) * 60)]); }
+  if (R.foundLost) { const it = LOST.find(x => x.id === R.foundLost); rows.push([`Found ${it.name}`, Math.round(80 + coinValue(it.min) * 40)]); }
   let dailyPaid = false;
   if (R.daily && R.dailyDone && S.daily && S.daily.day === R.daily.day && !S.daily.done) {
     const y = dayKey(new Date(Date.now() - 864e5));
@@ -3943,6 +3948,7 @@ const BODIES = [
   { alt: 110000, kind: 'mars', x: 0.22, size: 0.9 },
   { alt: 240000, kind: 'saturn', x: 0.76, size: 1.1 },
   { alt: 650000, kind: 'gate', x: 0.3, size: 1 },
+  { alt: 1500000, kind: 'pip', x: 0.7, size: 1.15 },
 ];
 function drawSunAndPlanets(alt) {
   // sun
@@ -4004,6 +4010,31 @@ function drawPlanet(kind, x, y, r) {
     ctx.restore();
   } else if (kind === 'gate') {
     ctx.save(); ctx.translate(x, y); drawStation(ctx, 'gate', G.t, r / 170); ctx.restore();
+  } else if (kind === 'pip') { // Pip's home planet, out past the Starlight Gate: the whole family waves
+    ctx.save(); ctx.translate(x, y);
+    const g = ctx.createRadialGradient(0, 0, r * 0.8, 0, 0, r * 1.5); g.addColorStop(0, 'rgba(160,255,140,.35)'); g.addColorStop(1, 'rgba(160,255,140,0)');
+    ctx.fillStyle = g; circ(ctx, 0, 0, r * 1.5); ctx.fill();
+    circ(ctx, 0, 0, r); fillStroke(ctx, '#7ed957', 4);
+    ctx.save(); circ(ctx, 0, 0, r); ctx.clip();
+    ctx.fillStyle = '#5fbf45'; for (let i = 0; i < 7; i++) { const a = i * 2.4, d = r * (0.25 + (i % 3) * 0.22); ctx.beginPath(); ctx.ellipse(Math.cos(a) * d, Math.sin(a) * d + r * 0.2, r * 0.18, r * 0.1, a, 0, TAU); ctx.fill(); }
+    ctx.fillStyle = '#b07be8'; for (let i = 0; i < 4; i++) { const a = i * 1.7 + 0.6, d = r * (0.35 + (i % 2) * 0.3); circ(ctx, Math.cos(a) * d, Math.sin(a) * d + r * 0.1, r * 0.09); ctx.fill(); }
+    ctx.fillStyle = 'rgba(255,255,255,.25)'; circ(ctx, -r * 0.35, -r * 0.4, r * 0.32); ctx.fill();
+    ctx.restore();
+    // little domes and the family on the rim
+    const fam = 5;
+    for (let i = 0; i < fam; i++) {
+      const a = -Math.PI / 2 + (i - (fam - 1) / 2) * 0.24;
+      ctx.save(); ctx.rotate(a + Math.PI / 2); ctx.translate(0, -r);
+      if (i % 2 === 0) { ctx.beginPath(); ctx.arc(0, 2, r * 0.11, Math.PI, 0); fillStroke(ctx, '#d8c7ff', 3); }
+      else {
+        const k = r / 170, hop = Math.abs(Math.sin(G.t * 5 + i)) * 6 * k;
+        ctx.translate(0, -hop);
+        ctx.save(); ctx.scale(k * 1.1, k * 1.1); rr(ctx, -9, -20, 18, 20, 7); fillStroke(ctx, '#9fe870', 3); ctx.translate(0, -30); drawFace(ctx, 'pip', 12, 'joy', G.t); ctx.restore();
+        ctx.beginPath(); ctx.moveTo(8 * k, -16 * k); ctx.lineTo((18 + Math.sin(G.t * 8 + i) * 5) * k, -34 * k); ctx.lineWidth = 3; ctx.stroke();
+      }
+      ctx.restore();
+    }
+    ctx.restore();
   }
 }
 // ---- parallax clouds (deterministic field)
@@ -5159,7 +5190,7 @@ const UI = (() => {
       const ico = el('div', 'r-ico'); ico.appendChild(cnv); cnv.style.width = '64px'; cnv.style.height = '64px'; card.appendChild(ico);
       const fresh = known && !S.seen['lost_' + it.id];
       const chips = got ? '<span class="chip ok">Returned!</span>' : known ? `<span class="chip pax">${fmtAlt(it.min)} – ${fmtAlt(it.max)}</span>${fresh ? '<span class="chip ok">New!</span>' : ''}` : '';
-      const desc = got ? `Back with ${CHARS[it.owner].name}. Thank you!` : known ? it.hint + ' Look for it at this height.' : 'Fly more passengers to hear about this one.';
+      const desc = (got ? `Back with ${CHARS[it.owner].name}. Thank you!` : known ? it.hint + ' Look for it at this height.' : 'Fly more passengers to hear about this one.') + (known && it.reward ? ` <b>Reward: ${it.reward}.</b>` : '');
       card.appendChild(el('div', 'r-main', `<div class="r-name">${known ? it.name : '???'}</div><div class="r-desc">${desc}</div><div class="r-meta">${chips}</div>`));
       list.appendChild(card);
     }
@@ -5277,7 +5308,7 @@ const UI = (() => {
       const c = cnv.getContext('2d'); c.scale(2, 2); rr(c, 2, 2, 60, 60, 14); c.fillStyle = '#bfe9ff'; c.fill(); c.lineWidth = 3; c.strokeStyle = INK; c.stroke();
       c.translate(32, 34); c.scale(0.42, 0.42); const L = Object.assign(rocketLook(), { paint: p }); drawRocket(c, L, { t: 0, faces: [] });
       card.appendChild(cnv);
-      card.appendChild(el('div', 'r-main', `<div class="r-name">${p.name}</div><div class="r-meta">${ok ? '<span class="chip ok">Unlocked</span>' : `<span class="chip pay">${p.end ? 'Finish the story' : p.stars + ' ★'}</span>`}</div>`));
+      card.appendChild(el('div', 'r-main', `<div class="r-name">${p.name}</div><div class="r-meta">${ok ? '<span class="chip ok">Unlocked</span>' : `<span class="chip pay">${p.end ? 'Finish the story' : p.lost ? 'Lost & Found reward' : p.stars + ' ★'}</span>`}</div>`));
       const act = el('div', 'r-act');
       if (ok) { const b = el('button', 'btn ' + (cur ? 'go' : 'blue'), cur ? 'Wearing' : 'Paint'); b.addEventListener('click', () => { sfx.buy(); S.paint = p.id; saveGame(); G.look = rocketLook(); G.hangarPop = 1; openPaint(); }); act.appendChild(b); }
       card.appendChild(act);
@@ -5677,7 +5708,7 @@ window.__skyhop = {
   setLevel(id, l) { S.up[id] = l; G.look = rocketLook(); G.st = computeStats(); if (UI.current === 'hangar') UI.refresh(); },
   done(id) { S.routes[id] = { done: true, stars: 3, runs: 1 }; const nx = nextRoute(); S.route = nx ? nx.id : 'free'; },
   start: startGame, launch(v = 0.8) { $('scr-results').classList.add('hidden'); if (G.mode !== 'launch') enterLaunch(); G.launch.v = v; doLaunch(); },
-  hangar: () => goHangar(true), reset() { resetSave(); }, LOST, drawLostItem,
+  hangar: () => goHangar(true), reset() { resetSave(); }, LOST, drawLostItem, mail: () => UI.openLetter(),
   daily() { return todaysDaily(); },
   teleport(alt) { const R = G.R; if (!R) return; R.alt = alt; R.maxAlt = Math.max(R.maxAlt, alt); },
   save: saveGame, music: Music, audio: AudioSys, sfxTest() { const errs = []; for (const k in AudioSys.sfx) { try { AudioSys.sfx[k](); } catch (e) { errs.push(k + ':' + e.message); } } return errs; },

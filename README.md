@@ -30,8 +30,12 @@ Open `index.html` in any modern browser, or enable GitHub Pages for this repo (S
 - Passenger wishes: riders ask for a ring, a wiggle, a close call or a calm stretch mid-flight. Grant them for comfort and coins.
 - Daily Special: a new delivery every day (same for everyone), with a twist like Glass Cannon, Feather Day or Boss Day, a target height and a day streak.
 - Sky Guide: a field book that fills with drawings of every obstacle and boss you meet.
+- Guestbook: every passenger you fly gets a portrait and a short bio.
+- Lost & Found: your passengers keep dropping things (a top hat, a pancake, a bowling ball...). Catch them in the sky at the right height and return them.
+- Fan mail: thank-you letters with a little gift arrive in the yard's mailbox after deliveries, boss wins and lost-item returns.
+- Route Map with an illustrated panorama of the whole line, from the shed to the Starlight Gate.
 - A pokeable workshop: tap the rocket, Grandma Ada, the crowd or the shed.
-- Paint shop with paint jobs and exhaust trails (rainbow, hearts, stardust, and three earned from the bosses), 26 achievements (one of them secret), a stats panel and shareable postcards of your deliveries.
+- Paint shop with paint jobs and exhaust trails (rainbow, hearts, stardust, and three earned from the bosses), 28 achievements (one of them secret), a stats panel and shareable postcards of your deliveries.
 - After the finale, open a new line (new game plus): start over with a fresh rocket, keep your trophies and cosmetics, and earn +50% per line.
 - Relaxed mode (+2 hearts, fewer hazards), tilt steering on phones, and a calmer-screen option (less shake and flashing).
 - Your rocket visibly changes as you upgrade: nose cones, fins, boosters, drop tanks, stages, shield bubble, ram prow and more.
