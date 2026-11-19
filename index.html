@@ -548,12 +548,15 @@ function loadSave() {
       S.stats = Object.assign(def.stats, d.stats || {});
       S.settings = Object.assign(def.settings, d.settings || {});
       S.avg = Object.assign(def.avg, d.avg || {});
+      // welcome-back bonus: the gift stand keeps selling while you're away (from 1 hour, capped at 8)
+      const away = S.lastSeen ? (Date.now() - S.lastSeen) / 36e5 : 0;
+      if (away >= 1 && S.flights >= 3 && (S.avg.total || 0) > 0) S.pendingAway = Math.max(10, Math.round(S.avg.total * 0.25 * Math.min(away, 8)));
     }
   } catch (e) { S = defaultSave(); }
 }
 let saveTimer = 0;
 let saveLock = false; // set while a loaded save code reloads the page, so the old save can't overwrite it
-function saveGame() { if (saveLock) return; try { localStorage.setItem(SAVE_KEY, JSON.stringify(S)); } catch (e) { /* storage unavailable */ } }
+function saveGame() { if (saveLock) return; S.lastSeen = Date.now(); try { localStorage.setItem(SAVE_KEY, JSON.stringify(S)); } catch (e) { /* storage unavailable */ } }
 // save codes: copy your progress to another device (ghost replays are left out to keep the code short)
 function exportSave() { const o = Object.assign({}, S); delete o.ghosts; return 'SKYHOP1.' + btoa(unescape(encodeURIComponent(JSON.stringify(o)))); }
 function importSave(str) {
@@ -6078,6 +6081,11 @@ const UI = (() => {
     if (S.pendingCrash) { S.pendingCrash = false; S.seen.crash = 1; lines.push(...STORY.crash); }
     if (S.pendingSpace) { S.pendingSpace = false; lines.push(...STORY.space); }
     if (S.pendingFork) { S.pendingFork = false; lines.push(...STORY.fork); }
+    if (S.pendingAway) {
+      const v = S.pendingAway; S.pendingAway = 0; S.money += v; S.earned += v;
+      lines.push(['ada', `Welcome back, dear! The souvenir stand kept selling snow globes while you were away. That’s ${fmtMoney(v)} for the rocket fund!`]);
+      setTimeout(() => sfx.bigcoin(), 400);
+    }
     if (S.pendingRival) { const c = RIVAL.find(x => x.id === S.pendingRival); S.pendingRival = null; if (c) lines.push(...c.lose); }
     { const rc = rivalCur(); if (rc && !S.seen['rival_' + rc.id] && lines.length < 6 && S.flights >= 2) { S.seen['rival_' + rc.id] = 1; lines.push(...rc.intro); } }
     if (jobsUnlocked() && !S.seen.jobs) { S.seen.jobs = 1; fillJobs(); S.jobsNew = 3; lines.push(...STORY.jobs); }
