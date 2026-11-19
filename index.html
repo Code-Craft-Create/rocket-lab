@@ -7532,7 +7532,7 @@ const UI = (() => {
     let kind, name, sub, warn = false, icon;
     fixDailyRoute();
     if (S.route === 'daily') { const d = todaysDaily(); kind = 'Daily special'; name = d.cargo.charAt(0).toUpperCase() + d.cargo.slice(1); sub = `${fmtAlt(d.target)} · ${TWISTS[d.twist].name}`; icon = 'parcel'; }
-    else if (!r) { const nc = chartsOpen() && nextChart(); kind = nc ? 'Star hunt' : 'Free flight'; name = nc ? nc.name : 'Just go high!'; sub = nc ? `Constellation at ${fmtAlt(nc.alt)}` : `Best: ${fmtAlt(S.bestAlt)}`; icon = 'gate'; }
+    else if (!r) { const nc = chartsOpen() && nextChart(); kind = nc ? 'Star hunt' : 'Free flight'; name = nc ? nc.name : 'Just go high!'; sub = nc ? `Fly past ${fmtAlt(nc.alt)}` : `Best: ${fmtAlt(S.bestAlt)}`; icon = 'gate'; }
     else {
       const done = routeDone(r.id);
       kind = done ? 'Regular service' : (r.id === 'r0' ? 'Mission' : 'Next route');
