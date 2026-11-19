@@ -635,11 +635,14 @@ function loadSave() {
     const raw = localStorage.getItem(SAVE_KEY);
     if (raw) {
       const d = JSON.parse(raw);
-      const def = defaultSave();
+      // merge nested settings over fresh defaults (the top-level assign below replaces def's own nested
+      // objects, so older saves would otherwise miss settings and stats added since)
+      const def = defaultSave(), fresh = defaultSave();
       S = Object.assign(def, d);
-      S.stats = Object.assign(def.stats, d.stats || {});
-      S.settings = Object.assign(def.settings, d.settings || {});
-      S.avg = Object.assign(def.avg, d.avg || {});
+      S.stats = Object.assign(fresh.stats, d.stats || {});
+      S.settings = Object.assign(fresh.settings, d.settings || {});
+      S.avg = Object.assign(fresh.avg, d.avg || {});
+      for (const k of ['musVol', 'sfxVol']) if (!isFinite(S.settings[k]) || S.settings[k] === null) S.settings[k] = 1;
       if (!S.rec.alt && S.bestAlt > 0) S.rec.alt = { v: S.bestAlt, n: 0 };
       // welcome-back bonus: the gift stand keeps selling while you're away (from 1 hour, capped at 8)
       const away = S.lastSeen ? (Date.now() - S.lastSeen) / 36e5 : 0;
@@ -707,7 +710,7 @@ const AudioSys = (() => {
   function setSfx(on) { enabledSfx = on; if (ac) sfxBus.gain.setTargetAtTime(on ? SFX_VOL * volS : 0, ac.currentTime, 0.05); }
   function setMusic(on) { enabledMusic = on; if (ac) musBus.gain.setTargetAtTime(on ? MUS_VOL * volM : 0, ac.currentTime, 0.1); }
   // volume sliders: v from 0 to 1, a gentle curve so the low end is usable
-  function setVol(kind, v) { v = Math.max(0, Math.min(1, v)) ** 1.6; if (kind === 'music') { volM = v; setMusic(enabledMusic); } else { volS = v; setSfx(enabledSfx); } }
+  function setVol(kind, v) { v = Number(v); if (!isFinite(v)) v = 1; v = Math.max(0, Math.min(1, v)) ** 1.6; if (kind === 'music') { volM = v; setMusic(enabledMusic); } else { volS = v; setSfx(enabledSfx); } }
 
   // generic tone with envelope
   function tone(o) {
@@ -6640,10 +6643,12 @@ function setPaused(p) {
 
 // ================================================================ INPUT
 function startGame() {
-  AudioSys.init();
-  AudioSys.setVol('music', S.settings.musVol); AudioSys.setVol('sfx', S.settings.sfxVol);
-  AudioSys.setMusic(S.settings.music); AudioSys.setSfx(S.settings.sfx);
-  sfx.click();
+  try { // sound must never stop the game from starting
+    AudioSys.init();
+    AudioSys.setVol('music', S.settings.musVol); AudioSys.setVol('sfx', S.settings.sfxVol);
+    AudioSys.setMusic(S.settings.music); AudioSys.setSfx(S.settings.sfx);
+    sfx.click();
+  } catch (e) { console.warn('audio setup failed', e); }
   if (!S.seen.intro) {
     UI.showScreen('none');
     Music.play('hangar');
