@@ -38,6 +38,8 @@ button{font-family:var(--font)}
 .btn:disabled{filter:grayscale(.85) opacity(.65);cursor:not-allowed;transform:none;box-shadow:0 5px 0 var(--ink)}
 .btn.small{font-size:15px;padding:6px 12px;border-radius:13px;flex:0 0 auto}
 .btn.off{filter:grayscale(.85) opacity(.6)}
+.seg{display:flex;gap:8px;justify-content:center;margin:0 0 12px}
+.route .r-ico canvas{width:64px;height:64px;display:block}
 .icon-btn{width:46px;height:46px;border:4px solid var(--ink);border-radius:14px;background:var(--paper);box-shadow:0 4px 0 var(--ink);
   cursor:pointer;display:inline-flex;align-items:center;justify-content:center;padding:0;transition:transform .07s,box-shadow .07s}
 .icon-btn:active{transform:translateY(3px);box-shadow:0 1px 0 var(--ink)}
@@ -2408,6 +2410,111 @@ function updateBoss(R, dt) {
     if (b.t > last + 3.2) R.boss = null;
   }
 }
+function drawStormKingBody(c, charging, zapping, lookX) {
+    drawCloud(c, 0, 0, 240, 120, 7, zapping ? '#9a96c0' : '#5a5578', '#3a3554', 3);
+    ink(c, 3);
+    // crown
+    c.save(); c.translate(0, -62); c.rotate(-0.12);
+    c.beginPath(); c.moveTo(-36, 10); c.lineTo(-40, -22); c.lineTo(-20, -6); c.lineTo(0, -30); c.lineTo(20, -6); c.lineTo(40, -22); c.lineTo(36, 10); c.closePath(); fillStroke(c, '#ffd93d', 3);
+    c.fillStyle = '#ff5a5f'; circ(c, 0, 0, 5); c.fill(); c.stroke(); c.fillStyle = '#4d96ff'; circ(c, -22, 3, 4); c.fill(); c.stroke(); circ(c, 22, 3, 4); c.fill(); c.stroke();
+    c.restore();
+    // face
+    const glow = charging && Math.sin(G.t * 24) > 0;
+    for (const sd of [-1, 1]) {
+      c.fillStyle = glow ? '#fff36b' : '#fff'; c.beginPath(); c.ellipse(sd * 26, -12, 13, 10, 0, 0, TAU); c.fill(); c.stroke();
+      c.fillStyle = INK; circ(c, sd * 24 + lookX, -10, 4.5); c.fill();
+      c.lineWidth = 5; c.beginPath(); c.moveTo(sd * 44, -32); c.lineTo(sd * 12, -22); c.stroke(); c.lineWidth = 3;
+    }
+    // mustache + mouth
+    c.beginPath(); c.moveTo(0, 8); c.quadraticCurveTo(-18, 2, -30, 14); c.quadraticCurveTo(-14, 12, 0, 14); c.quadraticCurveTo(14, 12, 30, 14); c.quadraticCurveTo(18, 2, 0, 8); fillStroke(c, '#e8e8f0', 2.5);
+    if (zapping) { c.beginPath(); c.ellipse(0, 26, 12, 9, 0, 0, TAU); fillStroke(c, '#2b2240', 2.5); }
+    else { c.beginPath(); c.arc(0, 32, 12, -2.6, -0.5); c.stroke(); }
+    if (charging) { c.strokeStyle = '#fff36b'; c.lineWidth = 3; for (const sd of [-1, 1]) { const xx = sd * (100 + Math.sin(G.t * 40) * 6); c.beginPath(); c.moveTo(xx, -10); c.lineTo(xx + sd * 10, 4); c.lineTo(xx, 8); c.lineTo(xx + sd * 12, 24); c.stroke(); } }
+}
+function drawKrakenHead(c, lookX) {
+    c.beginPath(); c.moveTo(-120, 120); c.bezierCurveTo(-130, -30, -70, -110, 0, -110); c.bezierCurveTo(70, -110, 130, -30, 120, 120); c.closePath(); fillStroke(c, '#b05bd6', 3.5);
+    c.fillStyle = '#c97ff0'; for (const [sx2, sy2, r2] of [[-60, -60, 10], [50, -78, 7], [70, -30, 9], [-30, -90, 6]]) { circ(c, sx2, sy2, r2); c.fill(); }
+    for (const sd of [-1, 1]) {
+      c.fillStyle = '#fff'; c.beginPath(); c.ellipse(sd * 40, -20, 24, 28, 0, 0, TAU); c.fill(); c.stroke();
+      c.fillStyle = INK; circ(c, sd * 40 + lookX, -30, 11); c.fill(); c.fillStyle = '#fff'; circ(c, sd * 40 + lookX + 4, -35, 3.5); c.fill();
+      c.lineWidth = 4; c.beginPath(); c.moveTo(sd * 62, -56); c.lineTo(sd * 22, -50); c.stroke(); c.lineWidth = 3.5;
+    }
+    c.beginPath(); c.moveTo(-26, 30); c.quadraticCurveTo(0, 18 + Math.sin(G.t * 5) * 4, 26, 30); c.stroke();
+}
+function drawWhaleBody(c, dir, t) {
+    c.save(); c.scale(dir, 1); ink(c, 3.5);
+    const sw = Math.sin(t * 2.2) * 0.18;
+    // tail
+    c.save(); c.translate(-120, -6); c.rotate(sw);
+    c.beginPath(); c.moveTo(0, 0); c.quadraticCurveTo(-30, -6, -52, -38); c.quadraticCurveTo(-40, -8, -64, 6); c.quadraticCurveTo(-36, 8, -52, 34); c.quadraticCurveTo(-26, 10, 0, 12); c.closePath(); fillStroke(c, '#4d96ff', 3.5);
+    c.restore();
+    // body
+    c.beginPath(); c.moveTo(-124, 0); c.bezierCurveTo(-90, -62, 60, -78, 112, -26); c.bezierCurveTo(140, 4, 120, 48, 70, 52); c.bezierCurveTo(10, 60, -80, 40, -124, 12); c.closePath(); fillStroke(c, '#4d96ff', 3.5);
+    c.save(); c.clip(); c.fillStyle = '#d4ecff'; c.beginPath(); c.ellipse(30, 52, 110, 34, -0.05, 0, TAU); c.fill();
+    c.strokeStyle = 'rgba(43,34,64,.35)'; c.lineWidth = 2.5; for (let i = 0; i < 5; i++) { c.beginPath(); c.moveTo(-30 + i * 26, 30); c.lineTo(-24 + i * 26, 56); c.stroke(); }
+    c.fillStyle = 'rgba(255,255,255,.25)'; c.beginPath(); c.ellipse(10, -40, 60, 12, -0.1, 0, TAU); c.fill();
+    c.restore();
+    c.beginPath(); c.moveTo(-124, 0); c.bezierCurveTo(-90, -62, 60, -78, 112, -26); c.bezierCurveTo(140, 4, 120, 48, 70, 52); c.bezierCurveTo(10, 60, -80, 40, -124, 12); c.closePath(); c.lineWidth = 3.5; c.stroke();
+    // flipper
+    c.save(); c.translate(20, 34); c.rotate(0.5 + Math.sin(t * 3) * 0.25); c.beginPath(); c.ellipse(0, 18, 12, 26, 0, 0, TAU); fillStroke(c, '#3a7fe0', 3); c.restore();
+    // face
+    c.fillStyle = '#fff'; circ(c, 78, -6, 10); c.fill(); c.stroke(); c.fillStyle = INK; circ(c, 81, -5, 5); c.fill(); c.fillStyle = '#fff'; circ(c, 83, -8, 1.8); c.fill();
+    c.beginPath(); c.moveTo(84, 18); c.quadraticCurveTo(102, 28, 118, 12); c.stroke();
+    c.fillStyle = '#ff9fc0'; c.globalAlpha = 0.6; c.beginPath(); c.ellipse(92, 8, 8, 4, 0, 0, TAU); c.fill(); c.globalAlpha = 1;
+    // blowhole
+    c.beginPath(); c.ellipse(34, -50, 7, 3, 0, 0, TAU); c.fillStyle = INK; c.fill();
+    c.restore();
+}
+// ---------------------------------------------------------------- Sky Guide (a field book of everything you have met)
+const GUIDE = [
+  { id: 'bird', name: 'Puffy Pigeon', desc: 'Flaps about the low sky in little gangs. Bump one and you lose a heart (and it loses a feather).', ext: 26 },
+  { id: 'balloon', name: 'Hot-Air Balloon', desc: 'Slow, stripey and full of waving tourists. Big, so give it room.', ext: 50, oy: 4 },
+  { id: 'kite', name: 'Runaway Kite', desc: 'Somebody in Pebbleton is very sad right now. Small, but the tail tangles.', ext: 44, oy: 14 },
+  { id: 'plane', name: 'Prop Plane', desc: 'Buzzes in from the edges of the screen. Honk honk!', ext: 50 },
+  { id: 'storm', name: 'Storm Cloud', desc: 'Grumbles, charges up, then zaps anything close. Keep your distance.', ext: 118 },
+  { id: 'jet', name: 'Jet Liner', desc: 'Very fast, very rude. A Radar upgrade warns you before it arrives.', ext: 56 },
+  { id: 'wballoon', name: 'Weather Balloon', desc: 'Measures the weather. Today the weather is you.', ext: 40, oy: 12 },
+  { id: 'gust', name: 'Wind Gust', desc: 'An invisible shove sideways. Harmless, but it ruins a good line.', ext: 70 },
+  { id: 'satellite', name: 'Satellite', desc: 'Beams cat videos to the whole planet. Please do not dent it.', ext: 54 },
+  { id: 'junk', name: 'Space Junk', desc: 'A lost wrench, a bolt, half a sandwich. Small, but it adds up.', ext: 36 },
+  { id: 'meteor', name: 'Meteor', desc: 'Falls from above with a fiery tail. Dodge sideways!', ext: 34 },
+  { id: 'asteroid', name: 'Asteroid', desc: 'Lumpy space potatoes. The big ones cost TWO hearts.', ext: 40 },
+  { id: 'ufo', name: 'UFO', desc: 'Its tractor beam slows you down. They only want to say hi. Probably.', ext: 50 },
+  { id: 'ice', name: 'Ring Ice', desc: 'Chunks knocked off Saturn’s rings. Brrr.', ext: 34 },
+  { id: 'comet', name: 'Comet', desc: 'Streaks sideways at silly speeds and hits for two hearts.', ext: 40 },
+  { id: 'jelly', name: 'Space Jelly', desc: 'Floaty, glowy, stingy. Nobody knows how they got up here.', ext: 44, oy: 8 },
+  { id: 'blackhole', name: 'Black Hole', desc: 'Pulls you in. Steer hard away and do not look back.', ext: 56 },
+  { boss: 'storm', stat: 'king', name: 'The Storm King', desc: 'Rules the clouds around 2 km. When a yellow stripe appears under you, get out of it!' },
+  { boss: 'whale', stat: 'whale', name: 'Big Blue', desc: 'A friendly sky whale above 9 km. Its spout is the best boost in the sky.' },
+  { boss: 'kraken', stat: 'kraken', name: 'The Space Kraken', desc: 'Lurks past 60 km. Fly through the sparkly gap between its arms.' },
+];
+const guideKey = g => g.boss ? 'gb_' + g.boss : 'g_' + g.id;
+const guideNewCount = () => GUIDE.filter(g => guideSeen(g) && !S.seen[guideKey(g)]).length;
+function guideSeen(g) { return g.boss ? !!S.seen['boss_' + g.boss] : !!S.seen['tip_' + g.id]; }
+function guideMinAlt(g) { if (g.boss) return BOSSES[g.boss].min; for (const z of ZONES) if (z.spawn && z.spawn[g.id]) return z.alt; return SKY_EVENTS.meteors.min; }
+function guideIcon(g, locked) {
+  const cv2 = document.createElement('canvas'); cv2.width = cv2.height = 128;
+  const c = cv2.getContext('2d'); c.scale(2, 2); c.translate(32, 32);
+  try {
+    if (g.boss === 'storm') { c.translate(0, 6); c.scale(0.2, 0.2); drawStormKingBody(c, false, false, 0); }
+    else if (g.boss === 'whale') { c.translate(2, 2); c.scale(0.22, 0.22); drawWhaleBody(c, 1, 0.4); }
+    else if (g.boss === 'kraken') { c.translate(0, 6); c.scale(0.24, 0.24); drawKrakenHead(c, 0); }
+    else {
+      const o = makeObstacle(g.id, 0, 0);
+      Object.assign(o, { x: 0, py: 0, dir: 1, seed: 0.37, rot: 0 });
+      if (g.id === 'storm') { o.w = 200; o.h = 70; o.charge = 0.2; }
+      if (g.id === 'asteroid') { o.r = 34; }
+      if (g.id === 'ice') { o.r = 28; }
+      if (g.id === 'meteor') { o.r = 20; }
+      if (g.id === 'gust') { o.w = 120; o.h = 90; }
+      if (g.id === 'junk') { o.kind = 1; o.rot = 0.7; }
+      const k = 27 / g.ext; c.translate(0, (g.oy || 0) * -k); c.scale(k, k);
+      drawObstacleShape(c, o, 0.6);
+    }
+  } catch (e) { /* a drawing that needs flight state: leave the icon blank */ }
+  if (locked) { c.setTransform(1, 0, 0, 1, 0, 0); c.globalCompositeOperation = 'source-in'; c.fillStyle = 'rgba(43,34,64,.32)'; c.fillRect(0, 0, 128, 128); }
+  return cv2;
+}
 function drawTentacle(c, x0, y, x1, u, ph, wave) {
   // a fat wobbly arm from the screen edge (x0) to its curled tip (x1)
   const dir = Math.sign(x1 - x0) || 1, len = Math.abs(x1 - x0), w0 = 50 * u, n = 18;
@@ -2449,25 +2556,7 @@ function drawBoss() {
     const charging = b.strikes.some(k => k.st === 'warn'), zapping = b.strikes.some(k => k.st === 'bolt');
     ctx.translate(b.sx, b.sy); ctx.scale(u * 1.25, u * 1.25);
     ctx.rotate(Math.sin(G.t * 1.7) * 0.04);
-    drawCloud(ctx, 0, 0, 240, 120, 7, zapping ? '#9a96c0' : '#5a5578', '#3a3554', 3);
-    ink(ctx, 3);
-    // crown
-    ctx.save(); ctx.translate(0, -62); ctx.rotate(-0.12);
-    ctx.beginPath(); ctx.moveTo(-36, 10); ctx.lineTo(-40, -22); ctx.lineTo(-20, -6); ctx.lineTo(0, -30); ctx.lineTo(20, -6); ctx.lineTo(40, -22); ctx.lineTo(36, 10); ctx.closePath(); fillStroke(ctx, '#ffd93d', 3);
-    ctx.fillStyle = '#ff5a5f'; circ(ctx, 0, 0, 5); ctx.fill(); ctx.stroke(); ctx.fillStyle = '#4d96ff'; circ(ctx, -22, 3, 4); ctx.fill(); ctx.stroke(); circ(ctx, 22, 3, 4); ctx.fill(); ctx.stroke();
-    ctx.restore();
-    // face
-    const glow = charging && Math.sin(G.t * 24) > 0;
-    for (const sd of [-1, 1]) {
-      ctx.fillStyle = glow ? '#fff36b' : '#fff'; ctx.beginPath(); ctx.ellipse(sd * 26, -12, 13, 10, 0, 0, TAU); ctx.fill(); ctx.stroke();
-      ctx.fillStyle = INK; circ(ctx, sd * 24 + clamp((w2s(R.x, R.py)[0] - b.sx) / 60, -4, 4), -10, 4.5); ctx.fill();
-      ctx.lineWidth = 5; ctx.beginPath(); ctx.moveTo(sd * 44, -32); ctx.lineTo(sd * 12, -22); ctx.stroke(); ctx.lineWidth = 3;
-    }
-    // mustache + mouth
-    ctx.beginPath(); ctx.moveTo(0, 8); ctx.quadraticCurveTo(-18, 2, -30, 14); ctx.quadraticCurveTo(-14, 12, 0, 14); ctx.quadraticCurveTo(14, 12, 30, 14); ctx.quadraticCurveTo(18, 2, 0, 8); fillStroke(ctx, '#e8e8f0', 2.5);
-    if (zapping) { ctx.beginPath(); ctx.ellipse(0, 26, 12, 9, 0, 0, TAU); fillStroke(ctx, '#2b2240', 2.5); }
-    else { ctx.beginPath(); ctx.arc(0, 32, 12, -2.6, -0.5); ctx.stroke(); }
-    if (charging) { ctx.strokeStyle = '#fff36b'; ctx.lineWidth = 3; for (const sd of [-1, 1]) { const xx = sd * (100 + Math.sin(G.t * 40) * 6); ctx.beginPath(); ctx.moveTo(xx, -10); ctx.lineTo(xx + sd * 10, 4); ctx.lineTo(xx, 8); ctx.lineTo(xx + sd * 12, 24); ctx.stroke(); } }
+    drawStormKingBody(ctx, charging, zapping, clamp((w2s(R.x, R.py)[0] - b.sx) / 60, -4, 4));
   } else if (b.id === 'kraken') {
     for (const k of b.strikes) {
       if (k.st !== 'come') continue;
@@ -2481,15 +2570,7 @@ function drawBoss() {
     }
     // the head peeking up from below
     ctx.translate(b.sx, b.sy); ctx.scale(u * 1.2, u * 1.2); ink(ctx, 3.5);
-    ctx.beginPath(); ctx.moveTo(-120, 120); ctx.bezierCurveTo(-130, -30, -70, -110, 0, -110); ctx.bezierCurveTo(70, -110, 130, -30, 120, 120); ctx.closePath(); fillStroke(ctx, '#b05bd6', 3.5);
-    ctx.fillStyle = '#c97ff0'; for (const [sx2, sy2, r2] of [[-60, -60, 10], [50, -78, 7], [70, -30, 9], [-30, -90, 6]]) { circ(ctx, sx2, sy2, r2); ctx.fill(); }
-    const lookX = clamp((w2s(R.x, R.py)[0] - b.sx) / 50, -6, 6);
-    for (const sd of [-1, 1]) {
-      ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.ellipse(sd * 40, -20, 24, 28, 0, 0, TAU); ctx.fill(); ctx.stroke();
-      ctx.fillStyle = INK; circ(ctx, sd * 40 + lookX, -30, 11); ctx.fill(); ctx.fillStyle = '#fff'; circ(ctx, sd * 40 + lookX + 4, -35, 3.5); ctx.fill();
-      ctx.lineWidth = 4; ctx.beginPath(); ctx.moveTo(sd * 62, -56); ctx.lineTo(sd * 22, -50); ctx.stroke(); ctx.lineWidth = 3.5;
-    }
-    ctx.beginPath(); ctx.moveTo(-26, 30); ctx.quadraticCurveTo(0, 18 + Math.sin(G.t * 5) * 4, 26, 30); ctx.stroke();
+    drawKrakenHead(ctx, clamp((w2s(R.x, R.py)[0] - b.sx) / 50, -6, 6));
   } else if (b.id === 'whale') {
     ctx.translate(b.sx, b.sy); ctx.scale(u, u);
     // spout
@@ -2502,28 +2583,7 @@ function drawBoss() {
       if (!b.boosted) { ctx.globalAlpha = 0.6 + Math.sin(G.t * 10) * 0.3; text(ctx, '▲', 0, -hgt - 30, 26, '#ffffff'); }
       ctx.restore();
     }
-    ctx.save(); ctx.scale(b.dir, 1); ink(ctx, 3.5);
-    const sw = Math.sin(G.t * 2.2) * 0.18;
-    // tail
-    ctx.save(); ctx.translate(-120, -6); ctx.rotate(sw);
-    ctx.beginPath(); ctx.moveTo(0, 0); ctx.quadraticCurveTo(-30, -6, -52, -38); ctx.quadraticCurveTo(-40, -8, -64, 6); ctx.quadraticCurveTo(-36, 8, -52, 34); ctx.quadraticCurveTo(-26, 10, 0, 12); ctx.closePath(); fillStroke(ctx, '#4d96ff', 3.5);
-    ctx.restore();
-    // body
-    ctx.beginPath(); ctx.moveTo(-124, 0); ctx.bezierCurveTo(-90, -62, 60, -78, 112, -26); ctx.bezierCurveTo(140, 4, 120, 48, 70, 52); ctx.bezierCurveTo(10, 60, -80, 40, -124, 12); ctx.closePath(); fillStroke(ctx, '#4d96ff', 3.5);
-    ctx.save(); ctx.clip(); ctx.fillStyle = '#d4ecff'; ctx.beginPath(); ctx.ellipse(30, 52, 110, 34, -0.05, 0, TAU); ctx.fill();
-    ctx.strokeStyle = 'rgba(43,34,64,.35)'; ctx.lineWidth = 2.5; for (let i = 0; i < 5; i++) { ctx.beginPath(); ctx.moveTo(-30 + i * 26, 30); ctx.lineTo(-24 + i * 26, 56); ctx.stroke(); }
-    ctx.fillStyle = 'rgba(255,255,255,.25)'; ctx.beginPath(); ctx.ellipse(10, -40, 60, 12, -0.1, 0, TAU); ctx.fill();
-    ctx.restore();
-    ctx.beginPath(); ctx.moveTo(-124, 0); ctx.bezierCurveTo(-90, -62, 60, -78, 112, -26); ctx.bezierCurveTo(140, 4, 120, 48, 70, 52); ctx.bezierCurveTo(10, 60, -80, 40, -124, 12); ctx.closePath(); ctx.lineWidth = 3.5; ctx.stroke();
-    // flipper
-    ctx.save(); ctx.translate(20, 34); ctx.rotate(0.5 + Math.sin(G.t * 3) * 0.25); ctx.beginPath(); ctx.ellipse(0, 18, 12, 26, 0, 0, TAU); fillStroke(ctx, '#3a7fe0', 3); ctx.restore();
-    // face
-    ctx.fillStyle = '#fff'; circ(ctx, 78, -6, 10); ctx.fill(); ctx.stroke(); ctx.fillStyle = INK; circ(ctx, 81, -5, 5); ctx.fill(); ctx.fillStyle = '#fff'; circ(ctx, 83, -8, 1.8); ctx.fill();
-    ctx.beginPath(); ctx.moveTo(84, 18); ctx.quadraticCurveTo(102, 28, 118, 12); ctx.stroke();
-    ctx.fillStyle = '#ff9fc0'; ctx.globalAlpha = 0.6; ctx.beginPath(); ctx.ellipse(92, 8, 8, 4, 0, 0, TAU); ctx.fill(); ctx.globalAlpha = 1;
-    // blowhole
-    ctx.beginPath(); ctx.ellipse(34, -50, 7, 3, 0, 0, TAU); ctx.fillStyle = INK; ctx.fill();
-    ctx.restore();
+    drawWhaleBody(ctx, b.dir, G.t);
   }
   ctx.restore();
 }
@@ -2719,6 +2779,7 @@ function chatter() { const R = G.R; if (R.mood === 'scared') return pick(['Eek!'
 const TIPS = {
   bird: 'Birds! Bump one and you lose speed and a heart.',
   balloon: 'Hot-air balloons drift slowly. Steer around them!',
+  kite: 'Runaway kites! Mind the tangly tails.',
   plane: 'Planes fly in from the sides. Watch the edges!',
   storm: 'Storm clouds charge up and ZAP anything close. Keep your distance!',
   jet: 'Jets are FAST. A Radar upgrade warns you early.',
@@ -3066,6 +3127,7 @@ const ACH = [
   { id: 'king', name: 'Storm Chaser', desc: 'Dodge every bolt the Storm King throws', test: () => S.stats.king >= 1, reward: 1500 },
   { id: 'whale', name: 'Whale Rider', desc: 'Catch a boost from Big Blue’s spout', test: () => S.stats.whale >= 1, reward: 2500 },
   { id: 'kraken', name: 'Eight-Arm Escape', desc: 'Slip past every arm of the Space Kraken', test: () => S.stats.kraken >= 1, reward: 20000 },
+  { id: 'guide', prog: () => [GUIDE.filter(guideSeen).length, GUIDE.length], name: 'Sky Spotter', desc: 'Fill every page of the Sky Guide', test: () => GUIDE.every(guideSeen), reward: 50000 },
   { id: 'tickle', secret: true, name: 'Tickle Tank', desc: 'Poke your rocket 25 times in the workshop', test: () => (S.stats.pokes || 0) >= 25, reward: 250 },
   { id: 'fork', name: 'Decisions!', desc: 'Pick your first fork upgrade', test: () => UPGRADES.some(u => u.fork && lvl(u.id) > 0), reward: 500 },
 ];
@@ -3622,26 +3684,29 @@ function drawStationAndRecord() {
 function drawObstacle(o) {
   ctx.save(); ctx.translate(o.x, -o.py);
   if (o.hitT > 0.5) ctx.globalAlpha = 0.6;
-  switch (o.type) {
-    case 'bird': drawBird(ctx, o, G.t); break;
-    case 'balloon': drawBalloon(ctx, o, G.t); break;
-    case 'kite': drawKite(ctx, o, G.t); break;
-    case 'plane': drawPlane(ctx, o, G.t); break;
-    case 'storm': drawStorm(ctx, o, G.t); break;
-    case 'jet': drawJet(ctx, o, G.t); break;
-    case 'wballoon': drawWBalloon(ctx, o, G.t); break;
-    case 'gust': drawGust(ctx, o, G.t); break;
-    case 'satellite': drawSatellite(ctx, o, G.t); break;
-    case 'junk': drawJunk(ctx, o, G.t); break;
-    case 'meteor': drawMeteor(ctx, o, G.t); break;
-    case 'asteroid': drawAsteroid(ctx, o, G.t, G.R && G.R.alt > 110000 ? '#b9806a' : '#9c95b0', G.R && G.R.alt > 110000 ? '#9a6452' : '#7a7390'); break;
-    case 'ufo': drawUFO(ctx, o, G.t); break;
-    case 'ice': drawIce(ctx, o, G.t); break;
-    case 'comet': drawComet(ctx, o, G.t); break;
-    case 'jelly': drawJelly(ctx, o, G.t); break;
-    case 'blackhole': drawBlackHole(ctx, o, G.t); break;
-  }
+  drawObstacleShape(ctx, o, G.t);
   ctx.restore();
+}
+function drawObstacleShape(c, o, t) {
+  switch (o.type) {
+    case 'bird': drawBird(c, o, t); break;
+    case 'balloon': drawBalloon(c, o, t); break;
+    case 'kite': drawKite(c, o, t); break;
+    case 'plane': drawPlane(c, o, t); break;
+    case 'storm': drawStorm(c, o, t); break;
+    case 'jet': drawJet(c, o, t); break;
+    case 'wballoon': drawWBalloon(c, o, t); break;
+    case 'gust': drawGust(c, o, t); break;
+    case 'satellite': drawSatellite(c, o, t); break;
+    case 'junk': drawJunk(c, o, t); break;
+    case 'meteor': drawMeteor(c, o, t); break;
+    case 'asteroid': drawAsteroid(c, o, t, G.R && G.R.alt > 110000 ? '#b9806a' : '#9c95b0', G.R && G.R.alt > 110000 ? '#9a6452' : '#7a7390'); break;
+    case 'ufo': drawUFO(c, o, t); break;
+    case 'ice': drawIce(c, o, t); break;
+    case 'comet': drawComet(c, o, t); break;
+    case 'jelly': drawJelly(c, o, t); break;
+    case 'blackhole': drawBlackHole(c, o, t); break;
+  }
 }
 function drawPickup(p) {
   ctx.save(); ctx.translate(p.x, -p.py);
@@ -4129,7 +4194,8 @@ const UI = (() => {
     const h = $('head-btns'); h.innerHTML = '';
     const mapB = iconBtn('btn-map', 'map', 'Route map', () => openMap());
     if (routeDone('r0') && ROUTES.some(r => routeUnlocked(r) && !routeDone(r.id) && !S.seen['map_' + r.id])) mapB.appendChild(el('span', 'badge-dot', '!'));
-    const ach = iconBtn('btn-ach', 'trophy', 'Achievements', () => openAch());
+    const ach = iconBtn('btn-ach', 'trophy', 'Achievements & Sky Guide', () => openAch());
+    if (guideNewCount()) ach.appendChild(el('span', 'badge-dot', String(guideNewCount())));
     const paint = iconBtn('btn-paint', 'brush', 'Paint shop', () => openPaint());
     if (PAINTS.some(p => paintUnlocked(p) && !S.seen['paint_' + p.id] && p.id !== 'classic')) paint.appendChild(el('span', 'badge-dot', '!'));
     if (routeDone('r1')) h.append(paint);
@@ -4364,6 +4430,34 @@ const UI = (() => {
   }
 
   // ---------- achievements
+  function bookTabs(active) {
+    const row = el('div', 'seg');
+    const mk = (label, on, fn) => { const b = el('button', 'btn small ' + (on ? 'go' : 'off'), label); b.addEventListener('click', () => { sfx.tab(); fn(); }); row.appendChild(b); };
+    const nn = guideNewCount();
+    mk('Trophies', active === 'ach', openAch); mk('Sky Guide' + (nn && active !== 'guide' ? ` (${nn} new)` : ''), active === 'guide', openGuide);
+    return row;
+  }
+  function openGuide() {
+    const list = $('map-list'); list.innerHTML = '';
+    let seen = 0;
+    for (const g of GUIDE) {
+      const got = guideSeen(g); if (got) seen++;
+      const card = el('div', 'route' + (got ? '' : ' locked'));
+      const ico = el('div', 'r-ico'); ico.appendChild(guideIcon(g, !got)); card.appendChild(ico);
+      const beaten = g.boss && S.stats[g.stat] > 0;
+      const fresh = got && !S.seen[guideKey(g)];
+      const chips = got ? `<span class="chip ${beaten ? 'ok' : 'pay'}">${g.boss ? (beaten ? 'Beaten!' : 'Boss') : 'Spotted'}</span>${fresh ? '<span class="chip ok">New!</span>' : ''}` : '';
+      card.appendChild(el('div', 'r-main', `<div class="r-name">${got ? g.name : '???'}</div><div class="r-desc">${got ? g.desc : 'Not spotted yet. Lives above ' + fmtAlt(guideMinAlt(g)) + '.'}</div><div class="r-meta">${chips}</div>`));
+      list.appendChild(card);
+    }
+    $('scr-map').querySelector('h2').textContent = 'Sky Guide';
+    list.prepend(el('div', 'small-note', seen >= GUIDE.length ? `All ${GUIDE.length} spotted. What a book!` : `${seen} / ${GUIDE.length} spotted. Fly higher to fill the book!`));
+    list.prepend(bookTabs('guide'));
+    for (const g of GUIDE) if (guideSeen(g)) S.seen[guideKey(g)] = 1;
+    saveGame(); renderHeadBtns();
+    $('map-list').parentElement.scrollTop = 0;
+    overlay('scr-map', true);
+  }
   function openAch() {
     const list = $('map-list'); list.innerHTML = '';
     for (const a of ACH) {
@@ -4378,6 +4472,8 @@ const UI = (() => {
     }
     $('scr-map').querySelector('h2').textContent = 'Achievements';
     list.prepend(el('div', 'small-note', `${Object.keys(S.ach).length} / ${ACH.length} earned`));
+    list.prepend(bookTabs('ach'));
+    $('map-list').parentElement.scrollTop = 0;
     overlay('scr-map', true);
   }
 
@@ -4745,7 +4841,7 @@ requestAnimationFrame(frame);
 
 // debug / test hooks
 window.__skyhop = {
-  G, DEBUG, get S() { return S; }, computeStats, simulateFlight, UPGRADES, ROUTES, UP, art: { drawStation, routeIconCanvas, drawFace, makePostcard },
+  G, DEBUG, get S() { return S; }, computeStats, simulateFlight, UPGRADES, ROUTES, UP, art: { drawStation, routeIconCanvas, drawFace, makePostcard, guideIcon, GUIDE },
   set bot(v) { DEBUG.bot = v; }, set timeScale(v) { DEBUG.timeScale = v; },
   setMoney(v) { S.money = v; if (UI.current === 'hangar') UI.refresh(); },
   setLevel(id, l) { S.up[id] = l; G.look = rocketLook(); G.st = computeStats(); if (UI.current === 'hangar') UI.refresh(); },
