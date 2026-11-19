@@ -30,7 +30,7 @@ Open `index.html` in any modern browser, or enable GitHub Pages for this repo (S
 - Job Board side jobs (collect coins, skim obstacles, fly clean...) that scale with how you play.
 - Sky forecast before each flight: sunset, night, tailwind, coin shower or ring festival, each with its own bonus.
 - Surprise sky events mid-flight: gold rush, ring road, bird migration, meteor shower, ice storm, jelly bloom, and rainbows (steer up through the arc and coins are worth double for a while; hit the top for longer).
-- Four sky bosses with their own music: the Storm King (dodge his lightning), Big Blue the sky whale (ride its spout), Captain Calico's sky pirates (slide into the green lane before the cannons fire) and the Space Kraken (slip between its arms).
+- Five sky bosses with their own music: the Storm King (dodge his lightning), Big Blue the sky whale (ride its spout), Captain Calico's sky pirates (slide into the green lane before the cannons fire), the Space Kraken (slip between its arms) and Rascal the Comet Bandit, a raccoon in a saucer who stole the luggage (bump him three times while he swoops low).
 - Ghost racer: a faded rocket replays your best run on each route.
 - Passenger wishes: riders ask for a ring, a wiggle, a close call or a calm stretch mid-flight. Grant them for comfort and coins.
 - Daily Special: a new delivery every day (same for everyone), with a twist like Glass Cannon, Feather Day or Boss Day, a target height and a day streak.
@@ -46,7 +46,7 @@ Open `index.html` in any modern browser, or enable GitHub Pages for this repo (S
 - Scenery that changes as you climb: hills and town, the town blimp, a castle on a floating island in the High Sky, then the Moon, Mars, a ringed planet and the Gate.
 - Route Map with an illustrated panorama of the whole line, from the shed to the Starlight Gate.
 - A pokeable workshop: tap the rocket, Grandma Ada, the crowd or the shed.
-- Paint shop with paint jobs and exhaust trails (rainbow, hearts, stardust, and four earned from the bosses), 34 achievements (two of them secret), each with its own medal, and shareable postcards of your deliveries.
+- Paint shop with paint jobs and exhaust trails (rainbow, hearts, stardust, and four earned from the bosses), 35 achievements (two of them secret), each with its own medal, and shareable postcards of your deliveries.
 - Logbook: a chart of your recent flights' heights, personal records (top speed, most coins, longest ring combo, most close calls...) and all-time totals. Beat a skill record and the results card says so.
 - After the finale, open a new line (new game plus): start over with a fresh rocket, keep your trophies and cosmetics, and earn +50% per line.
 - Relaxed mode (+2 hearts, fewer hazards), tilt steering on phones, music and sound volume sliders, and a calmer-screen option (less shake and flashing).

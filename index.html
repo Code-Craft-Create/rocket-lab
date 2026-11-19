@@ -626,6 +626,7 @@ function defaultSave() {
     ghosts: {},        // route id -> {alt, step, a:[alt...], x:[x...]} best run replay
     log: [],           // last 30 flights for the logbook chart: {n, a, r, d}
     rec: {},           // personal records: id -> {v, n}
+    news: 0,           // how many WORKSHOP_NEWS items this player has heard from Ada
     ended: false,
   };
 }
@@ -1308,6 +1309,8 @@ const MAIL = [
     text: 'PIRATES?! You got away from actual SKY PIRATES?! Was there a parrot? Was it a cat? It was a CAT?!\n\nI told everyone at school. Nobody believes me. Enclosed: my pocket money, for a cannonball-proof fin.', sign: 'Rusty (your biggest fan)' },
   { id: 'kraken', from: 'bot', stamp: 'mars', gift: 4000, when: () => S.stats.kraken > 0,
     text: 'BEEP. KRAKEN ESCAPED. BEEP BOOP.\nENCLOSED: COINS.\nTHE KRAKEN SAYS NO HARD FEELINGS. IT WAVED ALL EIGHT ARMS. BEEP.' },
+  { id: 'bandit', from: 'tourist', stamp: 'saturn', gift: 6000, when: () => (S.stats.bandit || 0) > 0,
+    text: 'MY SUITCASE! You got it back from that raccoon! All 214 photos are safe, and my lucky socks. He did eat the sandwiches.\n\nEnclosed: a reward, and a photo of you bumping him. You are the blur on the left.' },
   { id: 'fan1', from: 'tourist', gift: () => 80 + S.avg.total * 0.5, when: () => S.flights >= 8,
     text: 'Hi! I watched your launch from the fence. I took 214 photos. In 3 of them you can see the rocket! Here’s a little something for fuel. Keep flying!' },
   { id: 'daily3', from: 'ada', stamp: 'gate', gift: () => 150 + S.avg.total * 0.6, when: () => (S.stats.daily || 0) >= 3,
@@ -1538,6 +1541,14 @@ function drawMailbox() {
 }
 
 // story lines keyed by trigger
+// what's new, told by Ada to returning players (append only; a fresh save starts caught up)
+const WORKSHOP_NEWS = [
+  { t: 'The trophy book has a Logbook now: a chart of your recent flights and all your personal records.' },
+  { t: 'You can turn the music and sounds up or down in Settings now.' },
+  { t: 'New in the Control workshop: Dash Jets! Double-tap left or right to zip sideways. Nothing can touch you mid-dash.', when: () => upState(UP.dash) !== 'hidden' },
+  { t: 'Got a game controller? Plug it in and fly with it. The arrow keys work in the workshop too.', when: () => matchMedia('(hover: hover)').matches },
+  { t: 'Word from the Saturn Spa: a raccoon in a stolen saucer is nicking luggage past 220 km. Bump him three times and he’ll give it back!', when: () => S.bestAlt >= 120000 },
+];
 const STORY = {
   intro: [
     ['ada', 'Well hello, sweetpea! Welcome to my old rocket shed. I used to fly these things, you know.'],
@@ -2807,8 +2818,8 @@ function prepareRocket() {
   if (cd.thrustMul) { G.st = Object.assign({}, G.st, { thrust: G.st.thrust * cd.thrustMul }); }
   R.startPy = R.py;
   R.trace = { a: [], x: [] }; R.traceT = 0; R.ghostBeat = false;
-  R.boss = null; R.bossN = 0; R.bossOk = { storm: !S.seen.boss_storm || chance(0.4), whale: !S.seen.boss_whale || chance(0.45), pirates: !S.seen.boss_pirates || chance(0.4), kraken: !S.seen.boss_kraken || chance(0.4) };
-  if (daily && daily.twist === 'boss') R.bossOk = { storm: true, whale: true, pirates: true, kraken: true };
+  R.boss = null; R.bossN = 0; R.bossOk = { storm: !S.seen.boss_storm || chance(0.4), whale: !S.seen.boss_whale || chance(0.45), pirates: !S.seen.boss_pirates || chance(0.4), kraken: !S.seen.boss_kraken || chance(0.4), bandit: !S.seen.boss_bandit || chance(0.45) };
+  if (daily && daily.twist === 'boss') R.bossOk = { storm: true, whale: true, pirates: true, kraken: true, bandit: true };
   const gh = S.ghosts && S.ghosts[route ? route.id : 'free'];
   G.ghost = !daily && S.settings.ghost && gh && gh.a && gh.a.length > 4 ? gh : null;
   const rc = !daily && rivalLive(); G.rival = rc ? makeRival(rc, G.st) : null; R.rivalBeat = false;
@@ -3021,19 +3032,23 @@ const BOSSES = {
   whale: { name: 'BIG BLUE', sub: 'FLY THROUGH THE SPOUT!', min: 9000, max: 22000, minFlights: 0, col: '#9fdcff', room: 2500 },
   pirates: { name: 'CAPTAIN CALICO', sub: 'SKY PIRATES! FIND THE GREEN LANE', min: 26000, max: 55000, minFlights: 0, col: '#ff9f43', room: 4000, secs: 5.6 },
   kraken: { name: 'THE SPACE KRAKEN', sub: 'SLIP THROUGH THE GAPS', min: 60000, max: 200000, minFlights: 0, col: '#f15bb5', room: 14000 },
+  bandit: { name: 'THE COMET BANDIT', sub: 'BUMP HIM 3 TIMES FOR THE LUGGAGE!', min: 220000, max: 600000, minFlights: 0, col: '#7ee081', room: 30000, secs: 11.5 },
 };
+const BANDIT_DUR = 11;
 function updateBoss(R, dt) {
   if (R.ended || R.crashed) return;
   const u = G.cam.z;
   if (!R.boss) {
     if (R.bossN >= 2 || R.event || !(R.vy > 120) || R.time < 3) return;
     for (const id in BOSSES) {
-      const d = BOSSES[id];
-      if (!R.bossOk[id] || R.alt < d.min || R.alt > d.max || S.flights < d.minFlights) continue;
+      const d = BOSSES[id], forced = DEBUG.forceBoss === id; // __skyhop.DEBUG.forceBoss = 'bandit' for playtests
+      if (DEBUG.forceBoss && !forced) continue;
+      if (!forced && (!R.bossOk[id] || R.alt < d.min || R.alt > d.max || S.flights < d.minFlights)) continue;
       // only when the climb has enough steam left for the whole encounter
       R.bossChk = (R.bossChk || 0) - dt; if (R.bossChk > 0) return;
       R.bossChk = 0.5;
-      if (predictApogee(R, G.st, !!d.secs) < R.alt + d.room || (d.secs && predictApogee.t < d.secs)) continue;
+      if (!forced && (predictApogee(R, G.st, !!d.secs) < R.alt + d.room || (d.secs && predictApogee.t < d.secs))) continue;
+      DEBUG.forceBoss = null;
       R.bossN++; R.bossOk[id] = false; S.seen['boss_' + id] = 1;
       const dir = chance(0.5) ? 1 : -1;
       R.boss = { id, t: 0, dir, hit: false, strikes: [], seed: Math.random(), sx: W / 2, sy: -200 * u, done: false, boosted: false };
@@ -3052,6 +3067,10 @@ function updateBoss(R, dt) {
         for (let i = 0; i < n; i++) R.boss.strikes.push({ at: 1.6 + i * 1.6, st: 'wait', lanes: null, by: 0 });
         sfx.arr(); sfx.cannon();
         if (R.faces.length) R.bubble = { s: 'PIRATES?! In SPACE?!', t: 0 };
+      } else if (id === 'bandit') {
+        Object.assign(R.boss, { bumps: 0, stun: 0, sw: 0, ph: 0, cans: [], canT: 1.6, leaveT: 0 });
+        sfx.ufo(); sfx.honk();
+        if (R.faces.length) R.bubble = { s: 'Hey! That raccoon has our bags!', t: 0 };
       } else { sfx.whale(); if (R.faces.length) R.bubble = { s: 'Is that a WHALE?!', t: 0 }; }
       banner(d.name, d.col, 2.4, d.sub);
       return;
@@ -3182,7 +3201,90 @@ function updateBoss(R, dt) {
       }
     }
     if (b.t > last + 3.2) R.boss = null;
+  } else if (b.id === 'bandit') {
+    // Rascal zigzags overhead and swoops down to your height every couple of seconds:
+    // bump into him three times to win the luggage back, and dodge the tin cans he throws
+    const relaxed = S.settings.relaxed;
+    if (!b.leaveT && (b.bumps >= 3 || b.t > BANDIT_DUR)) {
+      b.leaveT = b.t; b.paid = true;
+      if (b.bumps >= 3) {
+        const v = coinValue(R.alt) * 15; R.coinCash += v; R.coins += 15; S.stats.coins += 15; S.stats.bandit = (S.stats.bandit || 0) + 1;
+        banner('BANDIT BUSTED!', '#7ee081', 2.2, 'Luggage back! +' + fmtMoney(v)); sfx.bigcoin(); confetti(R.x, R.py + 80, 40);
+        if (R.faces.length) { R.bubble = { s: 'My suitcase!', t: 0 }; R.mood = 'joy'; R.moodT = 2.5; }
+      } else { banner('HE GOT AWAY!', '#c9ced8', 1.8, b.bumps ? `${b.bumps} of 3 bumps` : 'Catch him next time'); sfx.meh(); }
+    }
+    b.stun = Math.max(0, b.stun - dt);
+    const enter = smooth(clamp(b.t / 1.0, 0, 1)), leave = b.leaveT ? smooth(clamp((b.t - b.leaveT) / 1.1, 0, 1)) : 0;
+    // swoop: 0 = cruising up top, 1 = down at the rocket's height
+    const want = b.leaveT || b.stun > 0 ? 0 : Math.pow((1 - Math.cos(Math.max(0, b.t - 0.8) * 2.6)) / 2, 1.4);
+    b.sw += (want - b.sw) * Math.min(1, dt * (want < b.sw ? 5 : 9));
+    b.ph += dt * 1.8 * (1 - 0.6 * b.sw);
+    const span = Math.min(W * 0.32, 260 * u), top = Math.max(H * 0.18, 110 * u), low = clamp(ry - 14 * u, top, H - 60 * u);
+    b.sx = W / 2 + Math.sin(b.ph + b.seed * 6) * span;
+    b.sy = lerp(lerp(-160 * u, top, enter), low, b.sw * enter) - leave * (H * 0.6);
+    // bump!
+    const reach = (relaxed ? 62 : 48) * u + 10 * G.rocketScale * u;
+    if (!b.leaveT && b.stun <= 0 && !R.crashed && Math.hypot(rx - b.sx, ry - b.sy) < reach) {
+      b.bumps++; b.stun = 0.9;
+      const v = coinValue(R.alt) * 3; R.coinCash += v; R.coins += 3; S.stats.coins += 3;
+      sfx.boing(); sfx.coin(b.bumps * 3); G.cam.shake = Math.max(G.cam.shake, 5); buzz(20);
+      floater(R.x, R.py + 70, b.bumps < 3 ? `BUMP! ${b.bumps}/3` : 'GOTCHA!', '#7ee081', 22);
+      sparks(R.x, R.py + 40, 16, ['#7ee081', '#ffffff', '#ffd93d'], 300);
+    }
+    // tin cans
+    b.canT -= dt;
+    if (!b.leaveT && b.canT <= 0 && b.stun <= 0 && b.sw < 0.45 && b.t > 1.2) {
+      b.canT = relaxed ? 2.2 : 1.35;
+      b.cans.push({ x: b.sx, y: b.sy + 26 * u, vx: clamp((rx - b.sx) * 0.55, -260 * u, 260 * u) + rand(-30, 30) * u, vy: H * 0.75, rot: rand(0, TAU), done: false });
+      sfx.whoosh();
+    }
+    const half = 20 * u + 10 * G.rocketScale * u;
+    for (const k of b.cans) {
+      const y0 = k.y; k.x += k.vx * dt; k.y += k.vy * dt; k.rot += dt * 9;
+      if (!k.done && y0 < ry && k.y >= ry) {
+        k.done = true;
+        if (Math.abs(k.x - rx) < half && !R.crashed) hitRocket({ x: R.x, py: R.py + 60, slow: 0.1, dmg: 1 }, false);
+        else if (Math.abs(k.x - rx) < half * 2.2) floater(R.x, R.py + 30, pick(['Not today!', 'Missed!', 'Nice try!']), '#c9ced8', 15);
+      }
+    }
+    b.cans = b.cans.filter(k => k.y < H + 60);
+    if (b.leaveT && leave >= 1 && !b.cans.length) R.boss = null;
   }
+}
+// Rascal the Comet Bandit: a raccoon in a stolen saucer with a sack of loot
+function drawBanditShip(c, t, stunned, lookX = 0) {
+  ink(c, 3);
+  // striped tail poking out behind the dome
+  for (let i = 0; i < 6; i++) { const a = i / 5, x = -36 - a * 34, y = -14 - Math.sin(a * 2.4) * 16 + Math.sin(t * 6 + i) * 1.5; circ(c, x, y, 9 - a * 2.5); fillStroke(c, i % 2 ? INK : '#9b97ad', 2.5); }
+  // loot sack hanging under the saucer
+  c.save(); c.translate(42, 26); c.rotate(Math.sin(t * 3) * 0.15);
+  c.beginPath(); c.moveTo(-4, -14); c.lineTo(0, 0); c.stroke();
+  c.beginPath(); c.moveTo(-12, 4); c.quadraticCurveTo(-16, 26, 0, 26); c.quadraticCurveTo(16, 26, 12, 4); c.quadraticCurveTo(0, -2, -12, 4); fillStroke(c, '#d9b27a', 3);
+  text(c, '$', 0, 15, 15, '#fff6e5', 'center', INK, 3);
+  c.restore();
+  // glass dome with the raccoon inside
+  c.beginPath(); c.ellipse(0, 4, 42, 56, 0, Math.PI, TAU); c.closePath(); c.fillStyle = 'rgba(191,233,255,.55)'; c.fill();
+  c.save(); c.translate(0, -24);
+  for (const sd of [-1, 1]) { c.beginPath(); c.moveTo(sd * 7, -14); c.lineTo(sd * 16, -22); c.lineTo(sd * 19, -7); c.closePath(); fillStroke(c, '#9b97ad', 2.5); }
+  circ(c, 0, 0, 19); fillStroke(c, '#b3afc4', 3);
+  c.beginPath(); c.ellipse(0, -2, 18, 7.5, 0, 0, TAU); c.fillStyle = INK; c.fill();
+  if (stunned) {
+    c.lineWidth = 2.5; c.strokeStyle = '#fff';
+    for (const sd of [-1, 1]) { c.beginPath(); c.moveTo(sd * 7 - 3, -5); c.lineTo(sd * 7 + 3, 1); c.moveTo(sd * 7 + 3, -5); c.lineTo(sd * 7 - 3, 1); c.stroke(); }
+    c.strokeStyle = INK;
+  } else for (const sd of [-1, 1]) { c.fillStyle = '#fff'; circ(c, sd * 7, -2, 4); c.fill(); c.fillStyle = INK; circ(c, sd * 7 + lookX * 0.4, -1.5, 2); c.fill(); }
+  c.beginPath(); c.ellipse(0, 8, 9, 6.5, 0, 0, TAU); fillStroke(c, '#fff6e5', 2.5);
+  c.fillStyle = INK; circ(c, 0, 5, 2.6); c.fill();
+  c.lineWidth = 2; c.beginPath(); if (stunned) { c.arc(0, 12, 3, Math.PI, TAU); } else { c.arc(0, 9, 4, 0.2, Math.PI - 0.2); } c.stroke();
+  c.restore();
+  c.beginPath(); c.ellipse(0, 4, 42, 56, 0, Math.PI, TAU); c.closePath(); ink(c, 3); c.stroke();
+  c.fillStyle = 'rgba(255,255,255,.7)'; c.beginPath(); c.ellipse(-24, -26, 5, 11, 0.45, 0, TAU); c.fill();
+  // saucer rim with blinking lights
+  c.beginPath(); c.ellipse(0, 6, 74, 15, 0, 0, TAU); fillStroke(c, '#c9ced8', 3.5);
+  c.beginPath(); c.ellipse(0, 11, 54, 8, 0, 0, Math.PI); c.fillStyle = '#9aa1b0'; c.fill();
+  for (let i = 0; i < 7; i++) { const x = (i - 3) * 19, on = Math.sin(t * 10 + i * 1.3) > 0; circ(c, x, 7 - Math.abs(i - 3) * 0.6, 4); fillStroke(c, on ? (i % 2 ? '#ffd93d' : '#ff6fb5') : '#6b6680', 2); }
+  // dizzy stars
+  if (stunned) for (let i = 0; i < 3; i++) { const a = t * 6 + i * 2.1; text(c, '★', Math.cos(a) * 28, -62 + Math.sin(a) * 6, 14, '#ffd93d', 'center', INK, 2.5); }
 }
 function drawStormKingBody(c, charging, zapping, lookX) {
     drawCloud(c, 0, 0, 240, 120, 7, zapping ? '#9a96c0' : '#5a5578', '#3a3554', 3);
@@ -3297,6 +3399,7 @@ const GUIDE = [
   { boss: 'whale', stat: 'whale', name: 'Big Blue', desc: 'A friendly sky whale above 9 km. Its spout is the best boost in the sky.' },
   { boss: 'pirates', stat: 'pirates', name: 'Captain Calico', desc: 'A pirate cat in a flying ship, 26 to 55 km up. Red X lanes get cannonballs: slide into a green SAFE lane!' },
   { boss: 'kraken', stat: 'kraken', name: 'The Space Kraken', desc: 'Lurks past 60 km. Fly through the sparkly gap between its arms.' },
+  { boss: 'bandit', stat: 'bandit', name: 'Rascal the Comet Bandit', desc: 'A raccoon in a stolen saucer, 220 to 600 km up, with everyone’s luggage. Bump him three times while he swoops low, and dodge his tin cans.' },
 ];
 const guideKey = g => g.boss ? 'gb_' + g.boss : 'g_' + g.id;
 const guideNewCount = () => GUIDE.filter(g => guideSeen(g) && !S.seen[guideKey(g)]).length;
@@ -3310,6 +3413,7 @@ function guideIcon(g, locked) {
     else if (g.boss === 'whale') { c.translate(2, 2); c.scale(0.22, 0.22); drawWhaleBody(c, 1, 0.4); }
     else if (g.boss === 'kraken') { c.translate(0, 6); c.scale(0.24, 0.24); drawKrakenHead(c, 0); }
     else if (g.boss === 'pirates') { c.translate(0, 10); c.scale(0.19, 0.19); drawPirateShip(c, 0, false, 0); }
+    else if (g.boss === 'bandit') { c.translate(2, 6); c.scale(0.36, 0.36); drawBanditShip(c, 0.3, false, 0); }
     else {
       const o = makeObstacle(g.id, 0, 0);
       Object.assign(o, { x: 0, py: 0, dir: 1, seed: 0.37, rot: 0 });
@@ -3425,6 +3529,19 @@ function drawBoss() {
     // the head peeking up from below
     ctx.translate(b.sx, b.sy); ctx.scale(u * 1.2, u * 1.2); ink(ctx, 3.5);
     drawKrakenHead(ctx, clamp((w2s(R.x, R.py)[0] - b.sx) / 50, -6, 6));
+  } else if (b.id === 'bandit') {
+    for (const k of b.cans) { // tin cans
+      ctx.save(); ctx.translate(k.x, k.y); ctx.rotate(k.rot); ctx.scale(u, u); ink(ctx, 2.5);
+      rr(ctx, -7, -10, 14, 20, 3); fillStroke(ctx, '#c9ced8', 2.5); ctx.fillStyle = '#ff5a5f'; ctx.fillRect(-7, -3, 14, 7); ctx.strokeRect(-7, -3, 14, 7);
+      ctx.restore();
+    }
+    // a soft green ring around him while he's low enough to catch
+    if (!b.leaveT && b.stun <= 0 && b.sw > 0.55) { ctx.save(); ctx.globalAlpha = (b.sw - 0.55) * 1.6 * (0.6 + Math.sin(G.t * 12) * 0.25); ctx.strokeStyle = '#7ee081'; ctx.lineWidth = 4; ctx.setLineDash([10, 8]); circ(ctx, b.sx, b.sy, 66 * u); ctx.stroke(); ctx.restore(); }
+    ctx.translate(b.sx, b.sy); ctx.scale(u * 1.1, u * 1.1); ctx.rotate(b.stun > 0 ? Math.sin(G.t * 30) * 0.2 : Math.cos(b.ph + b.seed * 6) * 0.12);
+    drawBanditShip(ctx, G.t, b.stun > 0, clamp((w2s(R.x, R.py)[0] - b.sx) / 40, -6, 6));
+    // bump counter
+    ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+    if (!b.leaveT) { for (let i = 0; i < 3; i++) { const x = b.sx + (i - 1) * 18 * u, y = b.sy - 82 * u; circ(ctx, x, y, 6 * u); fillStroke(ctx, i < b.bumps ? '#7ee081' : 'rgba(255,255,255,.5)', 2.5); } }
   } else if (b.id === 'whale') {
     ctx.translate(b.sx, b.sy); ctx.scale(u, u);
     // spout
@@ -3660,6 +3777,7 @@ function predictApogee(R, st, noWarp) {
 function autoDodge() {
   const R = G.R; let push = 0;
   if (R.boss && R.boss.id === 'storm') { const rx = w2s(R.x, R.py)[0], u = G.cam.z; for (const k of R.boss.strikes) if (k.st === 'warn' && Math.abs(rx - k.x) < 70 * u) push += (rx >= k.x ? 1 : -1) * 1.5; }
+  if (R.boss && R.boss.id === 'bandit') { const [rx, ry] = w2s(R.x, R.py), u = G.cam.z; for (const k of R.boss.cans) if (!k.done && k.y < ry && ry - k.y < 260 * u && Math.abs(k.x - rx) < 50 * u) push += (rx >= k.x ? 1 : -1) * 1.5; }
   if (R.boss && R.boss.id === 'pirates' && R.boss.lane) { const rx = w2s(R.x, R.py)[0], bs = R.boss; const k = bs.strikes.find(q => q.st === 'warn' && q.lanes); if (k) { const me = clamp(Math.floor((rx - bs.lane.l0) / bs.lane.lw), 0, 4); if (k.lanes[me]) { let best = null; for (let i = 0; i < 5; i++) if (!k.lanes[i]) { const cx = bs.lane.l0 + (i + 0.5) * bs.lane.lw; if (best == null || Math.abs(cx - rx) < Math.abs(best - rx)) best = cx; } if (best != null) push += Math.sign(best - rx) * 1.5; } } }
   for (const o of G.obs) {
     if (o.harmless || o.dead) continue;
@@ -4185,6 +4303,7 @@ const ACH = [
   { id: 'whale', name: 'Whale Rider', desc: 'Catch a boost from Big Blue’s spout', test: () => S.stats.whale >= 1, reward: 2500 },
   { id: 'rival', name: 'Vroom Vanquished', desc: 'Beat all five of Baron Vroom\u2019s challenges', test: () => !!(S.rival && S.rival.v5), reward: 10000 },
   { id: 'pirates', name: 'Outsailed!', desc: 'Dodge every cannonball from Captain Calico\u2019s ship', test: () => (S.stats.pirates || 0) >= 1, reward: 5000 },
+  { id: 'bandit', name: 'Lost Luggage Hero', desc: 'Catch the Comet Bandit and win the luggage back', test: () => (S.stats.bandit || 0) >= 1, reward: 30000 },
   { id: 'kraken', name: 'Eight-Arm Escape', desc: 'Slip past every arm of the Space Kraken', test: () => S.stats.kraken >= 1, reward: 20000 },
   { id: 'guide', prog: () => [GUIDE.filter(guideSeen).length, GUIDE.length], name: 'Sky Spotter', desc: 'Fill every page of the Sky Guide', test: () => GUIDE.every(guideSeen), reward: 50000 },
   { id: 'wish10', prog: () => [S.stats.wishes || 0, 10], name: 'Fairy Rocketmother', desc: 'Grant 10 passenger wishes', test: () => (S.stats.wishes || 0) >= 10, reward: 2500 },
@@ -4234,6 +4353,7 @@ const ACH_SYM = {
   daily: '<rect x="21" y="18" width="22" height="20" rx="3" fill="#fff6e5" stroke-width="2.5"/><path d="M21 24h22" stroke-width="2.5"/><rect x="21" y="18" width="22" height="6" rx="2" fill="#ff5a5f" stroke-width="2.5"/>' + T_('1', 10).replace('y="31.6"', 'y="35"'),
   line2: T_('#2', 14),
   tickle: '<path d="M21 41c4-11 11-20 22-26-1 11-8 20-19 24z" fill="#ffb3d9" stroke-width="2.5"/><path d="M21 41l14-16M30 26l-3-3M34 29l4 0M27 31l-3-2M30 33l3 1" stroke-width="1.8"/>',
+  bandit: '<path d="M28 22v-4h8v4" stroke-width="2.5"/><rect x="20.5" y="22" width="23" height="16" rx="3" fill="#d9a066" stroke-width="2.5"/><path d="M26 22v16M38 22v16" stroke-width="2"/><rect x="29.5" y="27" width="5" height="4.5" rx="1" fill="#ffd93d" stroke-width="1.8"/><path d="M20.5 27.5h-2M45.5 27.5h-2" stroke="#4fd8ff" stroke-width="2.2"/><path d="M17 33h3M44 33h3" stroke="#4fd8ff" stroke-width="2.2"/>',
   phase: '<path d="M24 15c3.5 3 4.5 7 4.5 10.5V36h-9V25.5c0-3.5 1-7.5 4.5-10.5z" fill="#fff" opacity=".55" stroke-dasharray="2.5 3"/><path d="M40 15c3.5 3 4.5 7 4.5 10.5V36h-9V25.5c0-3.5 1-7.5 4.5-10.5z" fill="#fff6e5"/><circle cx="40" cy="24.5" r="2" fill="#4d96ff" stroke-width="2"/><path d="M37.5 36l2.5 4.5 2.5-4.5" fill="#ff9f43" stroke-width="2"/><path d="M30.5 21h3M30 28h4M30.5 35h3" stroke="#4fd8ff" stroke-width="2.5"/>',
   rainbow: '<path d="M18 36a14 14 0 0 1 28 0" stroke="#ff5a5f" stroke-width="4"/><path d="M22 36a10 10 0 0 1 20 0" stroke="#ffd93d" stroke-width="4"/><path d="M26 36a6 6 0 0 1 12 0" stroke="#4d96ff" stroke-width="4"/>',
   fork: '<path d="M32 40V29l-8-9M32 29l8-9" stroke-width="3.5"/><path d="M21 22v-5h5M43 22v-5h-5" stroke-width="3"/>',
@@ -6601,6 +6721,13 @@ const UI = (() => {
       lines.push(['ada', `Welcome back, dear! The souvenir stand kept selling snow globes while you were away. That’s ${fmtMoney(v)} for the rocket fund!`]);
       setTimeout(() => sfx.bigcoin(), 400);
     }
+    if ((S.news || 0) < WORKSHOP_NEWS.length) {
+      if (S.flights >= 3) {
+        const fresh = WORKSHOP_NEWS.slice(S.news || 0).filter(n => !n.when || n.when()).slice(-4);
+        fresh.forEach((n, i) => lines.push(['ada', (i ? '' : 'Workshop news, sweetpea! ') + n.t]));
+      }
+      S.news = WORKSHOP_NEWS.length;
+    }
     if (S.pendingRival) { const c = RIVAL.find(x => x.id === S.pendingRival); S.pendingRival = null; if (c) lines.push(...c.lose); }
     { const rc = rivalCur(); if (rc && !S.seen['rival_' + rc.id] && lines.length < 6 && S.flights >= 2) { S.seen['rival_' + rc.id] = 1; lines.push(...rc.intro); } }
     if (jobsUnlocked() && !S.seen.jobs) { S.seen.jobs = 1; fillJobs(); S.jobsNew = 3; lines.push(...STORY.jobs); }
@@ -6849,6 +6976,11 @@ function botSteer() {
     const rx = w2s(R.x, R.py)[0], u = G.cam.z;
     if (bs.id === 'storm') for (const k of bs.strikes) if (k.st === 'warn' && Math.abs(rx - k.x) < 100 * u) push += (rx >= k.x ? 1 : -1) * 4;
     if (bs.id === 'whale' && !bs.boosted && bs.hole) push += clamp((bs.hole[0] - rx) / (40 * u), -1.5, 1.5);
+    if (bs.id === 'bandit' && !bs.leaveT) {
+      if (bs.sw > 0.3 && bs.stun <= 0) push += clamp((bs.sx - rx) / (25 * u), -4, 4);
+      const ry = w2s(R.x, R.py)[1];
+      for (const k of bs.cans) if (!k.done && k.y < ry && ry - k.y < 320 * u && Math.abs(k.x - rx) < 70 * u) push += (rx >= k.x ? 1 : -1) * 3;
+    }
     if (bs.id === 'kraken') { const k = bs.strikes.find(q => q.st === 'come' && q.y < w2s(R.x, R.py)[1] + 10); if (k) push += clamp((k.gx - rx) / (25 * u), -4, 4); }
     if (bs.id === 'pirates' && bs.lane) { const k = bs.strikes.find(q => (q.st === 'warn' || (q.st === 'fire' && !q.hitDone)) && q.lanes); if (k) { let best = null; for (let i = 0; i < 5; i++) if (!k.lanes[i]) { const cx = bs.lane.l0 + (i + 0.5) * bs.lane.lw; if (best == null || Math.abs(cx - rx) < Math.abs(best - rx)) best = cx; } if (best != null) push += clamp((best - rx) / (20 * u), -4, 4); } }
   }
