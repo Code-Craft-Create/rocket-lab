@@ -3746,6 +3746,8 @@ const ACH = [
   { id: 'wish10', prog: () => [S.stats.wishes || 0, 10], name: 'Fairy Rocketmother', desc: 'Grant 10 passenger wishes', test: () => (S.stats.wishes || 0) >= 10, reward: 2500 },
   { id: 'guests20', prog: () => [guestsMet(), 20], name: 'Famous Friends', desc: 'Fly 20 different passengers (see the Guestbook)', test: () => guestsMet() >= 20, reward: 15000 },
   { id: 'lost5', prog: () => [lostFound(), 5], name: 'Sky Detective', desc: 'Return 5 lost items (see Lost & Found)', test: () => lostFound() >= 5, reward: 8000 },
+  { id: 'pen10', prog: () => [S.stats.letters || 0, 10], name: 'Pen Pals', desc: 'Open 10 fan letters from your mailbox', test: () => (S.stats.letters || 0) >= 10, reward: 3000 },
+  { id: 'wave', secret: true, name: 'Wave Back', desc: 'Fly past Pip\u2019s home planet, far beyond the Starlight Gate', test: () => !!S.seen.pipPlanet, reward: 50000 },
   { id: 'daily', name: 'Special Courier', desc: 'Complete a Daily Special delivery', test: () => (S.stats.daily || 0) >= 1, reward: 3000 },
   { id: 'line2', name: 'Franchise', desc: 'Open a second Skyhop line after the finale', test: () => (S.line || 1) >= 2, reward: 5000 },
   { id: 'tickle', secret: true, name: 'Tickle Tank', desc: 'Poke your rocket 25 times in the workshop', test: () => (S.stats.pokes || 0) >= 25, reward: 250 },
@@ -5527,6 +5529,7 @@ const UI = (() => {
       e.stopPropagation();
       if (S.mail[0] !== m.id) return;
       S.mail.shift(); S.money += gift; S.earned += gift; S.stats.letters = (S.stats.letters || 0) + 1;
+      checkAchievements(); if (S.pendingAch && S.pendingAch.length) { for (const id of S.pendingAch) { const a = ACH.find(x => x.id === id); toast(`Achievement: <b>${a.name}</b> +${fmtMoney(a.reward)}`); } sfx.ach(); S.pendingAch = []; }
       sfx.bigcoin(); saveGame(); refresh();
       if (mailCount()) { const pnl = $('scr-letter').querySelector('.panel'); pnl.style.animation = 'none'; void pnl.offsetWidth; pnl.style.animation = ''; sfx.paper(); openLetter(); }
       else { overlay('scr-letter', false); toast(`Fan mail gift: <b>+${fmtMoney(gift)}</b>`); }
