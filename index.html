@@ -335,6 +335,9 @@ button{font-family:var(--font)}
   #detail .dact .btn{font-size:19px;padding:10px 14px}
   #detail .dact .btn.auto{font-size:16px;padding:6px 12px}
 }
+/* big monitors at 100% scaling: the workshop scales up so it isn't tiny */
+@media (min-width:2200px) and (min-height:1250px){#scr-hangar .side,#statcard{zoom:1.25}}
+@media (min-width:3000px) and (min-height:1700px){#scr-hangar .side,#statcard{zoom:1.6}}
 /* laptops: a shorter details column */
 @media (min-width:1180px) and (min-height:600px) and (max-height:820px){
   #detail{padding:12px 14px 10px;gap:6px}
@@ -7550,9 +7553,11 @@ const UI = (() => {
   function measurePanel() {
     const sd = document.querySelector('#scr-hangar .side');
     if (!sd || !sd.offsetParent) return;
-    const sc = $('statcard');
-    G.panel = { l: sd.offsetLeft, t: sd.offsetTop, w: sd.offsetWidth, h: sd.offsetHeight, fold: sd.classList.contains('folded'), sheet: sheetMode(), sr: sc && sc.offsetParent ? sc.offsetLeft + sc.offsetWidth : 0 };
+    // screen rects, so a zoomed panel on a big monitor measures right (the pop animation re-measures when it ends)
+    const sc = $('statcard'), r = sd.getBoundingClientRect();
+    G.panel = { l: r.left, t: r.top, w: r.width, h: r.height, fold: sd.classList.contains('folded'), sheet: sheetMode(), sr: sc && sc.offsetParent ? sc.getBoundingClientRect().right : 0 };
   }
+  document.querySelector('#scr-hangar .side').addEventListener('animationend', e => { if (e.animationName === 'sidePop') measurePanel(); });
   function relayout() { applyMenu(); renderTabs(); renderTree(); measurePanel(); }
   function renderHeadBtns() {
     const h = $('head-btns'); h.innerHTML = '';
