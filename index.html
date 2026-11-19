@@ -4607,9 +4607,11 @@ function drawStars(alt) {
     const cols = alt > 400000 ? ['rgba(46,196,182,', 'rgba(155,93,229,'] : alt > 200000 ? ['rgba(155,93,229,', 'rgba(241,91,181,'] : ['rgba(255,90,95,', 'rgba(255,159,67,'];
     for (let k = 0; k < 3; k++) {
       const cx = W * (0.2 + k * 0.33) + Math.sin(G.t * 0.05 + k) * 40, cy = ((H * (0.3 + k * 0.25) + G.cam.py * 0.01 * G.cam.z) % (H * 1.5)) - H * 0.2;
-      const g = ctx.createRadialGradient(cx, cy, 10, cx, cy, W * 0.4);
+      const gr = W * 0.4, g = ctx.createRadialGradient(cx, cy, 10, cx, cy, gr);
       g.addColorStop(0, cols[k % 2] + (0.18 * neb) + ')'); g.addColorStop(1, cols[k % 2] + '0)');
-      ctx.globalAlpha = 1; ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+      // paint only the glow's own square: outside it the gradient is fully transparent, so the picture is the same for a third of the work
+      const x0 = Math.max(0, cx - gr), y0 = Math.max(0, cy - gr), x1 = Math.min(W, cx + gr), y1 = Math.min(H, cy + gr);
+      if (x1 > x0 && y1 > y0) { ctx.globalAlpha = 1; ctx.fillStyle = g; ctx.fillRect(x0, y0, x1 - x0, y1 - y0); }
     }
   }
   ctx.restore();
@@ -5620,12 +5622,28 @@ function drawHUD() {
   const altW = ctx.measureText(altS).width + altF * 0.18;
   if (pad + altW > coinL) altF = Math.max(20, Math.floor(altF * (coinL - pad) / altW));
   text(ctx, altS, pad, pad + (small ? 18 : 24), altF, '#ffffff', 'left');
-  text(ctx, `${fmtSpeed(R.vy)}${R.warp > 1.05 ? `  ·  WARP ×${R.warp.toFixed(1)}` : ''}`, pad + 2, pad + (small ? 44 : 58), small ? 13 : 16, '#bff8ff', 'left');
+  // passenger row: centred under the cash, but a full cabin slides right of the speed line and squeezes up before it would cover it
+  const cxH = W < 380 ? W / 2 + 22 : W / 2, nF = R.faces.length && !R.delivered ? Math.min(R.faces.length, 8) : 0, fsF = small ? 9 : 11;
+  const fr = fsF + 3, hi = W - (small ? 64 : 84) - fr, spF = small ? 13 : 16;
+  ctx.font = `900 ${spF}px ${FONT}`;
+  let spS = `${fmtSpeed(R.vy)}${R.warp > 1.05 ? `  ·  WARP ×${R.warp.toFixed(1)}` : ''}`, spW = ctx.measureText(spS).width;
+  // a full cabin on a very narrow phone: the warp tag drops its word so the faces still fit
+  if (R.warp > 1.05 && nF > 1 && pad + 2 + spW + 8 + fr + (nF - 1) * fsF * 1.5 > hi) { spS = `${fmtSpeed(R.vy)} · ×${R.warp.toFixed(1)}`; spW = ctx.measureText(spS).width; }
+  text(ctx, spS, pad + 2, pad + (small ? 44 : 58), spF, '#bff8ff', 'left');
+  let fCx = cxH, fGap = fsF * 2.4;
+  if (nF > 1) {
+    // face centres live between the end of the speed line and the pause button; squeeze closer only when the row would not fit
+    const lo = pad + 2 + spW + 8 + fr;
+    if ((nF - 1) * fGap > hi - lo) fGap = Math.max(fsF * 1.5, (hi - lo) / (nF - 1));
+    const half = (nF - 1) * fGap / 2;
+    fCx = Math.min(Math.max(cxH, lo + half), hi - half); // the pause button wins if space runs out
+  }
+  const fl = G.faceLay && G.faceLay.n === nF ? G.faceLay : (G.faceLay = { n: nF, cx: fCx, gap: fGap });
+  fl.cx += (fCx - fl.cx) * 0.2; fl.gap += (fGap - fl.gap) * 0.2; // glide when the WARP label comes and goes
   // hearts
   const hy = pad + (small ? 66 : 86), hs = small ? 20 : 24, rowH = small ? 19 : 23;
   // hearts wrap into rows so they never run into the passenger faces in the middle of the top bar
-  const cxH = W < 380 ? W / 2 + 22 : W / 2, nF = R.faces.length && !R.delivered ? Math.min(R.faces.length, 8) : 0, fsF = small ? 9 : 11;
-  const midL = nF ? cxH - Math.max((nF - 1) * fsF * 1.2 + fsF + 3, R.route && R.route.pax > 0 ? (small ? 45 : 60) : 0) - 10 : W;
+  const midL = nF ? fl.cx - Math.max((nF - 1) * fl.gap / 2 + fsF + 3, R.route && R.route.pax > 0 ? (small ? 45 : 60) : 0) - 10 : W;
   const slots = st.hp + (st.shield ? 1 : 0), perRow = Math.max(4, Math.min(slots, Math.floor((midL - pad - 4) / hs)));
   const hRows = Math.ceil(slots / perRow), hx = i => pad + 12 + (i % perRow) * hs, hyy = i => hy + Math.floor(i / perRow) * rowH;
   for (let i = 0; i < st.hp; i++) drawHeart(hx(i), hyy(i), small ? 8 : 10, i < R.hp);
@@ -5654,8 +5672,7 @@ function drawHUD() {
     ctx.font = `900 ${small ? 20 : 26}px ${FONT}`;
     const mr = mx + ctx.measureText(fmtMoney(R.coinCash)).width, over = mr + 40 > W - (small ? 64 : 84);
     // no room after the money (narrow phones): sit at the end of the speed line instead
-    ctx.font = `900 ${small ? 13 : 16}px ${FONT}`;
-    const spW = ctx.measureText(`${fmtSpeed(R.vy)}${R.warp > 1.05 ? `  ·  WARP ×${R.warp.toFixed(1)}` : ''}`).width;
+    // spW: the speed line's width, measured where it is drawn (it may be the short form)
     const k = R.lucky / (R.luckyMax || 8), lx = over ? pad + 2 + spW + 26 : mr + 24, ly = over ? pad + (small ? 44 : 58) : pad + 21;
     ctx.save(); if (R.lucky < 2 && Math.sin(G.t * 16) < 0) ctx.globalAlpha = 0.45;
     const g = ctx.createLinearGradient(lx - 16, 0, lx + 16, 0); RAINBOW.forEach((cc, i) => g.addColorStop(i / (RAINBOW.length - 1), cc));
@@ -5667,12 +5684,13 @@ function drawHUD() {
   // passengers
   if (R.faces.length && !R.delivered) {
     const n = Math.min(R.faces.length, 8), fs = small ? 9 : 11;
+    const fl = G.faceLay, fcx = fl ? fl.cx : cx, gap = fl ? fl.gap : fs * 2.4;
     for (let i = 0; i < n; i++) {
-      ctx.save(); ctx.translate(cx - (n - 1) * (fs * 1.2) + i * fs * 2.4, pad + (small ? 48 : 56));
+      ctx.save(); ctx.translate(fcx - (n - 1) * gap / 2 + i * gap, pad + (small ? 48 : 56));
       circ(ctx, 0, 0, fs + 3); ink(ctx, 3); fillStroke(ctx, '#bfe9ff', 3);
       drawFace(ctx, R.faces[i], fs, R.mood, G.t + i); ctx.restore();
     }
-    if (R.route && R.route.pax > 0) { const cw = small ? 90 : 120; const cy = pad + (small ? 68 : 80); rr(ctx, cx - cw / 2, cy, cw, 8, 4); fillStroke(ctx, 'rgba(43,34,64,.5)', 2.5); ctx.fillStyle = R.comfort > 0.7 ? '#5fd068' : R.comfort > 0.4 ? '#ffd93d' : '#ff5a5f'; ctx.fillRect(cx - cw / 2 + 2, cy + 2, (cw - 4) * R.comfort, 4); }
+    if (R.route && R.route.pax > 0) { const cw = small ? 90 : 120, cx = fcx; const cy = pad + (small ? 68 : 80); rr(ctx, cx - cw / 2, cy, cw, 8, 4); fillStroke(ctx, 'rgba(43,34,64,.5)', 2.5); ctx.fillStyle = R.comfort > 0.7 ? '#5fd068' : R.comfort > 0.4 ? '#ffd93d' : '#ff5a5f'; ctx.fillRect(cx - cw / 2 + 2, cy + 2, (cw - 4) * R.comfort, 4); }
   }
   // progress track (right side)
   drawProgressTrack();
@@ -5682,8 +5700,12 @@ function drawHUD() {
   // hazards close together share one triangle (the most urgent one, red if any of them is big) instead of a messy pile
   const warn = G.warnings.map(w => ({ x: clamp(w2s(w.x, 0)[0], 30, W - 60), k: w.k, big: w.big })).sort((a, b) => a.x - b.x), shown = [];
   for (const w of warn) { const p = shown[shown.length - 1]; if (p && w.x - p.x < 38) { p.k = Math.max(p.k, w.k); p.big = p.big || w.big; } else shown.push(w); }
+  // phones: below the hearts and fuel gauge, and below any tip on screen so a tip never hides the warning it is about
+  let wy = small ? Math.max(150, (G.hudB || 0) + 26) : 178;
+  if (small && shown.length) { const tb = $('toasts'); if (tb.children.length) { const r = tb.getBoundingClientRect(); if (r.height > 4) wy = Math.max(wy, r.bottom + 24); } }
+  G.warnY = shown.length && G.warnY ? G.warnY + (wy - G.warnY) * 0.25 : wy;
   for (const w of shown) {
-    const x = w.x, y = small ? Math.max(150, (G.hudB || 0) + 26) : 178; // below the hearts and fuel gauge
+    const x = w.x, y = G.warnY;
     ctx.save(); ctx.globalAlpha = 0.4 + w.k * 0.6;
     ctx.translate(x, y + Math.sin(G.t * 14) * 3);
     ink(ctx, 3); ctx.beginPath(); ctx.moveTo(0, -16); ctx.lineTo(15, 12); ctx.lineTo(-15, 12); ctx.closePath(); fillStroke(ctx, w.big ? '#ff5a5f' : '#ffd93d', 3);
