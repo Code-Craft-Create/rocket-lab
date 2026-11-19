@@ -316,6 +316,22 @@ body.in-hangar #toasts{left:calc((100vw - min(580px,54vw) - 16px)/2)}
 @keyframes toastOut{to{transform:translateY(-20px);opacity:0}}
 
 /* ---------- Pause / settings ---------- */
+#scr-letter .panel{max-width:410px;background:#fffaf0 repeating-linear-gradient(180deg,transparent 0 28px,rgba(77,150,255,.16) 28px 30px);padding:18px 20px 16px;position:relative;overflow:visible;transform:rotate(-1deg);animation:letterIn .5s cubic-bezier(.2,1.4,.4,1)}
+@keyframes letterIn{from{transform:translateY(80px) rotate(8deg) scale(.5);opacity:0}}
+#scr-letter .lt-scroll{overflow-y:auto;min-height:0;display:flex;flex-direction:column}
+.lt-head{display:flex;align-items:center;gap:12px;margin:0 56px 8px 0}
+.lt-head canvas{width:64px;height:64px;flex:none}
+.lt-from{font-weight:900;font-size:12px;color:var(--purple);text-transform:uppercase;letter-spacing:.8px}
+.lt-name{font-weight:900;font-size:21px;line-height:1.1}
+.lt-stamp{position:absolute;right:12px;top:-16px;transform:rotate(9deg);background:#fff;padding:4px;border:3px dashed var(--ink);border-radius:5px;box-shadow:0 3px 0 var(--ink);line-height:0}
+.lt-stamp canvas{width:50px;height:50px}
+.lt-body{font-weight:700;font-size:17px;line-height:1.5;white-space:pre-line;font-style:italic}
+.lt-sign{text-align:right;font-weight:900;margin-top:4px;font-style:italic}
+.lt-gift{display:flex;align-items:center;gap:8px;justify-content:center;margin:12px auto 12px;font-weight:900;font-size:18px;background:#fff3b0;border:3px solid var(--ink);border-radius:14px;padding:6px 14px;box-shadow:0 3px 0 var(--ink)}
+.lt-gift svg{width:26px;height:26px}
+#lt-ok{align-self:center}
+.lt-foot{display:flex;flex-direction:column;align-items:center;flex:none}
+@media (max-height:520px){.lt-body{font-size:15px;line-height:1.35}#scr-letter .panel{padding:12px 16px;max-width:600px}.lt-head{margin-bottom:4px}.lt-head canvas{width:48px;height:48px}.lt-foot{flex-direction:row;justify-content:center;gap:12px;margin-top:8px}.lt-gift{margin:0}}
 #scr-pause .panel,#scr-settings .panel,#scr-confirm .panel{max-width:380px;align-items:stretch}
 .menu-col{display:flex;flex-direction:column;gap:12px;padding:6px 18px 20px}
 .toggle-row{display:flex;justify-content:space-between;align-items:center;font-weight:800;font-size:18px;background:#fff;border:4px solid var(--ink);border-radius:14px;padding:8px 12px}
@@ -416,6 +432,17 @@ body.in-hangar #toasts{left:calc((100vw - min(580px,54vw) - 16px)/2)}
       <div class="menu-col"><div class="small-note" id="cf-text"></div>
         <div style="display:flex;gap:10px;justify-content:center"><button class="btn ghost" id="cf-no">Cancel</button><button class="btn red" id="cf-yes">Yes</button></div>
       </div>
+    </div>
+  </div>
+
+  <!-- Fan mail -->
+  <div id="scr-letter" class="screen overlay hidden">
+    <div class="panel"><div class="lt-stamp"><canvas id="lt-stamp" width="100" height="100"></canvas></div>
+      <div class="lt-scroll">
+        <div class="lt-head"><canvas id="lt-face" width="128" height="128"></canvas><div><div class="lt-from">A letter from</div><div class="lt-name" id="lt-name"></div></div></div>
+        <div class="lt-body" id="lt-body"></div><div class="lt-sign" id="lt-sign"></div>
+      </div>
+      <div class="lt-foot"><div class="lt-gift" id="lt-gift"></div><button class="btn" id="lt-ok">Thanks!</button></div>
     </div>
   </div>
 
@@ -669,6 +696,8 @@ const AudioSys = (() => {
     jelly() { tone({ type: 'sine', f: 400, f2: 900, dur: 0.25, vol: 0.12 }); },
     warp() { tone({ type: 'sine', f: 200, f2: 1600, dur: 0.8, vol: 0.12 }); noise({ dur: 0.8, vol: 0.15, filter: 'bandpass', f: 300, f2: 5000, q: 4 }); },
     ach() { [0, 4, 7, 12, 16].forEach((s, i) => tone({ type: 'triangle', f: N(79 + s), dur: 0.3, vol: 0.12, delay: i * 0.05 })); },
+    mail() { [0, 0.16].forEach(d => { tone({ type: 'sine', f: 2093, dur: 0.5, vol: 0.07, delay: d }); tone({ type: 'sine', f: 2960, dur: 0.35, vol: 0.035, delay: d }); }); },
+    paper() { noise({ dur: 0.25, vol: 0.12, filter: 'bandpass', f: 2500, f2: 5000, q: 0.8 }); noise({ dur: 0.2, vol: 0.08, filter: 'bandpass', f: 1800, f2: 3500, q: 0.8, delay: 0.18 }); },
     boing() { tone({ type: 'sine', f: 200, f2: 620, dur: 0.16, vol: 0.2 }); tone({ type: 'sine', f: 620, f2: 260, dur: 0.3, vol: 0.13, delay: 0.14 }); },
     cheer() {
       noise({ dur: 1.1, vol: 0.16, filter: 'bandpass', f: 1300, f2: 900, q: 0.7, attack: 0.1 });
@@ -1102,6 +1131,83 @@ const GUESTS = {
 function guestHint(id) { const r = ROUTES.find(x => x.who.includes(id)); if (r) return `Rides to ${r.to}.`; return TOURISTS.includes(id) ? 'Books seats on your regular routes.' : 'Somewhere out there...'; }
 const guestsMet = () => Object.keys(GUESTS).filter(id => S.met && S.met[id]).length;
 const guestNewCount = () => Object.keys(GUESTS).filter(id => S.met && S.met[id] && !S.seen['guest_' + id]).length;
+// ---- Fan mail: thank-you letters (with a little gift) arrive in the yard's mailbox
+const MAIL = [
+  { id: 'r0', from: 'buckley', stamp: 'dummy', gift: 40, when: () => routeDone('r0') && S.flights >= 3,
+    text: 'Dear Pilot,\n. . . . . . . . . . . . . . . .\n. . . . . . . . ! . . . . . .\n\nP.S. Ada here. He says thank you. I think.' },
+  { id: 'r1', from: 'plum', stamp: 'cafe', gift: 60, when: () => routeDone('r1'),
+    text: 'Dear Pilot,\nThe latte was magnificent. Slightly shaken, but magnificent. The Town Council has voted you a small thank-you. Please do not spend it all on rocket fuel.', sign: 'Yours officially, Mayor Plum' },
+  { id: 'r2', from: 'volt', stamp: 'storm', gift: 150, when: () => routeDone('r2'),
+    text: 'Your rocket flew through my storm clouds with only minor sizzling! Nimbus and I chipped in for a little something.\n\nP.S. If the sky ever growls at you around 2 km, that’s the Storm King. Don’t take it personally.' },
+  { id: 'r2b', from: 'orion', stamp: 'observ', gift: 250, when: () => routeDone('r2b'),
+    text: 'We saw the comet! Luna cried. I cried. The telescope fogged up. We have named a tiny asteroid after your rocket. It is very small, but it is yours. Enclosed: the naming fee, refunded.' },
+  { id: 'r3', from: 'juno', stamp: 'hotel', gift: 450, when: () => routeDone('r3'),
+    text: 'Dearest Pilot,\nThe heart-shaped window was everything. Romeo has been staring at Earth for three days. Please accept these coins and these tiny complimentary mints.\n\n(I ate the mints. Sorry.)' },
+  { id: 'r3b', from: 'flo', stamp: 'diner', gift: 750, when: () => routeDone('r3b'),
+    text: 'Hon, you’re welcome at my counter any time. Mike says your docking was smoother than my pancakes, which, rude. Coupon enclosed: one free stack. Coins too, since you can’t fly on pancakes. Yet.' },
+  { id: 'r4', from: 'kid', stamp: 'moon', gift: 1250, when: () => routeDone('r4'),
+    text: 'DEAR ROCKET PERSON.\nI AM ON THE MOON. I bowled a strike and the ball is still going. Nana knitted you a scarf but it floated away. Here is my allowance.', sign: 'Love, Lulu (age 8 and a half)' },
+  { id: 'r5', from: 'farmer', stamp: 'mars', gift: 3000, when: () => routeDone('r5'),
+    text: 'Pilot! The pizza arrived warm. WARM! From Earth! The potatoes and I are very grateful. Enclosed: some coins and my recipe for Mars potato pizza.\n\nStep one: be on Mars.' },
+  { id: 'r6', from: 'diva', stamp: 'saturn', gift: 7000, when: () => routeDone('r6'),
+    text: 'Darling.\nThe spa was divine. My skin is glowing (it might be the ice mud). Enclosed: backstage passes for the tour, and something for your fuel bill.', sign: 'Love and glitter, Stella' },
+  { id: 'r7', from: 'pip', stamp: 'gate', gift: 20000, when: () => routeDone('r7'),
+    text: 'Dear friend,\nI got home! Through the Gate. It is a long story. Mom says thank you for the ride, and that you are welcome for dinner any time (bring snacks, ours are purple).\n\nEnclosed: one shiny space pebble. Here it is worth a LOT.' },
+  { id: 'king', from: 'nimbus', stamp: 'storm', gift: 400, when: () => S.stats.king > 0,
+    text: 'That was the Storm King! Thirty years I’ve been forecasting him and you just... flew past. The lab took up a collection.\n\nP.S. Dr. Volt would like his hair to lie flat again. Any tips?' },
+  { id: 'whale', from: 'luna', stamp: 'observ', gift: 1500, when: () => S.stats.whale > 0,
+    text: 'We watched you ride Big Blue’s spout through the big telescope! Prof. Orion says the whale waved at you. I wrote it all down in my notebook, page 212. Here is a little reward from the observatory.' },
+  { id: 'kraken', from: 'bot', stamp: 'mars', gift: 6000, when: () => S.stats.kraken > 0,
+    text: 'BEEP. KRAKEN ESCAPED. BEEP BOOP.\nENCLOSED: COINS.\nTHE KRAKEN SAYS NO HARD FEELINGS. IT WAVED ALL EIGHT ARMS. BEEP.' },
+  { id: 'fan1', from: 'tourist', gift: () => 80 + S.avg.total * 0.5, when: () => S.flights >= 8,
+    text: 'Hi! I watched your launch from the fence. I took 214 photos. In 3 of them you can see the rocket! Here’s a little something for fuel. Keep flying!' },
+  { id: 'daily3', from: 'ada', stamp: 'gate', gift: () => 150 + S.avg.total * 0.6, when: () => (S.stats.daily || 0) >= 3,
+    text: 'Sweetpea, the phone hasn’t stopped ringing! Three special deliveries, and the goldfish sent a thank-you card. Here’s your share of the tips.', sign: 'Proud of you, Ada' },
+  { id: 'fan2', from: 'kid2', gift: () => 100 + S.avg.total * 0.5, when: () => S.flights >= 20,
+    text: 'Dear Pilot,\nI drew your rocket. I gave it more fins. You should give it more fins. Enclosed: my drawing, and some coins. Mostly the drawing.', sign: 'Rusty' },
+  { id: 'fan3', from: 'nana', gift: () => 150 + S.avg.total * 0.6, when: () => S.stats.pax >= 30,
+    text: 'Dear, I’m knitting a cozy for your nose cone. It’s in the post. At this rate it may take a few years. Until then, here’s some pocket money. Wear a scarf up there!' },
+  { id: 'cat', from: 'cat', gift: () => 200 + S.avg.total * 0.7, when: () => S.flights >= 35,
+    text: 'Meow. Meow meow.\nMrrrp.\n\n(The envelope also holds a feather, some fluff and a few coins. You keep the coins.)', sign: '— Sir Whiskers (paw print)' },
+];
+const mailCount = () => (S.mail || []).length;
+const mailboxOn = () => !!(S.mailGot && Object.keys(S.mailGot).length);
+const mailboxX = () => ((G.st || computeStats()).startAlt > 0 ? 212 : -252);
+function mailGift(m) { const g = typeof m.gift === 'function' ? m.gift() : m.gift; return g > 1000 ? Math.round(g / 50) * 50 : Math.round(g / 5) * 5; }
+function checkMail() {
+  S.mail = S.mail || []; S.mailGot = S.mailGot || {};
+  let n = 0;
+  for (const m of MAIL) if (!S.mailGot[m.id]) { let ok = false; try { ok = m.when(); } catch (e) { ok = false; } if (ok) { S.mailGot[m.id] = 1; S.mail.push(m.id); n++; } }
+  return n;
+}
+function drawMailbox() {
+  const n = mailCount(), P = G.poke;
+  const shake = P.mail > 0 ? Math.sin(P.mail * 40) * P.mail * 6 : 0;
+  const hop = n ? Math.max(0, Math.sin(G.t * 4)) * Math.max(0, Math.sin(G.t * 1.3)) * 6 : 0;
+  const mx = mailboxX();
+  ctx.save(); ctx.translate(mx, 0); ctx.scale(1.15, 1.15); ink(ctx, 3);
+  rr(ctx, -4, -38, 8, 38, 2); fillStroke(ctx, '#8b5a3c', 3);
+  ctx.translate(0, -38 - hop); ctx.rotate(shake * 0.02);
+  // envelopes poking out of the slot
+  for (let i = 0; i < Math.min(n, 3); i++) { ctx.save(); ctx.translate(-22 - i * 2, -12 + i * 3); ctx.rotate(-0.35 + i * 0.25 + Math.sin(G.t * 3 + i) * 0.05); rr(ctx, -14, -9, 22, 15, 2); fillStroke(ctx, i === 0 ? '#fff6e5' : '#ffd6e6', 2.5); ctx.beginPath(); ctx.moveTo(-14, -9); ctx.lineTo(-3, -1); ctx.lineTo(8, -9); ctx.lineWidth = 2; ctx.stroke(); ctx.lineWidth = 3; ctx.restore(); }
+  // box body with a round top
+  ctx.beginPath(); ctx.moveTo(-24, 0); ctx.lineTo(-24, -14); ctx.quadraticCurveTo(-24, -30, -8, -30); ctx.lineTo(10, -30); ctx.quadraticCurveTo(26, -30, 26, -14); ctx.lineTo(26, 0); ctx.closePath(); fillStroke(ctx, '#4d96ff', 3);
+  ctx.beginPath(); ctx.moveTo(-24, 0); ctx.lineTo(-24, -14); ctx.quadraticCurveTo(-24, -30, -8, -30); ctx.lineTo(-8, 0); ctx.closePath(); fillStroke(ctx, '#3a7be0', 3);
+  text(ctx, 'MAIL', 9, -14, 9, '#fff', 'center', null);
+  // flag: up when there is mail
+  ctx.save(); ctx.translate(22, -10); ctx.rotate(n ? -Math.PI / 2 + Math.sin(G.t * 5) * 0.08 : 0);
+  ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(22, 0); ctx.lineWidth = 4; ctx.stroke();
+  rr(ctx, 12, -11, 13, 11, 2); fillStroke(ctx, '#ff5a5f', 2.5);
+  ctx.restore();
+  ctx.restore();
+  if (n) {
+    const by = -86 - hop, k = 1 + Math.sin(G.t * 6) * 0.08;
+    ctx.save(); ctx.translate(mx - 30, by); ctx.scale(k, k);
+    circ(ctx, 0, 0, 12); fillStroke(ctx, '#ff5a5f', 3);
+    text(ctx, String(n), 0, 1, 14, '#fff', 'center', null);
+    ctx.restore();
+  }
+}
 
 // story lines keyed by trigger
 const STORY = {
@@ -3431,6 +3537,7 @@ function computeResult() {
   if (prevFlights === 0) S.pendingFirst = true;
   if (R.crashed && !S.seen.crash) S.pendingCrash = true;
   checkAchievements();
+  if (checkMail()) S.pendingMail = 1;
   saveGame();
 }
 
@@ -3875,6 +3982,7 @@ function drawGround() {
       if (i % 3 === 0 && row === 0) { ctx.beginPath(); ctx.moveTo(cx + 6, -30 - bob); ctx.lineTo(cx + 14, -54 - bob); ctx.stroke(); ctx.beginPath(); ctx.moveTo(cx + 14, -54 - bob); ctx.lineTo(cx + 30, -50 - bob); ctx.lineTo(cx + 14, -44 - bob); fillStroke(ctx, col, 2.5); }
       if (row > 0 && c % 4 === 1) { ctx.beginPath(); ctx.moveTo(cx - 7, -28 - bob); ctx.lineTo(cx - 13, -44 - bob - Math.abs(Math.sin(G.t * 4 + i)) * 4); ctx.stroke(); } // waving arm
     }
+    if (G.mode === 'hangar' && mailboxOn()) drawMailbox();
     // Grandma Ada with her cane
     ctx.save(); ctx.translate(-190, -4 - (G.poke.ada > 2.6 ? Math.sin((3 - G.poke.ada) / 0.4 * Math.PI) * 10 : 0));
     rr(ctx, -10, -30, 20, 28, 8); fillStroke(ctx, '#ff5a5f', 2.5);
@@ -3900,6 +4008,7 @@ function drawGround() {
   }
   // ---- forecast sign
   if (G.mode === 'hangar' && S.flights >= 4) drawForecastSign(126, 0);
+  if (G.mode === 'hangar' && mailboxOn() && mountain) drawMailbox();
   // ---- today's Daily Special customer waits in a balloon above the yard (tap it)
   if (G.mode === 'hangar' && hangarDailyOn()) {
     const bpy = 205 + Math.sin(G.t * 1.4) * 7, bx = -128 + Math.sin(G.t * 0.6) * 6;
@@ -3993,6 +4102,10 @@ function pokeHangar(sx, sy) {
     return true;
   }
   if (hangarDailyOn() && Math.abs(wx + 128) < 26 && wpy > 155 && wpy < 235) { sfx.boing(); UI.openMap(); return true; }
+  if (mailboxOn() && Math.abs(wx - mailboxX() + 2) < 31 && wpy > 0 && wpy < (mailCount() ? 108 : 92)) {
+    if (mailCount()) UI.openLetter(); else { P.mail = 0.5; sfx.creak(); toast('No new mail. Deliver more passengers and fans will write!'); }
+    return true;
+  }
   if (!town) return false;
   if (wx > -214 && wx < -166 && wpy > 0 && wpy < 66) {
     let line = pick(ADA_QUIPS); if (line === P.adaLine) line = pick(ADA_QUIPS);
@@ -4013,7 +4126,7 @@ function pokeHangar(sx, sy) {
   }
   return false;
 }
-function updatePokes(dt) { const P = G.poke; for (const k of ['rocket', 'ada', 'crowd', 'shed', 'rocketLineT']) if (P[k] > 0) P[k] = Math.max(0, P[k] - dt); }
+function updatePokes(dt) { const P = G.poke; for (const k of ['rocket', 'ada', 'crowd', 'shed', 'rocketLineT', 'mail']) if (P[k] > 0) P[k] = Math.max(0, P[k] - dt); }
 function wrapText(str, maxW) { const words = str.split(' '); const out = []; let line = ''; for (const w of words) { const t = line ? line + ' ' + w : w; if (ctx.measureText(t).width > maxW && line) { out.push(line); line = w; } else line = t; } if (line) out.push(line); return out; }
 function drawStationAndRecord() {
   const R = G.R;
@@ -4853,7 +4966,7 @@ const UI = (() => {
   }
   function startNewLine() {
     for (const p of PAINTS) if (paintUnlocked(p)) S.seen['paintown_' + p.id] = 1;
-    const keep = { met: S.met, daily: S.daily ? Object.assign({}, S.daily, { target: 0 }) : undefined, ach: S.ach, stats: S.stats, settings: S.settings, seen: S.seen, viewed: S.viewed, tabsSeen: S.tabsSeen, paint: S.paint, trail: S.trail, earned: S.earned, flights: S.flights, avg: S.avg, line: (S.line || 1) + 1 };
+    const keep = { mail: S.mail, mailGot: S.mailGot, met: S.met, daily: S.daily ? Object.assign({}, S.daily, { target: 0 }) : undefined, ach: S.ach, stats: S.stats, settings: S.settings, seen: S.seen, viewed: S.viewed, tabsSeen: S.tabsSeen, paint: S.paint, trail: S.trail, earned: S.earned, flights: S.flights, avg: S.avg, line: (S.line || 1) + 1 };
     S = Object.assign(defaultSave(), keep);
     S.seen.endCredits = 0; S.pendingLine = true;
     checkAchievements(); saveGame();
@@ -5065,7 +5178,7 @@ const UI = (() => {
     reset.addEventListener('click', () => confirmBox('Start over?', 'This wipes your rocket, money and routes. No undo!', () => { resetSave(); location.reload(); }));
     col.appendChild(reset);
     const st = S.stats;
-    col.appendChild(el('div', 'small-note', `<b>Your stats</b><br>${S.flights} flights · best ${fmtAlt(S.bestAlt)} · ${fmtMoney(S.earned)} earned<br>${fmtInt(st.coins)} coins · ${st.rings} rings · ${st.perfect} perfect launches · ${st.pax} passengers · ${Math.round(st.time / 60)} min flying${st.daily ? ` · ${st.daily} daily special${st.daily > 1 ? 's' : ''}` : ''}${st.king + st.whale + st.kraken ? ` · ${st.king + st.whale + st.kraken} boss wins` : ''}`));
+    col.appendChild(el('div', 'small-note', `<b>Your stats</b><br>${S.flights} flights · best ${fmtAlt(S.bestAlt)} · ${fmtMoney(S.earned)} earned<br>${fmtInt(st.coins)} coins · ${st.rings} rings · ${st.perfect} perfect launches · ${st.pax} passengers · ${Math.round(st.time / 60)} min flying${st.daily ? ` · ${st.daily} daily special${st.daily > 1 ? 's' : ''}` : ''}${st.king + st.whale + st.kraken ? ` · ${st.king + st.whale + st.kraken} boss wins` : ''}${st.letters ? ` · ${st.letters} fan letter${st.letters > 1 ? 's' : ''}` : ''}`));
     col.appendChild(el('div', 'small-note', 'Skyhop Express · every picture, sound and tune is generated by code.<br>Steer: ← → / A D, tap sides' + (tiltSupported() ? ' or tilt' : '') + ' · Boost: Space · Pause: P'));
     overlay('scr-settings', true);
   }
@@ -5140,6 +5253,38 @@ const UI = (() => {
     goHangar(true);
     flushPending(then);
   }
+  // fan mail
+  function openLetter() {
+    while (mailCount() && !MAIL.find(x => x.id === S.mail[0])) S.mail.shift();
+    if (!mailCount()) return;
+    const m = MAIL.find(x => x.id === S.mail[0]);
+    const C = CHARS[m.from] || CHARS.ada;
+    const fc = $('lt-face').getContext('2d'); fc.setTransform(2, 0, 0, 2, 0, 0); fc.clearRect(0, 0, 64, 64);
+    fc.translate(32, 32); rr(fc, -29, -29, 58, 58, 14); fc.fillStyle = '#bfe9ff'; fc.fill(); fc.lineWidth = 3; fc.strokeStyle = INK; fc.stroke();
+    fc.save(); rr(fc, -29, -29, 58, 58, 14); fc.clip(); fc.fillStyle = C.col || '#ff5a5f'; fc.beginPath(); fc.ellipse(0, 36, 24, 16, 0, 0, TAU); fc.fill(); fc.stroke(); fc.translate(0, 2); drawFace(fc, m.from, 18, 'happy', 0); fc.restore();
+    const sc = $('lt-stamp').getContext('2d'); sc.setTransform(1, 0, 0, 1, 0, 0); sc.clearRect(0, 0, 100, 100);
+    const sg = sc.createLinearGradient(0, 0, 0, 100); sg.addColorStop(0, '#9fdcff'); sg.addColorStop(1, '#ffe7b3'); sc.fillStyle = sg; sc.fillRect(0, 0, 100, 100);
+    if (m.stamp) sc.drawImage(routeIconCanvas(m.stamp, 64), 10, 8, 80, 80);
+    else { sc.save(); sc.translate(50, 54); sc.scale(1.6, 1.6); drawFace(sc, m.from, 18, 'joy', 0); sc.restore(); }
+    sc.globalAlpha = 0.55; sc.strokeStyle = INK; sc.lineWidth = 3; sc.beginPath(); for (let i = 0; i < 3; i++) { sc.moveTo(6, 70 + i * 9); sc.bezierCurveTo(30, 62 + i * 9, 60, 78 + i * 9, 96, 70 + i * 9); } sc.stroke(); sc.globalAlpha = 1;
+    $('lt-name').textContent = C.name;
+    $('lt-body').textContent = m.text;
+    $('lt-sign').textContent = m.sign || '— ' + C.name;
+    const gift = mailGift(m);
+    $('lt-gift').innerHTML = `${document.querySelector('#money-box .coin').outerHTML}<span>Enclosed: ${fmtMoney(gift)}</span>`;
+    const more = mailCount() - 1;
+    $('lt-ok').textContent = more > 0 ? `Thanks! Next letter (${more})` : 'Thanks!';
+    $('lt-ok').onclick = e => {
+      e.stopPropagation();
+      if (S.mail[0] !== m.id) return;
+      S.mail.shift(); S.money += gift; S.earned += gift; S.stats.letters = (S.stats.letters || 0) + 1;
+      sfx.bigcoin(); saveGame(); refresh();
+      if (mailCount()) { const pnl = $('scr-letter').querySelector('.panel'); pnl.style.animation = 'none'; void pnl.offsetWidth; pnl.style.animation = ''; sfx.paper(); openLetter(); }
+      else { overlay('scr-letter', false); toast(`Fan mail gift: <b>+${fmtMoney(gift)}</b>`); }
+    };
+    sfx.paper();
+    overlay('scr-letter', true);
+  }
   // queued story beats and achievement toasts
   function flushPending(then) {
     const lines = [];
@@ -5152,8 +5297,10 @@ const UI = (() => {
     if (jobsUnlocked() && !S.seen.jobs) { S.seen.jobs = 1; fillJobs(); S.jobsNew = 3; lines.push(...STORY.jobs); }
     if (dailyUnlocked() && !S.seen.dailyIntro && !lines.length && (S.line || 1) === 1) { S.seen.dailyIntro = 1; lines.push(...STORY.daily); }
     if (S.pendingAch && S.pendingAch.length) { for (const id of S.pendingAch) { const a = ACH.find(x => x.id === id); toast(`Achievement: <b>${a.name}</b> +${fmtMoney(a.reward)}`); } sfx.ach(); S.pendingAch = []; }
+    const mailNow = S.pendingMail; S.pendingMail = 0;
     saveGame();
-    Dialog.play(lines, () => { refresh(); if (S.ended && !S.seen.endCredits) { S.seen.endCredits = 1; saveGame(); showCredits(); } if (then) then(); });
+    Dialog.play(lines, () => {
+      if (mailNow && mailCount()) { setTimeout(() => sfx.mail(), 250); toast(S.seen.mailTip ? `<b>You've got mail!</b>` : `<b>You've got mail!</b> Tap the mailbox in the yard.`, 3600); S.seen.mailTip = 1; } refresh(); if (S.ended && !S.seen.endCredits) { S.seen.endCredits = 1; saveGame(); showCredits(); } if (then) then(); });
   }
 
   // ---------- wiring
@@ -5164,7 +5311,7 @@ const UI = (() => {
   $('btn-launch').addEventListener('click', () => { AudioSys.init(); sfx.click(); enterLaunch(); });
   soundBtns($('title-tools'));
 
-  return { showScreen, overlay, refresh, renderTree, showResults, openMap, openPause, announceNew, flushPending, showCredits, get current() { return current; } };
+  return { openLetter, showScreen, overlay, refresh, renderTree, showResults, openMap, openPause, announceNew, flushPending, showCredits, get current() { return current; } };
 })();
 
 function goHangar(skipFlush) {
@@ -5213,6 +5360,7 @@ window.addEventListener('keydown', e => {
   }
   if (e.code === 'Space' || e.code === 'Enter') {
     const vis = id => !$(id).classList.contains('hidden');
+    if (vis('scr-letter')) { e.preventDefault(); $('lt-ok').click(); return; }
     if (vis('scr-results')) { e.preventDefault(); if (performance.now() - (G.resultAt || 0) > 900) $(e.code === 'Enter' ? 'res-hangar' : 'res-again').click(); return; }
     if (G.mode === 'hangar' && UI.current === 'hangar' && !vis('scr-map') && !vis('scr-settings') && !vis('scr-confirm') && !vis('scr-pause')) { e.preventDefault(); $('btn-launch').click(); return; }
   }
@@ -5338,6 +5486,7 @@ function botSteer() {
 
 // ================================================================ BOOT
 loadSave();
+if (!S.mailGot && S.flights > 0) { S.mailGot = {}; S.mail = []; const due = MAIL.filter(m => { try { return m.when(); } catch (e) { return false; } }); for (const m of due) S.mailGot[m.id] = 1; const last = due.filter(m => ROUTES.some(r => r.id === m.id)).pop(); if (last) S.mail.push(last.id); }
 if (!S.met) { S.met = {}; for (const r of ROUTES) if (routeDone(r.id)) for (const f of (r.pax ? r.who.slice(0, r.pax) : ['buckley'])) S.met[f] = 1; }
 resize();
 G.st = computeStats(); G.look = rocketLook();
