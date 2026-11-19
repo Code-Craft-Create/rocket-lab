@@ -1575,7 +1575,30 @@ const PAINTS = [
   { id: 'gold', name: 'Solid Gold', stars: 24, end: true, body: '#ffd34d', accent: '#ff9f43', pattern: 'shine' },
 ];
 const totalStars = () => Object.values(S.routes).reduce((a, r) => a + (r.stars || 0), 0);
-const paintUnlocked = p => totalStars() >= p.stars || (p.end && (S.ended || (S.line || 1) > 1));
+const paintUnlocked = p => totalStars() >= p.stars || !!S.seen['paintown_' + p.id] || (p.end && (S.ended || (S.line || 1) > 1));
+// exhaust trails: cosmetic, unlocked by trophies
+const TRAILS = [
+  { id: 'smoke', name: 'Puffy Smoke', need: 0 },
+  { id: 'rainbow', name: 'Rainbow', need: 5 },
+  { id: 'hearts', name: 'Love Hearts', need: 9, extra: 'heart', col: '#ffd6e6' },
+  { id: 'stars', name: 'Stardust', need: 13, extra: 'star4', col: '#fff3b0' },
+  { id: 'bubbles', name: 'Whale Bubbles', ach: 'whale', extra: 'bubble', col: '#bfe3ff' },
+  { id: 'sparks', name: 'Storm Sparks', ach: 'king', extra: 'spark', col: '#fff6a0', glow: '#fff36b' },
+  { id: 'ink', name: 'Kraken Ink', ach: 'kraken', col: '#c79be0', glow: '#b05bd6' },
+];
+const trailUnlocked = tr => tr.ach ? !!S.ach[tr.ach] : Object.keys(S.ach).length >= tr.need;
+const curTrail = () => { const tr = TRAILS.find(x => x.id === S.trail); return tr && trailUnlocked(tr) ? tr : TRAILS[0]; };
+function trailCol(tr, inAir, i) {
+  if (tr.id === 'rainbow') return `hsl(${Math.round((G.t * 240 + i * 50) % 360)},90%,${inAir ? 78 : 66}%)`;
+  if (inAir) return tr.col || '#ffffff';
+  return tr.glow || tr.col || (lvl('ion') ? '#7fe0ff' : lvl('torch') ? '#ff8ae0' : '#ffd08a');
+}
+function trailExtra(tr, x, py, vx, vy) {
+  if (!tr.extra) return;
+  const k = tr.extra;
+  if (k === 'spark') { for (let j = 0; j < 2; j++) G.parts.push({ k: 'spark', x, py, vx: vx + rand(-90, 90), vy: vy + rand(-60, 60), r: rand(2, 4), life: 0.35, t: 0, col: pick(['#fff36b', '#ffffff']) }); return; }
+  G.parts.push({ k, x: x + rand(-8, 8), py, vx: vx * 0.6 + rand(-40, 40), vy: vy * 0.6, r: k === 'bubble' ? rand(7, 12) : rand(8, 12), life: rand(0.6, 1.0), t: 0, col: k === 'heart' ? pick(['#ff5a8a', '#ff9fc0', '#f15bb5']) : k === 'star4' ? pick(['#ffd93d', '#fff3b0', '#ffffff']) : '#bfe9ff', rot: rand(-0.4, 0.4) });
+}
 const HULL_COLS = ['#fff6e5', '#f4f1fb', '#e3ecf7', '#d4e6ff', '#cfe9ff', '#fff0b3', '#ffe07a', '#ffd34d'];
 function rocketDims(L) {
   const BL = 66 + Math.min(L.tank, 12) * 2.6;
@@ -2719,10 +2742,13 @@ function updateFlight(dt) {
     const n = Math.min(3, Math.ceil(thr * 2));
     const L = G.look, d = rocketDims(L), sc = G.rocketScale;
     const tailLen = ((R.visStage === 1 ? d.BL / 2 + d.BH : 6) + 10) * sc;
+    const tr = curTrail();
     for (let i = 0; i < n; i++) {
       const ex = R.x - Math.sin(R.tilt) * tailLen, ey = R.py - Math.cos(R.tilt) * tailLen;
       const inAir = R.alt < 14000;
-      G.parts.push({ k: inAir ? 'smoke' : 'glow', x: ex + rand(-5, 5), py: ey, vx: -Math.sin(R.tilt) * 80 + rand(-30, 30), vy: -Math.cos(R.tilt) * 60 - vpy * 0.15, r: rand(6, 11) * (R.abT > 0 ? 1.5 : 1), life: inAir ? rand(0.6, 1.2) : rand(0.3, 0.5), t: 0, col: inAir ? '#ffffff' : (lvl('ion') ? '#7fe0ff' : lvl('torch') ? '#ff8ae0' : '#ffd08a') });
+      const tvx = -Math.sin(R.tilt) * 80 + rand(-30, 30), tvy = -Math.cos(R.tilt) * 60 - vpy * 0.15;
+      G.parts.push({ k: inAir ? 'smoke' : 'glow', x: ex + rand(-5, 5), py: ey, vx: tvx, vy: tvy, r: rand(6, 11) * (R.abT > 0 ? 1.5 : 1), life: inAir ? rand(0.6, 1.2) : rand(0.3, 0.5), t: 0, col: trailCol(tr, inAir, i) });
+      if (i === 0 && tr.extra && chance(Math.min(1, dt * 18))) trailExtra(tr, ex, ey, tvx, tvy);
     }
     if (R.boostT > 0) for (const s of [-1, 1]) G.parts.push({ k: 'smoke', x: R.x + s * 22 * sc, py: R.py - tailLen * 0.8, vx: rand(-20, 20), vy: -40, r: rand(5, 8), life: rand(0.5, 0.9), t: 0, col: '#ffffff' });
   }
@@ -3756,6 +3782,9 @@ function drawParticle(p) {
   else if (p.k === 'spark') { ctx.globalAlpha = 1 - k; ctx.fillStyle = p.col; circ(ctx, p.x, -p.py, p.r * (1 - k * 0.5)); ctx.fill(); }
   else if (p.k === 'line') { ctx.globalAlpha = (1 - k) * 0.8; ctx.strokeStyle = p.col; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(p.x, -p.py); ctx.lineTo(p.x, -p.py + p.r); ctx.stroke(); }
   else if (p.k === 'conf') { ctx.globalAlpha = 1 - clamp((k - 0.7) / 0.3, 0, 1); ctx.translate(p.x, -p.py); ctx.rotate(p.rot); ctx.fillStyle = p.col; ctx.fillRect(-p.r, -p.r * 0.5, p.r * 2, p.r); ctx.strokeStyle = INK; ctx.lineWidth = 1.5; ctx.strokeRect(-p.r, -p.r * 0.5, p.r * 2, p.r); }
+  else if (p.k === 'heart') { ctx.globalAlpha = 1 - k; ctx.translate(p.x, -p.py); ctx.rotate(p.rot); const r = p.r * (1 + k * 0.4); ink(ctx, 2); ctx.beginPath(); ctx.moveTo(0, r * 0.9); ctx.bezierCurveTo(-r * 1.6, -r * 0.2, -r * 0.6, -r * 1.4, 0, -r * 0.5); ctx.bezierCurveTo(r * 0.6, -r * 1.4, r * 1.6, -r * 0.2, 0, r * 0.9); fillStroke(ctx, p.col, 2); }
+  else if (p.k === 'star4') { ctx.globalAlpha = 1 - k; ctx.translate(p.x, -p.py); ctx.rotate(p.rot + k * 3); const r = p.r * (1.2 - k * 0.5); ctx.beginPath(); for (let j = 0; j < 8; j++) { const a = j / 8 * TAU, rr2 = j % 2 ? r * 0.35 : r; ctx.lineTo(Math.cos(a) * rr2, Math.sin(a) * rr2); } ctx.closePath(); ink(ctx, 1.5); fillStroke(ctx, p.col, 1.5); }
+  else if (p.k === 'bubble') { ctx.globalAlpha = (1 - k) * 0.9; const r = p.r * (1 + k * 0.6); circ(ctx, p.x, -p.py, r); ctx.fillStyle = 'rgba(191,233,255,.45)'; ctx.fill(); ctx.lineWidth = 2.5; ctx.strokeStyle = '#3d8fd1'; ctx.stroke(); ctx.fillStyle = '#fff'; circ(ctx, p.x - r * 0.35, -p.py - r * 0.35, r * 0.22); ctx.fill(); }
   else if (p.k === 'feather') { ctx.globalAlpha = 1 - k; ctx.translate(p.x, -p.py); ctx.rotate(p.rot); ink(ctx, 2); ctx.beginPath(); ctx.ellipse(0, 0, 7, 3, 0, 0, TAU); fillStroke(ctx, p.col, 2); }
   else if (p.k === 'debris') {
     ctx.globalAlpha = 1 - clamp((k - 0.7) / 0.3, 0, 1); ctx.translate(p.x, -p.py); ctx.rotate(p.rot); ink(ctx, 3);
@@ -3774,6 +3803,7 @@ function updateParticles(dt) {
     else if (p.k === 'conf' || p.k === 'feather') { p.vy -= 380 * dt; p.vx *= 0.98; if (p.vy < -120) p.vy = -120; p.rot += p.vr * dt; }
     else if (p.k === 'debris') { p.vy -= 420 * dt; p.rot += p.vr * dt; }
     else if (p.k === 'spark') { p.vx *= 0.93; p.vy *= 0.93; }
+    else if (p.k === 'heart' || p.k === 'star4' || p.k === 'bubble') { p.vx *= 0.95; p.vy *= 0.95; p.vy += 30 * dt; }
   }
   G.parts = G.parts.filter(p => p.t < p.life);
   if (G.parts.length > 700) G.parts.splice(0, G.parts.length - 700);
@@ -4225,8 +4255,8 @@ const UI = (() => {
     const ach = iconBtn('btn-ach', 'trophy', 'Achievements & Sky Guide', () => openAch());
     if (guideNewCount()) ach.appendChild(el('span', 'badge-dot', String(guideNewCount())));
     const paint = iconBtn('btn-paint', 'brush', 'Paint shop', () => openPaint());
-    if (PAINTS.some(p => paintUnlocked(p) && !S.seen['paint_' + p.id] && p.id !== 'classic')) paint.appendChild(el('span', 'badge-dot', '!'));
-    if (routeDone('r1')) h.append(paint);
+    if (PAINTS.some(p => paintUnlocked(p) && !S.seen['paint_' + p.id] && p.id !== 'classic') || TRAILS.some(t => t.id !== 'smoke' && trailUnlocked(t) && !S.seen['trail_' + t.id])) paint.appendChild(el('span', 'badge-dot', '!'));
+    if (routeDone('r1') || (S.line || 1) > 1 || TRAILS.some(t => t.id !== 'smoke' && trailUnlocked(t))) h.append(paint);
     const set = iconBtn('btn-settings', 'gear', 'Settings', () => openSettings());
     if (jobsUnlocked()) {
       const jb = iconBtn('btn-jobs', 'clip', 'Job board', () => openJobs());
@@ -4467,7 +4497,8 @@ const UI = (() => {
     saveGame();
   }
   function startNewLine() {
-    const keep = { ach: S.ach, stats: S.stats, settings: S.settings, seen: S.seen, viewed: S.viewed, tabsSeen: S.tabsSeen, paint: S.paint, earned: S.earned, flights: S.flights, avg: S.avg, line: (S.line || 1) + 1 };
+    for (const p of PAINTS) if (paintUnlocked(p)) S.seen['paintown_' + p.id] = 1;
+    const keep = { ach: S.ach, stats: S.stats, settings: S.settings, seen: S.seen, viewed: S.viewed, tabsSeen: S.tabsSeen, paint: S.paint, trail: S.trail, earned: S.earned, flights: S.flights, avg: S.avg, line: (S.line || 1) + 1 };
     S = Object.assign(defaultSave(), keep);
     S.seen.endCredits = 0; S.pendingLine = true;
     checkAchievements(); saveGame();
@@ -4588,9 +4619,47 @@ const UI = (() => {
       card.appendChild(act);
       list.appendChild(card);
     }
+    const nAch = Object.keys(S.ach).length;
+    list.appendChild(el('div', 'small-note', `<br><b>Exhaust trails</b>: unlocked with trophies (you have ${nAch}).`));
+    for (const tr of TRAILS) {
+      const ok = trailUnlocked(tr), cur = curTrail().id === tr.id;
+      if (ok) S.seen['trail_' + tr.id] = 1;
+      const card = el('div', 'route' + (cur ? ' cur' : '') + (ok ? '' : ' locked'));
+      card.appendChild(trailPreview(tr, !ok));
+      const need = tr.ach ? (ACH.find(a => a.id === tr.ach) || {}).name : `${tr.need} trophies`;
+      card.appendChild(el('div', 'r-main', `<div class="r-name">${tr.name}</div><div class="r-meta">${ok ? '<span class="chip ok">Unlocked</span>' : `<span class="chip pay">${tr.ach ? 'Trophy: ' + need : need}</span>`}</div>`));
+      const act = el('div', 'r-act');
+      if (ok) { const b = el('button', 'btn ' + (cur ? 'go' : 'blue'), cur ? 'On' : 'Use'); b.addEventListener('click', () => { sfx.buy(); S.trail = tr.id; saveGame(); openPaint(); }); act.appendChild(b); }
+      card.appendChild(act);
+      list.appendChild(card);
+    }
     $('scr-map').querySelector('h2').textContent = 'Paint Shop';
     overlay('scr-map', true);
     saveGame();
+  }
+  function trailPreview(tr, locked) {
+    const cnv = document.createElement('canvas'); cnv.width = 128; cnv.height = 128; cnv.className = 'r-ico'; cnv.style.width = '64px'; cnv.style.height = '64px';
+    const c = cnv.getContext('2d'); c.scale(2, 2); rr(c, 2, 2, 60, 60, 14); c.fillStyle = tr.glow ? '#2b2a5a' : '#bfe9ff'; c.fill(); c.lineWidth = 3; c.strokeStyle = INK; c.stroke();
+    c.save(); rr(c, 2, 2, 60, 60, 14); c.clip();
+    for (let i = 0; i < 6; i++) {
+      const y = 10 + i * 9, x = 32 + Math.sin(i * 1.3) * 5, r = 4 + i * 1.1;
+      const col = tr.id === 'rainbow' ? `hsl(${i * 55},90%,72%)` : tr.glow || tr.col || '#ffffff';
+      circ(c, x, y, r); c.fillStyle = col; c.fill(); c.lineWidth = 1.5; c.strokeStyle = 'rgba(43,34,64,.6)'; if (!tr.glow) c.stroke();
+    }
+    if (tr.extra === 'heart' || tr.extra === 'star4' || tr.extra === 'bubble') {
+      for (const [x, y, r] of [[18, 22, 5], [46, 34, 6], [20, 48, 4]]) {
+        c.save(); c.translate(x, y);
+        if (tr.extra === 'heart') { c.beginPath(); c.moveTo(0, r * 0.9); c.bezierCurveTo(-r * 1.6, -r * 0.2, -r * 0.6, -r * 1.4, 0, -r * 0.5); c.bezierCurveTo(r * 0.6, -r * 1.4, r * 1.6, -r * 0.2, 0, r * 0.9); c.fillStyle = '#ff5a8a'; c.fill(); c.lineWidth = 1.5; c.strokeStyle = INK; c.stroke(); }
+        else if (tr.extra === 'star4') { c.beginPath(); for (let j = 0; j < 8; j++) { const a = j / 8 * TAU, q = j % 2 ? r * 0.35 : r; c.lineTo(Math.cos(a) * q, Math.sin(a) * q); } c.closePath(); c.fillStyle = '#ffd93d'; c.fill(); c.lineWidth = 1.2; c.strokeStyle = INK; c.stroke(); }
+        else { circ(c, 0, 0, r); c.lineWidth = 1.5; c.strokeStyle = '#fff'; c.stroke(); c.fillStyle = '#fff'; circ(c, -r * 0.35, -r * 0.35, r * 0.25); c.fill(); }
+        c.restore();
+      }
+    }
+    if (tr.extra === 'spark') { c.strokeStyle = '#fff36b'; c.lineWidth = 2.5; c.beginPath(); c.moveTo(16, 14); c.lineTo(22, 26); c.lineTo(17, 28); c.lineTo(24, 42); c.moveTo(46, 20); c.lineTo(42, 32); c.lineTo(48, 33); c.lineTo(43, 46); c.stroke(); }
+    c.restore();
+    c.save(); c.translate(32, 2); c.scale(0.3, 0.3); drawRocket(c, rocketLook(), { t: 0, faces: [], flame: false }); c.restore();
+    if (locked) { c.setTransform(1, 0, 0, 1, 0, 0); c.globalCompositeOperation = 'source-atop'; c.fillStyle = 'rgba(217,208,192,.65)'; c.fillRect(0, 0, 128, 128); }
+    return cnv;
   }
 
   // ---------- settings / confirm / pause
