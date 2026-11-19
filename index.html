@@ -684,7 +684,7 @@ function resetSave() { S = defaultSave(); saveGame(); }
 // ================================================================ AUDIO
 const AudioSys = (() => {
   let ac = null, master, comp, sfxBus, musBus, noiseBuf = null;
-  let engNoise, engFilter, engGain, engOsc, engOscGain, windNoise, windFilter, windGain;
+  let engSet = null, windNoise, windFilter, windGain;
   let enabledSfx = true, enabledMusic = true, volS = 1, volM = 1;
   const MUS_VOL = 0.32, SFX_VOL = 0.75;
 
@@ -704,16 +704,7 @@ const AudioSys = (() => {
     noiseBuf = ac.createBuffer(1, len, ac.sampleRate);
     const d = noiseBuf.getChannelData(0);
     for (let i = 0; i < len; i++) d[i] = Math.random() * 2 - 1;
-    // engine loop
-    engNoise = ac.createBufferSource(); engNoise.buffer = noiseBuf; engNoise.loop = true;
-    engFilter = ac.createBiquadFilter(); engFilter.type = 'lowpass'; engFilter.frequency.value = 400; engFilter.Q.value = 0.8;
-    engGain = ac.createGain(); engGain.gain.value = 0;
-    engNoise.connect(engFilter); engFilter.connect(engGain); engGain.connect(sfxBus);
-    engOsc = ac.createOscillator(); engOsc.type = 'sawtooth'; engOsc.frequency.value = 48;
-    const engOscF = ac.createBiquadFilter(); engOscF.type = 'lowpass'; engOscF.frequency.value = 160;
-    engOscGain = ac.createGain(); engOscGain.gain.value = 0;
-    engOsc.connect(engOscF); engOscF.connect(engOscGain); engOscGain.connect(sfxBus);
-    engNoise.start(); engOsc.start();
+    engSet = makeEngine(ac, sfxBus, noiseBuf);
     // wind loop
     windNoise = ac.createBufferSource(); windNoise.buffer = noiseBuf; windNoise.loop = true; windNoise.playbackRate.value = 0.7;
     windFilter = ac.createBiquadFilter(); windFilter.type = 'bandpass'; windFilter.frequency.value = 800; windFilter.Q.value = 0.6;
@@ -721,6 +712,33 @@ const AudioSys = (() => {
     windNoise.connect(windFilter); windFilter.connect(windGain); windGain.connect(sfxBus);
     windNoise.start();
     Music._attach();
+  }
+  // engine loop. A rocket is a roar, not a note (a pitched hum is what made it sound like a car), so every layer is
+  // noise: a deep rumble, the main roar, a thin jet hiss and the crackle of the exhaust. Returns a setter.
+  function makeEngine(ac, dest, white) {
+    const sr = ac.sampleRate, len = white.length;
+    const brown = ac.createBuffer(1, len, sr), bd = brown.getChannelData(0); let lb = 0;
+    for (let i = 0; i < len; i++) { lb = (lb + 0.02 * (Math.random() * 2 - 1)) / 1.02; bd[i] = lb * 3.5; }
+    const drift = bd[len - 1] - bd[0]; for (let i = 0; i < len; i++) bd[i] -= drift * i / (len - 1); // seamless loop, no tick
+    const clen = Math.floor(sr * 2.7), crk = ac.createBuffer(1, clen, sr), cd = crk.getChannelData(0);
+    for (let i = 0; i < clen; i++) if (Math.random() < 0.0009) { const a = 0.3 + Math.random() * 0.7, tau = 20 + Math.random() * 90; for (let j = 0; j < tau * 4 && i + j < clen; j++) cd[i + j] += a * (Math.random() * 2 - 1) * Math.exp(-j / tau); }
+    const layer = (buf, rate, type, f, q, hp) => {
+      const src = ac.createBufferSource(); src.buffer = buf; src.loop = true; src.playbackRate.value = rate;
+      const fl = ac.createBiquadFilter(); fl.type = type; fl.frequency.value = f; fl.Q.value = q;
+      const g = ac.createGain(); g.gain.value = 0; src.connect(fl);
+      if (hp) { const h = ac.createBiquadFilter(); h.type = 'highpass'; h.frequency.value = hp; h.Q.value = 0.7; fl.connect(h); h.connect(g); } else fl.connect(g);
+      g.connect(dest); src.start(); return { fl, g };
+    };
+    // the highpass cuts the sub-bass speakers can't play anyway, which would only pump the compressor
+    const roar = layer(brown, 1, 'lowpass', 500, 0.7, 45), rumble = layer(brown, 0.5, 'bandpass', 75, 0.9);
+    const hiss = layer(white, 1, 'bandpass', 2600, 0.6), crackle = layer(crk, 1, 'highpass', 900, 0.7);
+    return (th, boost, t) => {
+      roar.g.gain.setTargetAtTime(th * 0.52, t, 0.06);
+      roar.fl.frequency.setTargetAtTime(380 + th * 620 + (boost ? 900 : 0), t, 0.08);
+      rumble.g.gain.setTargetAtTime(Math.min(th, 1.1) * 0.8, t, 0.1);
+      hiss.g.gain.setTargetAtTime(th * 0.035 + (boost ? 0.06 : 0), t, 0.08);
+      crackle.g.gain.setTargetAtTime(Math.min(th, 1.2) * 0.28 + (boost ? 0.08 : 0), t, 0.05);
+    };
   }
   function resume() { if (ac && ac.state === 'suspended') ac.resume().catch(() => {}); }
   function suspend() { if (ac && ac.state === 'running') ac.suspend().catch(() => {}); }
@@ -814,6 +832,8 @@ const AudioSys = (() => {
     boost() { noise({ dur: 0.7, vol: 0.4, filter: 'bandpass', f: 400, f2: 4000, q: 1.5 }); tone({ type: 'sawtooth', f: 110, f2: 440, dur: 0.6, vol: 0.12, filter: 'lowpass', ff: 1800 }); },
     stage() { noise({ dur: 0.12, vol: 0.5, filter: 'lowpass', f: 1200 }); tone({ type: 'square', f: 140, f2: 60, dur: 0.12, vol: 0.2 }); this.boost(); },
     detach() { tone({ type: 'square', f: 300, f2: 120, dur: 0.1, vol: 0.12 }); noise({ dur: 0.15, vol: 0.2, filter: 'highpass', f: 1000 }); },
+    clank() { tone({ type: 'square', f: 220, f2: 150, dur: 0.16, vol: 0.13, filter: 'lowpass', ff: 1600 }); tone({ type: 'triangle', f: 1320, f2: 1250, dur: 0.4, vol: 0.06, delay: 0.01 }); noise({ dur: 0.08, vol: 0.25, filter: 'highpass', f: 1800 }); },
+    retro() { noise({ dur: 1.4, vol: 0.22, filter: 'lowpass', f: 900, f2: 220 }); tone({ type: 'sawtooth', f: 72, f2: 48, dur: 1.3, vol: 0.05, filter: 'lowpass', ff: 380 }); },
     chute() { noise({ dur: 0.08, vol: 0.3, filter: 'highpass', f: 2000 }); noise({ dur: 0.6, vol: 0.15, filter: 'bandpass', f: 500, f2: 300, delay: 0.06, q: 3 }); },
     dashReady() { tone({ type: 'sine', f: 1568, dur: 0.07, vol: 0.05 }); tone({ type: 'sine', f: 2093, dur: 0.1, vol: 0.04, delay: 0.06 }); },
     beep(hi) { tone({ type: 'square', f: hi ? 1320 : 880, dur: hi ? 0.35 : 0.12, vol: 0.12, filter: 'lowpass', ff: 3000 }); },
@@ -871,10 +891,7 @@ const AudioSys = (() => {
     if (!ac || !isFinite(throttle)) return;
     const t = ac.currentTime;
     const th = clamp(throttle, 0, 1.8);
-    engGain.gain.setTargetAtTime(th * 0.32, t, 0.06);
-    engFilter.frequency.setTargetAtTime(300 + th * 900 + (boost ? 1200 : 0), t, 0.08);
-    engOscGain.gain.setTargetAtTime(th * 0.25, t, 0.08);
-    engOsc.frequency.setTargetAtTime(42 + th * 18 + (boost ? 20 : 0), t, 0.1);
+    if (engSet) engSet(th, boost, t);
   }
   function setWind(amount) {
     if (!ac || !isFinite(amount)) return;
@@ -883,7 +900,7 @@ const AudioSys = (() => {
     windFilter.frequency.setTargetAtTime(500 + amount * 1500, t, 0.2);
   }
 
-  return { init, resume, suspend, now, sfx, tone, noise, N, setEngine, setWind, setSfx, setMusic, setVol,
+  return { init, resume, suspend, now, sfx, tone, noise, N, setEngine, setWind, setSfx, setMusic, setVol, makeEngine,
     get ac() { return ac; }, get musBus() { return musBus; } };
 })();
 const sfx = new Proxy({}, { get: (_, k) => (...a) => { try { AudioSys.sfx[k] && AudioSys.sfx[k](...a); } catch (e) { /* ignore audio errors */ } } });
@@ -1128,6 +1145,7 @@ const ICONS = {
   autododge: svgI('<rect x="14" y="14" width="36" height="36" rx="8" fill="#5fd068"/><rect x="24" y="24" width="16" height="16" rx="3" fill="#fff6e5" stroke-width="3"/><path d="M22 8v6M32 8v6M42 8v6M22 50v6M32 50v6M42 50v6M8 22h6M8 32h6M8 42h6M50 22h6M50 32h6M50 42h6" stroke-width="3"/>'),
   dash: svgI('<path d="M28 12c6 5 8 11 8 16v14H20V28c0-5 2-11 8-16z" fill="#fff6e5"/><circle cx="28" cy="26" r="3.2" fill="#4d96ff" stroke-width="2.5"/><path d="M24 42l4 8 4-8" fill="#ff9f43" stroke-width="2.5"/><path d="M42 22h14M44 31h10M42 40h14" stroke="#4fd8ff" stroke-width="4"/><path d="M14 24L6 31l8 7" stroke-width="3.5"/>'),
   vector: svgI('<path d="M24 6h16v14l6 18H18l6-18z" fill="#c9ced8"/><path d="M14 54l10-12M50 54L40 42M32 58V42" stroke="#ff9f43" stroke-width="5"/>'),
+  catcher: svgI('<path d="M40 60V8h12v52M40 20h12M40 34h12M40 48h12M40 20l12 14M40 34l12 14" stroke-width="3"/><path d="M18 9c5 4 7 9 7 14v27H11V23c0-5 2-10 7-14z" fill="#fff6e5"/><path d="M11 23c0-5 2-10 7-14 5 4 7 9 7 14z" fill="#ff5a5f" stroke-width="3"/><path d="M5 30h35" stroke-width="7"/><path d="M5 30h35" stroke="#ff9f43" stroke-width="3"/><path d="M13 54l5 7 5-7" fill="#ffd93d" stroke-width="3"/>'),
   tower: svgI('<path d="M16 60V8h14v52M16 18h14M16 30h14M16 42h14M16 18l14 12M16 30l14 12M16 42l14 12" stroke-width="3"/><path d="M30 14h18v6H30" fill="#ff5a5f" stroke-width="3"/><path d="M8 60h48" />'),
   control: svgI('<rect x="6" y="10" width="52" height="34" rx="6" fill="#2b2240"/><path d="M12 36l10-10 8 6 10-14 8 8" stroke="#5fd068" stroke-width="3"/><path d="M24 44l-4 12h24l-4-12" fill="#c9ced8"/>'),
   giftshop: svgI('<path d="M10 28h44v28H10z" fill="#fff6e5"/><path d="M6 16h52l-4 12H10z" fill="#f15bb5"/><path d="M19 16l-3 12M32 16v12M45 16l3 12" stroke-width="3"/><path d="M26 56V40h12v16" fill="#4d96ff" stroke-width="3"/><path d="M14 10h36" stroke-width="3"/>'),
@@ -1566,6 +1584,7 @@ const WORKSHOP_NEWS = [
   { t: 'New in the Control workshop: Dash Jets! Double-tap left or right to zip sideways. Nothing can touch you mid-dash.', when: () => upState(UP.dash) !== 'hidden' },
   { t: 'Got a game controller? Plug it in and fly with it. The arrow keys work in the workshop too.', when: () => matchMedia('(hover: hover)').matches },
   { t: 'Word from the Saturn Spa: a raccoon in a stolen saucer is nicking luggage past 220 km. Bump him three times and he’ll give it back!', when: () => S.bestAlt >= 120000 },
+  { t: 'New at the Launch Site: Catch Arms! The tower snatches your spent boosters out of the sky so they can fly again.', when: () => upState(UP.catcher) !== 'hidden' },
 ];
 const STORY = {
   intro: [
@@ -1763,6 +1782,9 @@ const UPGRADES = [
   { id: 'rail', br: 'pad', name: 'Mag-Rail', icon: 'rail', pos: [1.5, 2], max: 3, base: 1500, g: 2.8, req: [['tower', 2]], fork: 'site',
     desc: 'FORK: A magnetic catapult flings you off the pad at incredible speed.',
     fx: l => `+${fmtInt(STAT.railKick(l))} m/s launch speed` },
+  { id: 'catcher', br: 'pad', name: 'Catch Arms', icon: 'catcher', pos: [0, 3], max: 3, base: 2500, g: 2.8, req: [['control', 2], ['boosters', 1]],
+    desc: 'Giant chopstick arms on the tower catch your spent boosters as they fly home, so they can fly again. Pays out on every flight that drops its boosters.',
+    fx: l => l ? `+${fmtMoney(STAT.recover(l))} per catch` : 'None' },
 
   // ---- cabin
   { id: 'seats', br: 'cabin', name: 'Passenger Seats', icon: 'seats', pos: [1, 0], max: 7, base: 250, g: 2.1,
@@ -1805,6 +1827,7 @@ const STAT = {
   railKick: l => l * 110,
   startAlt: l => l * 650,
   gift: l => l ? Math.round(15 * Math.pow(3, l - 1) * (1 + Math.pow(S.bestAlt, 0.7) / 200)) : 0,
+  recover: l => l ? Math.round(60 * Math.pow(2.6, l - 1) * (1 + Math.pow(S.bestAlt, 0.7) / 200)) : 0,
   seats: l => [1, 2, 3, 4, 6, 8, 10, 12][l],
 };
 
@@ -1881,6 +1904,7 @@ function computeStats() {
   st.lounge = L('lounge');
   st.cargo = L('cargo');
   st.gift = STAT.gift(L('giftshop'));
+  st.catcher = L('catcher');
   // masses (tons)
   st.dry = 1.0 + 0.045 * L('engine') + 0.07 * L('hull') + 0.02 * L('tank') + (st.seats || 0) * 0.03 + (L('ram') ? 0.1 : 0) + (L('cargo') ? 0.15 : 0);
   st.fuelMass = 0.0045;   // tons per litre
@@ -2004,7 +2028,24 @@ function cloudShape(c, x, y, w, h, seed) {
   }
   c.rect(x - w / 2, y - h * 0.2, w, h * 0.4);
 }
+let cloudScratch = null;
 function drawCloud(c, x, y, w, h, seed, fill = '#ffffff', shade = '#d9eefc', lw = 3, alpha = 1) {
+  if (alpha < 0.995 && lw && c === ctx) {
+    // a fading cloud: paint it solid on a scratch canvas, then fade the whole picture at once, so the outlines
+    // of the overlapping bumps (hidden under the fill when it's opaque) never show through
+    if (alpha <= 0.005) return;
+    const m = c.getTransform(), cw = c.canvas.width, ch = c.canvas.height, pad = lw * 2 + 3;
+    const dx0 = Math.max(0, Math.floor(m.a * (x - w / 2 - h * 0.9 - pad) + m.e)), dy0 = Math.max(0, Math.floor(m.d * (y - h * 1.5 - pad) + m.f));
+    const dx1 = Math.min(cw, Math.ceil(m.a * (x + w / 2 + h * 0.9 + pad) + m.e)), dy1 = Math.min(ch, Math.ceil(m.d * (y + h * 0.55 + pad) + m.f));
+    if (dx1 <= dx0 || dy1 <= dy0) return;
+    if (!cloudScratch || cloudScratch.width !== cw || cloudScratch.height !== ch) { cloudScratch = document.createElement('canvas'); cloudScratch.width = cw; cloudScratch.height = ch; }
+    const sc = cloudScratch.getContext('2d');
+    sc.setTransform(1, 0, 0, 1, 0, 0); sc.clearRect(dx0, dy0, dx1 - dx0, dy1 - dy0);
+    sc.setTransform(m); drawCloud(sc, x, y, w, h, seed, fill, shade, lw, 1);
+    c.save(); c.setTransform(1, 0, 0, 1, 0, 0); c.globalAlpha = alpha;
+    c.drawImage(cloudScratch, dx0, dy0, dx1 - dx0, dy1 - dy0, dx0, dy0, dx1 - dx0, dy1 - dy0);
+    c.restore(); return;
+  }
   c.save(); c.globalAlpha = alpha;
   cloudShape(c, x, y, w, h, seed);
   c.lineWidth = lw * 2; c.strokeStyle = INK; c.lineJoin = 'round'; if (lw) c.stroke();
@@ -2835,11 +2876,12 @@ function prepareRocket() {
   const cd = CONDS[R.cond];
   if (cd.thrustMul) { G.st = Object.assign({}, G.st, { thrust: G.st.thrust * cd.thrustMul }); }
   R.startPy = R.py;
-  R.trace = { a: [], x: [] }; R.traceT = 0; R.ghostBeat = false;
+  R.trace = { a: [], x: [], f: [] }; R.traceT = 0; R.ghostBeat = false;
   R.boss = null; R.bossN = 0; R.bossOk = { storm: !S.seen.boss_storm || chance(0.4), whale: !S.seen.boss_whale || chance(0.45), pirates: !S.seen.boss_pirates || chance(0.4), kraken: !S.seen.boss_kraken || chance(0.4), bandit: !S.seen.boss_bandit || chance(0.45) };
   if (daily && daily.twist === 'boss') R.bossOk = { storm: true, whale: true, pirates: true, kraken: true, bandit: true };
   const gh = S.ghosts && S.ghosts[route ? route.id : 'free'];
   G.ghost = !daily && S.settings.ghost && gh && gh.a && gh.a.length > 4 ? gh : null;
+  G.ghostLook = G.ghost && G.ghost.lk ? Object.assign({}, G.ghost.lk, { paint: PAINTS.find(p => p.id === G.ghost.lk.paint) || PAINTS[0] }) : null;
   const rc = !daily && rivalLive(); G.rival = rc ? makeRival(rc, G.st) : null; R.rivalBeat = false;
   G.R = R;
   G.obs = []; G.picks = []; G.parts = []; G.floaters = []; G.banners = []; G.station = null; G.warnings = [];
@@ -2849,6 +2891,7 @@ function prepareRocket() {
 // ---------------------------------------------------------------- launch mode
 function enterLaunch() {
   $('toasts').innerHTML = ''; // workshop news shouldn't cover the launch gauge
+  G.catchQ = null; G.catchAnim = null;
   prepareRocket();
   G.mode = 'launch';
   G.launch = { t: 0, v: 0.1, dir: 1, speed: 1.05, done: false, hold: 0 };
@@ -3772,7 +3815,7 @@ function handlePhysEvents() {
   const R = G.R;
   for (const e of R.events) {
     if (e === 'boosterSep' && R.boosters) {
-      R.boosters = false; sfx.detach();
+      R.boosters = false; R.boosterDropped = true; sfx.detach();
       for (const s of [-1, 1]) G.parts.push({ k: 'debris', what: 'booster', x: R.x + s * 22, py: R.py - 10, vx: s * rand(60, 120), vy: -40, r: 1, life: 2.5, t: 0, rot: 0, vr: s * rand(1, 3) });
       floater(R.x, R.py - 20, 'Boosters away!', '#fff', 16);
     }
@@ -4223,6 +4266,11 @@ function computeResult() {
   const record = alt > S.bestAlt && S.flights > 0;
   if (record) rows.push(['New record bonus', Math.round(altPay * 0.25)]);
   if (st.gift) rows.push(['Gift shop sales', st.gift]);
+  if (st.catcher && R.boosterDropped) { // the tower catches the spent boosters; the yard shows the catch when you get back
+    const both = R.visStage === 2;
+    rows.push([both ? 'Booster + stage catch' : 'Booster catch', Math.round(STAT.recover(st.catcher) * (both ? 1.5 : 1))]);
+    S.stats.catches = (S.stats.catches || 0) + 1; G.catchQ = { stage: both };
+  }
   if (R.foundLost) { const it = LOST.find(x => x.id === R.foundLost); rows.push([`Found ${it.name}`, Math.round(80 + coinValue(it.min) * 40)]); }
   const rivalWon = R.rivalBeat && G.rival && !R.crashed ? G.rival.c : null;
   if (rivalWon) rows.push([`Beat Baron Vroom’s ${rivalWon.name}`, rivalWon.prize]);
@@ -4341,6 +4389,7 @@ const ACH = [
   { id: 'rainbow', prog: () => [S.stats.rainbows || 0, 5], name: 'Pot of Gold', desc: 'Fly up through 5 rainbows', test: () => (S.stats.rainbows || 0) >= 5, reward: 1500 },
   { id: 'phase', prog: () => [S.stats.phased || 0, 5], name: 'Untouchable', desc: 'Dash straight through 5 hazards', test: () => (S.stats.phased || 0) >= 5, reward: 2500 },
   { id: 'fork', name: 'Decisions!', desc: 'Pick your first fork upgrade', test: () => UPGRADES.some(u => u.fork && lvl(u.id) > 0), reward: 500 },
+  { id: 'catch10', prog: () => [S.stats.catches || 0, 10], name: 'Catch of the Day', desc: 'Catch 10 boosters with the Catch Arms', test: () => (S.stats.catches || 0) >= 10, reward: 4000 },
 ];
 // ---- trophy medals: one little drawing per achievement, on a bronze, silver or gold medal
 const T_ = (t, fs = 12) => `<text x="32" y="${28 + fs * 0.36}" text-anchor="middle" font-size="${fs}" font-weight="900" font-family="Fredoka, 'Arial Rounded MT Bold', Nunito, sans-serif" fill="${INK}" stroke="none">${t}</text>`;
@@ -4381,6 +4430,7 @@ const ACH_SYM = {
   phase: '<path d="M24 15c3.5 3 4.5 7 4.5 10.5V36h-9V25.5c0-3.5 1-7.5 4.5-10.5z" fill="#fff" opacity=".55" stroke-dasharray="2.5 3"/><path d="M40 15c3.5 3 4.5 7 4.5 10.5V36h-9V25.5c0-3.5 1-7.5 4.5-10.5z" fill="#fff6e5"/><circle cx="40" cy="24.5" r="2" fill="#4d96ff" stroke-width="2"/><path d="M37.5 36l2.5 4.5 2.5-4.5" fill="#ff9f43" stroke-width="2"/><path d="M30.5 21h3M30 28h4M30.5 35h3" stroke="#4fd8ff" stroke-width="2.5"/>',
   rainbow: '<path d="M18 36a14 14 0 0 1 28 0" stroke="#ff5a5f" stroke-width="4"/><path d="M22 36a10 10 0 0 1 20 0" stroke="#ffd93d" stroke-width="4"/><path d="M26 36a6 6 0 0 1 12 0" stroke="#4d96ff" stroke-width="4"/>',
   fork: '<path d="M32 40V29l-8-9M32 29l8-9" stroke-width="3.5"/><path d="M21 22v-5h5M43 22v-5h-5" stroke-width="3"/>',
+  catch10: '<path d="M43 14v26M43 22h5M43 31h5" stroke-width="2.5"/><path d="M29 13c3.5 3 5 6 5 9.5v16h-10v-16c0-3.5 1.5-6.5 5-9.5z" fill="#fff6e5" stroke-width="2.5"/><path d="M24 22.5c0-3.5 1.5-6.5 5-9.5 3.5 3 5 6 5 9.5z" fill="#ff5a5f" stroke-width="2.5"/><path d="M19 26h24" stroke-width="5"/><path d="M19 26h24" stroke="#ff9f43" stroke-width="2"/>',
 };
 function achBadge(a) {
   const tier = a.secret || a.reward >= 10000 ? ['#ffd93d', '#fff3b0'] : a.reward >= 1500 ? ['#c9ced8', '#f1f3f8'] : ['#e8a06a', '#f8d6b6'];
@@ -5088,7 +5138,7 @@ function drawGround() {
     const wave = Math.sin(G.t * 6) * 0.5;
     ctx.beginPath(); ctx.moveTo(8, -24); ctx.lineTo(18 + wave * 6, -44); ctx.lineWidth = 4; ctx.stroke();
     if (G.mode === 'hangar' && G.poke.ada > 0) speechBubble(ctx, G.poke.adaLine, 30, -70, clamp(G.poke.ada * 3, 0, 1) * clamp((3 - G.poke.ada) * 6, 0, 1), 170, true, 96);
-    else if (G.mode === 'hangar' && S.flights > 0 && !(G.poke.deco > 0)) {
+    else if (G.mode === 'hangar' && S.flights > 0 && !(G.poke.deco > 0) && !G.catchAnim) {
       const ti = Math.floor(G.t / 7) % ADA_TIPS.length, k = (G.t % 7);
       const a = clamp(k * 3, 0, 1) * clamp((6.5 - k) * 3, 0, 1);
       speechBubble(ctx, ADA_TIPS[ti], 30, -70, a, 170, true, 96); // 96: clears the launch tower
@@ -5115,7 +5165,7 @@ function drawGround() {
   if (G.mode === 'hangar' && mailboxOn() && mountain) drawMailbox();
   // ---- today's Daily Special customer waits in a balloon above the yard (tap it)
   if (G.mode === 'hangar' && hangarDailyOn()) {
-    const bpy = 205 + Math.sin(G.t * 1.4) * 7, bx = -128 + Math.sin(G.t * 0.6) * 6;
+    const bpy = 205 + Math.sin(G.t * 1.4) * 7, bx = -128 + Math.sin(G.t * 0.6) * 6 + (G.balDodge || 0);
     ctx.save(); ctx.translate(bx, -bpy); ctx.rotate(Math.sin(G.t * 1.1) * 0.05); ctx.scale(0.62, 0.62); ink(ctx, 3);
     ctx.beginPath(); ctx.moveTo(-14, 26); ctx.lineTo(-7, 50); ctx.moveTo(14, 26); ctx.lineTo(7, 50); ctx.stroke();
     ctx.beginPath(); ctx.ellipse(0, 0, 30, 34, 0, 0, TAU); fillStroke(ctx, '#ff8ad0', 3);
@@ -5145,6 +5195,7 @@ function drawGround() {
   ctx.fillStyle = tl ? '#ff5a5f' : '#c9ced8'; rr(ctx, tx - 16, -th - 10, 28, 12, 3); fillStroke(ctx, tl ? '#ff5a5f' : '#c9ced8');
   if (G.mode !== 'flight' && G.mode !== 'ending') { ctx.beginPath(); ctx.moveTo(tx + 8, -th * 0.55); ctx.lineTo(tx + 44, -th * 0.55); ctx.lineWidth = 5; ctx.stroke(); ctx.lineWidth = 3; }
   if (tl) { const bl = Math.sin(G.t * 4) > 0; ctx.fillStyle = bl ? '#ff5a5f' : '#7a1d2e'; circ(ctx, tx - 2, -th - 16, 5); ctx.fill(); ctx.stroke(); }
+  if (st.catcher) drawCatcher(tx - 12);
   // ---- mag-rail rings
   if (lvl('rail')) {
     const n = 2 + lvl('rail');
@@ -5232,7 +5283,7 @@ function pokeHangar(sx, sy) {
     P.baronLine = line; P.baronT = 2.8; for (let i = 0; i < 6; i++) setTimeout(() => sfx.talk(0.75), i * 70);
     return true;
   }
-  if (hangarDailyOn() && Math.abs(wx + 128) < 26 && wpy > 155 && wpy < 235) { sfx.boing(); UI.openMap(); return true; }
+  if (hangarDailyOn() && Math.abs(wx + 128 - (G.balDodge || 0)) < 26 && wpy > 155 && wpy < 235) { sfx.boing(); UI.openMap(); return true; }
   if (mailboxOn() && Math.abs(wx - mailboxX() + 2) < 31 && wpy > 0 && wpy < (mailCount() ? 108 : 92)) {
     if (mailCount()) UI.openLetter(); else { P.mail = 0.5; sfx.creak(); toast('No new mail. Deliver more passengers and fans will write!'); }
     return true;
@@ -5273,6 +5324,70 @@ function pokeHangar(sx, sy) {
     const cd = CONDS[nextCondId()] || CONDS.clear; toast(`<b>Next flight:</b> ${cd.name}${cd.fx ? ': ' + cd.fx : ''}`); sfx.click(); return true;
   }
   return false;
+}
+// ---- Catch Arms: after a flight that dropped its boosters, one comes home and the tower's arm catches it
+const CATCH = { y: -96, len: 52, dx: 36, s: 1.15 };
+const CATCH_LINES = ['Nice catch! That booster flies again.', 'Snatched right out of the sky!', 'Catch, refuel, relaunch!', 'Chopsticks! I never could use them myself.', 'Gently does it… and caught!'];
+function updateCatch(dt) {
+  const C = G.catchAnim;
+  // the Daily Special balloon floats aside while a booster comes down through its spot
+  G.balDodge = (G.balDodge || 0) + ((C && C.t > -0.6 && C.t < 3.6 ? -75 : 0) - (G.balDodge || 0)) * Math.min(1, dt * 2.5);
+  if (!C) return;
+  if (G.mode !== 'hangar') { G.catchAnim = null; return; }
+  if (Dialog.active || document.querySelector('.screen.overlay:not(.hidden)')) return; // wait until the yard is in view
+  const t0 = C.t; C.t += dt;
+  const at = k => t0 < k && C.t >= k, bx = -76 - CATCH.dx;
+  if (at(0)) sfx.creak();
+  if (at(0.3)) sfx.whoosh();
+  if (at(0.6)) sfx.retro();
+  if (at(1.9)) {
+    sfx.clank(); setTimeout(() => sfx.cheer(), 120); G.cam.shake = Math.max(G.cam.shake, 3); buzz(15);
+    puff(bx, -CATCH.y + 2, 5, '#ffffff', 50, [4, 7], [0.3, 0.6]); sparks(bx + 14, -CATCH.y, 10, ['#ffd93d', '#ffffff'], 160);
+    floater(bx - 30, -CATCH.y + 16, C.stage ? 'Double catch!' : 'Caught!', '#ffd93d', 20);
+    G.poke.crowd = 1.4;
+  }
+  if (at(3.3)) sfx.creak();
+  if (at(4.5)) sfx.creak();
+  if (at(4.9)) {
+    const P = G.poke; P.adaLine = S.stats.catches === 1 ? 'Caught it! Every booster we catch saves us money.' : pick(CATCH_LINES); P.ada = 3;
+    for (let i = 0; i < 6; i++) setTimeout(() => sfx.talk(1.25), i * 70);
+  }
+  if (C.t > 5.2) G.catchAnim = null;
+}
+// px: the tower's left strut. The arm hangs folded along it until a booster comes home.
+function drawCatcher(px) {
+  const C = G.catchAnim && G.mode === 'hangar' ? G.catchAnim : null, t = C ? C.t : -1;
+  const ease = u => u * u * (3 - 2 * u);
+  const k = t < 0 ? 0 : t < 0.5 ? ease(t / 0.5) : t < 4.4 ? 1 : t < 4.9 ? 1 - ease((t - 4.4) / 0.5) : 0;
+  const py = CATCH.y, bx = px - CATCH.dx, s = CATCH.s;
+  if (C && t > 0.2 && t < 4.6) {
+    // where the booster is: falling with its engine lit, a little bounce on the arm, then lowered into the bay
+    const cy = py + 20 * s; let y = cy, x = bx, flame = 0;
+    if (t < 1.9) { const u = (t - 0.2) / 1.7; y = cy - 650 * Math.pow(1 - u, 3); x += Math.sin(t * 5) * 5 * (1 - u); flame = 0.4 + 0.6 * (1 - u); }
+    else if (t < 3.3) y = cy + Math.sin((t - 1.9) * 14) * 6 * Math.exp(-(t - 1.9) * 5);
+    else y = cy + 150 * ease(Math.min(1, (t - 3.3) / 1.2));
+    const hatch = t < 3 ? 0 : t < 3.3 ? (t - 3) / 0.3 : t < 4.5 ? 1 : 1 - (t - 4.5) / 0.1;
+    if (hatch > 0) { ctx.beginPath(); ctx.ellipse(bx, 0, 20 * hatch, 5 * hatch, 0, 0, TAU); ctx.fillStyle = '#2b2240'; ctx.fill(); }
+    ctx.save(); ctx.beginPath(); ctx.rect(bx - 60, -2000, 120, 2000); ctx.clip();
+    ctx.translate(x, y); ctx.scale(s, s); ink(ctx, 3);
+    if (flame > 0) { // retro burn pointing at the ground
+      const fl = (16 + 22 * flame) * (0.85 + Math.random() * 0.3);
+      ctx.beginPath(); ctx.moveTo(-6, 32); ctx.quadraticCurveTo(0, 32 + fl * 1.3, 6, 32); ctx.closePath(); fillStroke(ctx, '#ff9f43', 2.5);
+      ctx.beginPath(); ctx.moveTo(-3, 32); ctx.quadraticCurveTo(0, 32 + fl * 0.8, 3, 32); ctx.closePath(); ctx.fillStyle = '#ffd93d'; ctx.fill();
+    }
+    rr(ctx, -7, -32, 14, 64, 6); fillStroke(ctx, '#fff');
+    ctx.beginPath(); ctx.moveTo(-7, -28); ctx.quadraticCurveTo(0, -46, 7, -28); fillStroke(ctx, '#ff5a5f');
+    ctx.fillStyle = '#ff5a5f'; ctx.fillRect(-6, 14, 12, 6); ctx.strokeRect(-7, 14, 14, 6);
+    ctx.fillStyle = INK; ctx.fillRect(-11, -22, 4, 5); ctx.fillRect(7, -22, 4, 5); // catch pins rest on the arm
+    ctx.restore();
+  }
+  // the arm: swings from folded (pointing up) to out (pointing left)
+  const a = -Math.PI / 2 - k * Math.PI / 2, ex = px + Math.cos(a) * CATCH.len, ey = py + Math.sin(a) * CATCH.len;
+  ctx.lineCap = 'round';
+  ctx.beginPath(); ctx.moveTo(px, py); ctx.lineTo(ex, ey); ctx.lineWidth = 10; ctx.strokeStyle = INK; ctx.stroke();
+  ctx.lineWidth = 5; ctx.strokeStyle = '#ff9f43'; ctx.stroke();
+  ctx.save(); ctx.translate(ex, ey); ctx.rotate(a); ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(4, -7); ctx.lineWidth = 4; ctx.strokeStyle = INK; ctx.stroke(); ctx.restore();
+  ctx.lineWidth = 3; ctx.fillStyle = '#c9ced8'; circ(ctx, px, py, 4.5); ctx.fill(); ctx.stroke();
 }
 function updatePokes(dt) { const P = G.poke; for (const k of ['rocket', 'ada', 'crowd', 'shed', 'rocketLineT', 'mail', 'guestT', 'deco', 'baronT']) if (P[k] > 0) P[k] = Math.max(0, P[k] - dt); }
 function wrapText(str, maxW) { const words = str.split(' '); const out = []; let line = ''; for (const w of words) { const t = line ? line + ' ' + w : w; if (ctx.measureText(t).width > maxW && line) { out.push(line); line = w; } else line = t; } if (line) out.push(line); return out; }
@@ -5506,7 +5621,11 @@ function recordTrace(R, dt) {
   if (!R.trace) return;
   R.traceT += dt;
   updateRival(R, dt);
-  while (R.traceT >= 0.1 && R.trace.a.length < 6000) { R.traceT -= 0.1; R.trace.a.push(Math.round(R.alt)); R.trace.x.push(Math.round(R.x)); }
+  while (R.traceT >= 0.1 && R.trace.a.length < 6000) {
+    R.traceT -= 0.1; R.trace.a.push(Math.round(R.alt)); R.trace.x.push(Math.round(R.x));
+    // what the rocket looked like at that moment: engine lit, stage 2, boosters on, drop tanks on, afterburner
+    R.trace.f.push((R.throttle > 0.02 ? 1 : 0) | (R.visStage === 2 ? 2 : 0) | (R.boosters ? 4 : 0) | (R.drops ? 8 : 0) | (R.abT > 0 ? 16 : 0));
+  }
   const g = G.ghost;
   if (g && !S.seen.ghost && R.time > 1.5) { S.seen.ghost = 1; toast('The faded rocket is your <b>ghost</b>: your best run on this route. Beat it!'); }
   if (g && !R.ghostBeat && R.time > 2 && R.alt > g.alt) {
@@ -5521,15 +5640,18 @@ function saveGhost(R) {
   const key = R.route ? R.route.id : 'free';
   const old = S.ghosts[key];
   if (old && old.alt >= R.maxAlt) return;
-  let a = R.trace.a, x = R.trace.x, step = 0.1;
-  while (a.length > 700) { a = a.filter((_, i) => i % 2 === 0); x = x.filter((_, i) => i % 2 === 0); step *= 2; }
-  S.ghosts[key] = { alt: Math.round(R.maxAlt), step, a, x };
+  let a = R.trace.a, x = R.trace.x, f = R.trace.f, step = 0.1;
+  while (a.length > 700) { a = a.filter((_, i) => i % 2 === 0); x = x.filter((_, i) => i % 2 === 0); f = f.filter((_, i) => i % 2 === 0); step *= 2; }
+  // the ghost keeps the gear and paint job it flew with, so later upgrades don't repaint it
+  const L = G.look || rocketLook(), lk = Object.assign({}, L, { paint: (L.paint || PAINTS[0]).id });
+  S.ghosts[key] = { alt: Math.round(R.maxAlt), step, a, x, f, lk };
 }
 function ghostAt(g, t) {
   const n = g.a.length, f = t / g.step, i = Math.floor(f);
-  if (i >= n - 1) return { alt: g.a[n - 1], x: g.x[n - 1], up: false, fade: clamp(1 - (t - (n - 1) * g.step) / 1.2, 0, 1) };
+  const fl = g.f && g.f.length === n ? g.f[Math.min(n - 1, Math.max(0, i))] : null; // older ghosts have no flags
+  if (i >= n - 1) return { alt: g.a[n - 1], x: g.x[n - 1], up: false, fl, fade: clamp(1 - (t - (n - 1) * g.step) / 1.2, 0, 1) };
   const k = f - i;
-  return { alt: lerp(g.a[i], g.a[i + 1], k), x: lerp(g.x[i], g.x[i + 1], k), up: g.a[i + 1] > g.a[i], fade: clamp(t / 0.8, 0, 1) };
+  return { alt: lerp(g.a[i], g.a[i + 1], k), x: lerp(g.x[i], g.x[i + 1], k), up: g.a[i + 1] > g.a[i], fl, fade: clamp(t / 0.8, 0, 1) };
 }
 function drawGhostIcon(c, r, t) {
   c.save(); ink(c, 2.5);
@@ -5555,9 +5677,11 @@ function drawGhostRocket() {
   ctx.save();
   ctx.translate(gp.x, -gpy); ctx.scale(G.rocketScale, G.rocketScale);
   ctx.globalAlpha = 0.3 * gp.fade;
-  drawRocket(ctx, G.look, { t: G.t, throttle: gp.up ? 0.7 : 0, faces: [], stage: R.visStage, boostersOn: false, dropsOn: false });
+  const gl = G.ghostLook || G.look, fl = gp.fl;
+  if (fl == null) drawRocket(ctx, gl, { t: G.t, throttle: gp.up ? 0.7 : 0, faces: [], stage: R.visStage, boostersOn: false, dropsOn: false });
+  else drawRocket(ctx, gl, { t: G.t, throttle: fl & 1 ? (fl & 16 ? 1.6 : 1) + (fl & 4 ? 0.5 : 0) : 0, flame: !!(fl & 1), ab: !!(fl & 16), faces: [], stage: fl & 2 ? 2 : 1, boostersOn: !!(fl & 4), boostFlame: !!(fl & 4), dropsOn: !!(fl & 8) });
   ctx.globalAlpha = 0.75 * gp.fade;
-  ctx.translate(0, -rocketDims(G.look).BL / 2 - 46); drawGhostIcon(ctx, 10, G.t);
+  ctx.translate(0, -rocketDims(gl).BL / 2 - 46); drawGhostIcon(ctx, 10, G.t);
   ctx.restore();
 }
 function drawPlayerRocket() {
@@ -6856,6 +6980,7 @@ const UI = (() => {
 function goHangar(skipFlush) {
   G.mode = 'hangar'; G.R = null; G.obs = []; G.picks = []; G.parts = []; G.banners = []; G.station = null;
   G.st = computeStats(); G.look = rocketLook();
+  if (G.catchQ) { G.catchAnim = Object.assign({ t: -0.9 }, G.catchQ); G.catchQ = null; }
   AudioSys.setEngine(0, false); AudioSys.setWind(0);
   refreshAdaTips();
   UI.showScreen('hangar');
@@ -7042,6 +7167,7 @@ function update(dt) {
   G.cam.flash = Math.max(0, G.cam.flash - dt);
   G.hangarPop = Math.max(0, G.hangarPop - dt * 3);
   updatePokes(dt);
+  updateCatch(dt);
   if (DEBUG.bot && G.mode === 'flight') botSteer();
   if (G.mode === 'launch') updateLaunch(sdt);
   else if (G.mode === 'flight') updateFlight(sdt);
@@ -7153,7 +7279,7 @@ window.__skyhop = {
   done(id) { S.routes[id] = { done: true, stars: 3, runs: 1 }; const nx = nextRoute(); S.route = nx ? nx.id : 'free'; },
   start: startGame, launch(v = 0.8) { $('scr-results').classList.add('hidden'); if (G.mode !== 'launch') enterLaunch(); G.launch.v = v; doLaunch(); },
   hangar: () => goHangar(true), flush: () => UI.flushPending(), reset() { resetSave(); }, LOST, drawLostItem, mail: () => UI.openLetter(),
-  daily() { return todaysDaily(); }, toast, floater, UI,
+  daily() { return todaysDaily(); }, toast, floater, UI, AudioSys,
   skyEvent(id) { DEBUG.forceEvent = id; },
   teleport(alt) { const R = G.R; if (!R) return; R.alt = alt; R.maxAlt = Math.max(R.maxAlt, alt); },
   save: saveGame, music: Music, audio: AudioSys, sfxTest() { const errs = []; for (const k in AudioSys.sfx) { try { AudioSys.sfx[k](); } catch (e) { errs.push(k + ':' + e.message); } } return errs; },
