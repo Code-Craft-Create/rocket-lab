@@ -1091,6 +1091,7 @@ function routeUnlocked(r) { const i = ROUTES.indexOf(r); return i === 0 || route
 
 // characters: portrait params
 const CHARS = {
+  baron: { name: 'Baron Vroom', skin: '#f2c29b', hair: '#3a2a2a', style: 'helmet', mustache: true, monocle: true, col: '#ffd93d' },
   ada:   { name: 'Grandma Ada', skin: '#f5c9a5', hair: '#e8e8f0', style: 'bun', goggles: true, col: '#ff5a5f' },
   buckley: { name: 'Buckley', skin: '#ffd93d', hair: null, style: 'dummy', col: '#2b2240' },
   plum:  { name: 'Mayor Plum', skin: '#e0a8d8', hair: '#5a2a6a', style: 'tophat', mustache: true, col: '#9b5de5' },
@@ -1124,6 +1125,7 @@ const CHARS = {
 const TOURISTS = ['tourist', 'kid', 'nimbus', 'romeo', 'juno', 'nana', 'farmer', 'kid2', 'bowler', 'twin1', 'cat', 'pip'];
 // ---- Guestbook: everyone you've flown, with a little bio
 const GUESTS = {
+  baron: 'Founder of Vroom Rockets Inc. Your loudest rival, then your loudest fan.',
   buckley: 'Crash-test dummy. Never complains. Never says anything, really.',
   plum: 'Mayor of Pebbleton. Wants a latte with a view and a ribbon to cut at every stop.',
   volt: 'Runs the lightning lab at Thunderhead Station. Hair has been standing up for years.',
@@ -1159,6 +1161,8 @@ const guestsMet = () => Object.keys(GUESTS).filter(id => S.met && S.met[id]).len
 const guestNewCount = () => Object.keys(GUESTS).filter(id => S.met && S.met[id] && !S.seen['guest_' + id]).length;
 // ---- Fan mail: thank-you letters (with a little gift) arrive in the yard's mailbox
 const MAIL = [
+  { id: 'baron', from: 'baron', gift: 5000, when: () => !!(S.rival && S.rival.v5), sign: '— Baron Vroom (former rival, current fan)',
+    text: 'Dear Captain,\n\nI have sold the Vroom-MAX for scrap and bought a season ticket on Skyhop Express. Window seat, please.\n\nEnclosed is my last fortune. Spend it on something LOUD.' },
   { id: 'r0', from: 'buckley', stamp: 'dummy', gift: 40, when: () => routeDone('r0') && S.flights >= 3,
     text: 'Dear Pilot,\n. . . . . . . . . . . . . . . .\n. . . . . . . . ! . . . . . .\n\nP.S. Ada here. He says thank you. I think.' },
   { id: 'r1', from: 'plum', stamp: 'cafe', gift: 60, when: () => routeDone('r1'),
@@ -1185,7 +1189,7 @@ const MAIL = [
     text: 'That was the Storm King! Thirty years I’ve been forecasting him and you just... flew past. The lab took up a collection.\n\nP.S. Dr. Volt would like his hair to lie flat again. Any tips?' },
   { id: 'whale', from: 'luna', stamp: 'observ', gift: 900, when: () => S.stats.whale > 0,
     text: 'We watched you ride Big Blue’s spout through the big telescope! Prof. Orion says the whale waved at you. I wrote it all down in my notebook, page 212. Here is a little reward from the observatory.' },
-  { id: 'pirates', from: 'kid2', stamp: 'moon', gift: 1800, when: () => (S.stats.pirates || 0) > 0,
+  { id: 'pirates', from: 'kid2', stamp: 'moon', gift: 1200, when: () => (S.stats.pirates || 0) > 0,
     text: 'PIRATES?! You got away from actual SKY PIRATES?! Was there a parrot? Was it a cat? It was a CAT?!\n\nI told everyone at school. Nobody believes me. Enclosed: my pocket money, for a cannonball-proof fin.', sign: 'Rusty (your biggest fan)' },
   { id: 'kraken', from: 'bot', stamp: 'mars', gift: 4000, when: () => S.stats.kraken > 0,
     text: 'BEEP. KRAKEN ESCAPED. BEEP BOOP.\nENCLOSED: COINS.\nTHE KRAKEN SAYS NO HARD FEELINGS. IT WAVED ALL EIGHT ARMS. BEEP.' },
@@ -1322,6 +1326,7 @@ function drawLostPick(c, p, t) {
   c.save(); c.translate(26, -34); c.rotate(0.15); rr(c, -9, -12, 18, 22, 6); ink(c, 3); fillStroke(c, '#ffd93d', 3); text(c, '!', 0, -1, 16, INK, 'center', null); c.restore();
 }
 const FAN_LINES = {
+  baron: 'Ahem. Splendid launch. For a rival.',
   plum: 'Splendid launch! I shall cut a ribbon for it.', volt: 'Feel that static? That’s excitement!', nimbus: 'Forecast: 100% chance of awesome.',
   orion: 'Did you see the comet? I saw the comet.', luna: 'Writing this launch down. Page 213!', romeo: 'Juno and I want to fly again. Honeymoon part two!',
   juno: 'Got any more of those mints?', bell: 'Carry your bags, Captain?', flo: 'Pancakes for the pilot, on the house!', mike: 'Ten-four, rocket buddy!',
@@ -1918,6 +1923,11 @@ function drawFace(c, ch, r, mood = 'happy', t = 0) {
   if (st === 'tophat') { rr(c, -r * 0.55, -r * 1.75, r * 1.1, r * 0.95, r * 0.1); fillStroke(c, INK, lw); c.fillStyle = C.col; c.fillRect(-r * 0.55, -r * 1.05, r * 1.1, r * 0.18); rr(c, -r * 0.95, -r * 0.92, r * 1.9, r * 0.2, r * 0.1); fillStroke(c, INK, lw); }
   if (st === 'cap' || st === 'bellcap') { c.beginPath(); c.ellipse(0, -r * 0.62, r * 0.85, r * 0.5, 0, Math.PI, 0); c.closePath(); fillStroke(c, C.col, lw); if (st === 'cap') { c.beginPath(); c.ellipse(r * 0.55, -r * 0.62, r * 0.6, r * 0.14, 0, 0, TAU); fillStroke(c, C.col, lw); } else { rr(c, -r * 0.5, -r * 1.05, r, r * 0.45, r * 0.1); fillStroke(c, C.col, lw); } }
   if (st === 'chef') { c.beginPath(); c.moveTo(-r * 0.7, -r * 0.6); c.lineTo(r * 0.7, -r * 0.6); c.lineTo(r * 0.7, -r * 1.0); c.arc(r * 0.4, -r * 1.25, r * 0.4, 0.3, -2.4, true); c.arc(-r * 0.05, -r * 1.45, r * 0.45, -0.3, -2.8, true); c.arc(-r * 0.45, -r * 1.2, r * 0.4, -0.7, 2.6, true); c.closePath(); fillStroke(c, '#ffffff', lw); }
+  if (st === 'helmet') { // gold racing helmet with a black stripe
+    c.beginPath(); c.moveTo(-r * 1.04, -r * 0.05); c.quadraticCurveTo(-r * 1.08, -r * 1.25, 0, -r * 1.22); c.quadraticCurveTo(r * 1.08, -r * 1.25, r * 1.04, -r * 0.05); c.quadraticCurveTo(r * 0.7, -r * 0.5, 0, -r * 0.52); c.quadraticCurveTo(-r * 0.7, -r * 0.5, -r * 1.04, -r * 0.05); c.closePath(); fillStroke(c, C.col, lw);
+    c.save(); c.clip(); c.fillStyle = INK; c.fillRect(-r * 0.16, -r * 1.3, r * 0.32, r); c.restore();
+  }
+  if (C.monocle) { c.lineWidth = lw * 0.9; c.strokeStyle = '#d4a017'; circ(c, r * 0.38, -r * 0.1, r * 0.26); c.stroke(); c.beginPath(); c.moveTo(r * 0.55, r * 0.08); c.quadraticCurveTo(r * 0.75, r * 0.5, r * 0.62, r * 0.85); c.stroke(); c.strokeStyle = INK; c.lineWidth = lw; }
   if (st === 'straw') { c.beginPath(); c.ellipse(0, -r * 0.6, r * 1.4, r * 0.28, 0, 0, TAU); fillStroke(c, '#f3d27a', lw); c.beginPath(); c.ellipse(0, -r * 0.8, r * 0.7, r * 0.45, 0, Math.PI, 0); c.closePath(); fillStroke(c, '#f3d27a', lw); }
   c.restore();
 }
@@ -2679,6 +2689,7 @@ function prepareRocket() {
   if (daily && daily.twist === 'boss') R.bossOk = { storm: true, whale: true, pirates: true, kraken: true };
   const gh = S.ghosts && S.ghosts[route ? route.id : 'free'];
   G.ghost = !daily && S.settings.ghost && gh && gh.a && gh.a.length > 4 ? gh : null;
+  const rc = !daily && rivalLive(); G.rival = rc ? makeRival(rc, G.st) : null; R.rivalBeat = false;
   G.R = R;
   G.obs = []; G.picks = []; G.parts = []; G.floaters = []; G.banners = []; G.station = null; G.warnings = [];
   G.spawnY = R.py + 260;
@@ -2821,7 +2832,7 @@ function updateSkyEvent(R, dt, viewTop) {
     if (e.id === 'goldrush' && e.acc > 0.32) { e.acc = 0; spawnCoins(R.x + rand(-vw * 0.3, vw * 0.3), viewTop + rand(40, 260)); }
     if (e.id === 'meteors' && e.acc > 0.28) { e.acc = 0; const o = makeObstacle('meteor', R.x + rand(-vw * 0.55, vw * 0.55), viewTop); o.vx = e.dir * rand(60, 200); G.obs.push(o); }
     if (e.id === 'icefall' && e.acc > 0.3) { e.acc = 0; const o = makeObstacle('ice', R.x + rand(-vw * 0.5, vw * 0.5), viewTop + rand(50, 300)); o.vy = -rand(80, 200); G.obs.push(o); }
-    if (e.id === 'ringroad' && e.acc > 0.42) { e.acc = 0; e.k = (e.k || 0) + 1; G.picks.push({ type: 'ring', x: G.cam.x + Math.sin(e.k * 0.45 + e.dir) * Math.min(vw * 0.16, 170), py: viewTop + 90, r: 46, seed: Math.random(), vx: 0, vy: 0, hit: false }); }
+    if (e.id === 'ringroad' && e.acc > 0.5) { e.acc = 0; e.k = (e.k || 0) + 1; G.picks.push({ type: 'ring', road: true, x: G.cam.x + Math.sin(e.k * 0.5 + e.dir) * Math.min(vw * 0.16, 170), py: viewTop + 90, r: 46, seed: Math.random(), vx: 0, vy: 0, hit: false }); }
     if (e.id === 'bloom' && e.acc > 0.36) { e.acc = 0; G.obs.push(makeObstacle('jelly', R.x + rand(-vw * 0.5, vw * 0.5), viewTop + rand(60, 320))); }
     if (e.id === 'flock' && e.acc > 0.55) {
       e.acc = 0; const n = randi(3, 5), sp = rand(150, 230), y = R.py + rand(120, 520), x0 = G.cam.x - e.dir * (vw / 2 + 60);
@@ -3761,7 +3772,8 @@ function updatePickups(dt) {
       if (!p.hit && Math.abs(dx) < p.r * 0.8 && Math.abs(dy) < 26) {
         p.hit = true; R.rings++; S.stats.rings++;
         R.ringCombo = R.ringT > 0 ? R.ringCombo + 1 : 1; R.ringT = 3;
-        const boost = Math.max(25, Math.abs(R.vy) * 0.1) * (1 + 0.15 * Math.min(R.ringCombo - 1, 4));
+        // ring road rings come in long chains, so each one gives a gentler push
+        const boost = p.road ? Math.max(15, Math.abs(R.vy) * 0.025) : Math.max(25, Math.abs(R.vy) * 0.1) * (1 + 0.15 * Math.min(R.ringCombo - 1, 4));
         R.vy += boost; sfx.ring(R.ringCombo);
         R.comfort = Math.min(1, R.comfort + 0.04); R.mood = 'joy'; R.moodT = 1;
         floater(p.x, p.py + 30, R.ringCombo > 1 ? `BOOST x${R.ringCombo}!` : 'BOOST!', '#4fd8ff', 20);
@@ -3857,6 +3869,8 @@ function computeResult() {
   if (record) rows.push(['New record bonus', Math.round(altPay * 0.25)]);
   if (st.gift) rows.push(['Gift shop sales', st.gift]);
   if (R.foundLost) { const it = LOST.find(x => x.id === R.foundLost); rows.push([`Found ${it.name}`, Math.round(80 + coinValue(it.min) * 40)]); }
+  const rivalWon = R.rivalBeat && G.rival && !R.crashed ? G.rival.c : null;
+  if (rivalWon) rows.push([`Beat Baron Vroom’s ${rivalWon.name}`, rivalWon.prize]);
   let dailyPaid = false;
   if (R.daily && R.dailyDone && S.daily && S.daily.day === R.daily.day && !S.daily.done) {
     const y = dayKey(new Date(Date.now() - 864e5));
@@ -3871,7 +3885,7 @@ function computeResult() {
   if (line > 1) { const base = rows.reduce((a, x) => a + x[1], 0); rows.push([`Line #${line} bonus +${(line - 1) * 50}%`, Math.round(base * 0.5 * (line - 1))]); }
   const jobsPaid = settleJobs(R, rows);
   const total = rows.reduce((s, x) => s + x[1], 0);
-  const core = rows.reduce((s, x) => s + (x[0].startsWith('Job:') || x[0] === 'First delivery bonus!' || x[0].startsWith('Special delivery') ? 0 : x[1]), 0);
+  const core = rows.reduce((s, x) => s + (x[0].startsWith('Job:') || x[0].startsWith('Beat Baron') || x[0] === 'First delivery bonus!' || x[0].startsWith('Special delivery') ? 0 : x[1]), 0);
   S.avg.total = S.avg.total * 0.65 + core * 0.35;
   const badges = [];
   if (R.delivered) badges.push('Delivered!');
@@ -3883,6 +3897,7 @@ function computeResult() {
   if (R.smashed >= 3) badges.push(`${R.smashed} smashed`);
   if (R.wishOk) badges.push(R.wishOk > 1 ? `${R.wishOk} wishes granted` : 'Wish granted');
   if (R.foundLost) badges.push('Lost item found');
+  if (rivalWon) badges.push('Rival beaten');
   if ((R.nearMiss || 0) >= 3) badges.push(`${R.nearMiss} close calls`);
   if (jobsPaid) badges.push(jobsPaid > 1 ? `${jobsPaid} jobs done` : 'Job done');
   if (R.crashed) badges.push('Kaboom');
@@ -3904,6 +3919,7 @@ function computeResult() {
       if (r.id === 'r7') S.ended = true;
     }
   }
+  if (rivalWon) { S.rival = S.rival || {}; S.rival[rivalWon.id] = 1; S.pendingRival = rivalWon.id; if (rivalWon.id === 'v5') { S.met = S.met || {}; S.met.baron = Math.max(S.met.baron || 0, 30); } }
   if (R.cond === 'night') S.stats.nights++;
   S.cond = rollCond();
   fixDailyRoute();
@@ -3951,7 +3967,8 @@ const ACH = [
   { id: 'km2500', prog: () => [S.bestAlt / 1000, 2500, ' km'], name: 'Beyond the Gate', desc: 'Reach 2,500 km in endless mode', test: () => S.bestAlt >= 2500000, reward: 250000 },
   { id: 'king', name: 'Storm Chaser', desc: 'Dodge every bolt the Storm King throws', test: () => S.stats.king >= 1, reward: 1500 },
   { id: 'whale', name: 'Whale Rider', desc: 'Catch a boost from Big Blue’s spout', test: () => S.stats.whale >= 1, reward: 2500 },
-  { id: 'pirates', name: 'Outsailed!', desc: 'Dodge every cannonball from Captain Calico\u2019s ship', test: () => (S.stats.pirates || 0) >= 1, reward: 8000 },
+  { id: 'rival', name: 'Vroom Vanquished', desc: 'Beat all five of Baron Vroom\u2019s challenges', test: () => !!(S.rival && S.rival.v5), reward: 10000 },
+  { id: 'pirates', name: 'Outsailed!', desc: 'Dodge every cannonball from Captain Calico\u2019s ship', test: () => (S.stats.pirates || 0) >= 1, reward: 5000 },
   { id: 'kraken', name: 'Eight-Arm Escape', desc: 'Slip past every arm of the Space Kraken', test: () => S.stats.kraken >= 1, reward: 20000 },
   { id: 'guide', prog: () => [GUIDE.filter(guideSeen).length, GUIDE.length], name: 'Sky Spotter', desc: 'Fill every page of the Sky Guide', test: () => GUIDE.every(guideSeen), reward: 50000 },
   { id: 'wish10', prog: () => [S.stats.wishes || 0, 10], name: 'Fairy Rocketmother', desc: 'Grant 10 passenger wishes', test: () => (S.stats.wishes || 0) >= 10, reward: 2500 },
@@ -4068,6 +4085,7 @@ function render() {
   for (const o of G.obs) drawObstacle(o);
   for (const p of G.picks) drawPickup(p);
   drawGhostRocket();
+  drawRivalRocket();
   drawBoss();
   drawPlayerRocket();
   for (const p of G.parts) if (!(p.k === 'smoke' || p.k === 'glow' || p.k === 'line')) drawParticle(p);
@@ -4809,10 +4827,98 @@ function updateParticles(dt) {
   G.banners = G.banners.filter(b => b.t < b.dur);
 }
 
+// ---------------------------------------------------------------- rival: Baron Vroom challenges you after story milestones
+const RIVAL = [
+  { id: 'v1', after: 'r1', alt: 2000, prize: 200, name: 'Vroom-1', lv: 1,
+    intro: [['baron', 'Well, well. Grandma Ada’s little backyard rocket!'], ['baron', 'I am Baron Vroom, of Vroom Rockets Incorporated. My Vroom-1 flies to 2 km!'], ['baron', 'Beat that on any flight and I’ll eat my helmet. Ha!'], ['ada', 'Oh, not HIM. Show him what we can do, dear.']],
+    lose: [['baron', 'Hmph! Beginner’s luck. I wasn’t even trying!']] },
+  { id: 'v2', after: 'r2b', alt: 9000, prize: 900, name: 'Vroom-2', lv: 3,
+    intro: [['baron', 'The Vroom-2 is here! Shinier fins, louder honk.'], ['baron', 'Nine kilometres! Nobody can catch that!'], ['buckley', '...']],
+    lose: [['baron', 'My engineers will hear about this. LOUDLY.']] },
+  { id: 'v3', after: 'r3b', alt: 30000, prize: 2500, name: 'Vroom-3', lv: 5,
+    intro: [['baron', 'Behold the Vroom-3! It has a cup holder. TWO cup holders!'], ['baron', 'Thirty kilometres! The diner crowd will cheer for ME this time.'], ['ada', 'He said that about the last two, too.']],
+    lose: [['baron', 'But... the cup holders!'], ['ada', 'Maybe try a bigger engine next time, Baron.']] },
+  { id: 'v4', after: 'r5', alt: 170000, prize: 9000, name: 'Vroom-4', lv: 7,
+    intro: [['baron', 'I have hired seven scientists and one very expensive cat.'], ['baron', 'The Vroom-4 reaches 170 km. Read it and weep!']],
+    lose: [['baron', 'Seven scientists! And the cat quit this morning.']] },
+  { id: 'v5', after: 'r6', alt: 420000, prize: 20000, name: 'Vroom-MAX', lv: 9,
+    intro: [['baron', 'This is it. The Vroom-MAX, built with my entire fortune.'], ['baron', '420 kilometres! If you beat this, I... I don’t know what I’ll do!'], ['ada', 'Go on, dear. One last time!']],
+    lose: [['baron', 'You beat the Vroom-MAX. You actually beat it.'], ['baron', 'Fine. You run the finest rocket line in the sky. May I have your autograph?'], ['ada', 'Come and watch our next launch, Baron. Front row!']] },
+];
+function rivalCur() { if ((S.line || 1) > 1) return null; S.rival = S.rival || {}; return RIVAL.find(c => routeDone(c.after) && !S.rival[c.id]) || null; }
+const rivalLive = () => { const c = rivalCur(); return c && S.seen['rival_' + c.id] ? c : null; };
+// the rival's flight: a scripted climb paced against your own rocket, so it feels like a race
+function makeRival(c, st) {
+  // fly your own rocket's predicted climb, stretched up to the Baron's height (or sped up and capped, if you out-class him)
+  const pr = Object.assign(newRocketState(st, {}), { events: [] }); pr.vy = st.kick;
+  const start = pr.alt, tr = []; let t = 0;
+  while (t < 300) { for (let k = 0; k < 3; k++) { pr.events.length = 0; physStep(pr, st, (0.1 / 3) * simWarp(pr), { tiltCos: 0.97 }); } t += 0.1; tr.push(pr.maxAlt); if (flightOver(pr) && t > 0.5) break; }
+  const peak = tr[tr.length - 1], top = Math.max(c.alt, start + 300);
+  const predAt = tt => { const i = Math.min(tr.length - 1, Math.floor(tt / 0.1)); return tr[i]; };
+  const f = (top - start) / Math.max(1, peak - start), speed = f >= 1 ? 1 : 1.12;
+  const a = [], x = []; let T = 0;
+  for (let k = 0; k < 6000; k++) {
+    const tt = k * 0.1, al = Math.min(top, start + (predAt(tt * speed) - start) * Math.max(f, 1));
+    a.push(Math.round(al)); x.push(Math.round(170 + Math.sin(tt * 0.55) * 60));
+    if (al >= top - 1 || tt * speed >= tr.length * 0.1) { if (!T) T = tt; if (tt > T + 1.6) break; }
+  }
+  return { c, alt: top, step: 0.1, a, x, T, say: null, sayT: 0, said: {} };
+}
+function rivalLook(lv) {
+  return { hull: lv, nose: Math.min(lv, 5), fins: Math.min(lv, 6), tank: lv, engine: lv, boosters: lv >= 3 ? 1 : 0, drops: 0, stage2: lv >= 7 ? 1 : 0, radar: 0, magnet: 0, ram: 0, shield: 0, seats: 1, torch: 0, ion: 0, scoop: 0, cargo: 0, lounge: 0, vector: 0, auto: 0, ab: 0, gold: false,
+    paint: { id: 'vroom', body: '#3a3554', accent: '#ffd93d', pattern: 'stripes' } };
+}
+function rivalSay(rv, key, str) { if (rv.said[key]) return; rv.said[key] = 1; rv.say = str; rv.sayT = 2.2; }
+function updateRival(R, dt) {
+  const rv = G.rival; if (!rv || R.crashed) return;
+  if (rv.sayT > 0) rv.sayT -= dt;
+  const gp = ghostAt(rv, R.time);
+  if (R.time > 0.6) rivalSay(rv, 'go', pick(['Eat my exhaust!', 'Ta-ta, slowpoke!', 'Vroom VROOM!']));
+  if (R.time > 2.5 && R.alt > gp.alt + 40 && gp.up && !rv.said.go2) { rv.said.go2 = 1; rv.say = pick(['WHAT?!', 'Hey! No fair!', 'How are you so fast?!']); rv.sayT = 2; }
+  if (R.time > rv.T && !R.rivalBeat) rivalSay(rv, 'top', 'Top THAT!');
+  if (!R.rivalBeat && R.time > 1 && R.alt > rv.alt) {
+    R.rivalBeat = true; rv.say = pick(['NOOOO!', 'My beautiful rocket!', 'Impossible!']); rv.sayT = 2.4;
+    banner('BARON VROOM BEATEN!', '#ffd93d', 2.2, 'Prize: ' + fmtMoney(rv.c.prize)); sfx.record(); confetti(R.x, R.py + 80, 30);
+  }
+}
+function drawRivalRocket() {
+  const R = G.R, rv = G.rival;
+  if (!rv || !R || G.mode !== 'flight' || R.crashed) return;
+  const gp = ghostAt(rv, R.time);
+  if (gp.fade <= 0.02) return;
+  const gpy = R.py + (gp.alt - R.alt) * pxScale(R.vy);
+  const z = G.cam.z, top = G.cam.py + (H * G.cam.anchor) / z, bot = G.cam.py - (H * (1 - G.cam.anchor)) / z;
+  const rx = G.cam.x - Math.min(170, (W / z) * 0.27) + Math.sin(R.time * 0.55) * 12; // flies alongside, on the left
+  if (gpy > top + 60 || gpy < bot - 60) { // off screen: a little marker at the edge says how far ahead or behind he is
+    const above = gpy > top, small = W < 600, sx = W / 2 - Math.min(170 * z, W * 0.27);
+    const sy = above ? (small ? 168 : 196) : H - (small ? 120 : 70);
+    ctx.save(); ctx.setTransform(DPR, 0, 0, DPR, 0, 0); ctx.globalAlpha = gp.fade;
+    ink(ctx, 3); circ(ctx, sx, sy, 15); fillStroke(ctx, '#3a3554', 3);
+    ctx.save(); ctx.translate(sx, sy + 1); drawFace(ctx, 'baron', 10, above ? 'joy' : 'scared', G.t); ctx.restore();
+    ctx.beginPath(); if (above) { ctx.moveTo(sx - 7, sy - 18); ctx.lineTo(sx, sy - 27); ctx.lineTo(sx + 7, sy - 18); } else { ctx.moveTo(sx - 7, sy + 18); ctx.lineTo(sx, sy + 27); ctx.lineTo(sx + 7, sy + 18); } ctx.closePath(); fillStroke(ctx, '#ffd93d', 2.5);
+    text(ctx, (above ? '+' : '−') + fmtAlt(Math.abs(gp.alt - R.alt)), sx + 22, sy + 1, small ? 12 : 14, '#ffd93d', 'left', INK, 3);
+    if (rv.sayT > 0 && rv.say) speechBubble(ctx, rv.say, sx + 10, sy + (above ? 52 : -32), clamp(rv.sayT * 3, 0, 1), 120, true);
+    ctx.restore();
+    return;
+  }
+  const look = rv.look || (rv.look = rivalLook(rv.c.lv)), rs = G.rocketScale;
+  ctx.save();
+  ctx.translate(rx, -gpy); ctx.scale(rs, rs);
+  ctx.globalAlpha = 0.92 * gp.fade;
+  drawRocket(ctx, look, { t: G.t, throttle: gp.up ? 0.85 : 0, faces: ['baron'], mood: R.rivalBeat ? 'scared' : 'joy', stage: 1, boostersOn: false, dropsOn: false });
+  ctx.restore();
+  const d = rocketDims(look), tagY = -gpy - (d.BL + d.NH + d.BH) * rs - 14;
+  ctx.save(); ctx.globalAlpha = gp.fade;
+  ctx.scale(1 / z, 1 / z);
+  text(ctx, 'BARON VROOM', rx * z, tagY * z, 12, '#ffd93d', 'center', INK, 3);
+  if (rv.sayT > 0 && rv.say) speechBubble(ctx, rv.say, rx * z, tagY * z - 20, clamp(rv.sayT * 3, 0, 1), 120, true);
+  ctx.restore();
+}
 // ---------------------------------------------------------------- ghost racer (replay of your best run on this route)
 function recordTrace(R, dt) {
   if (!R.trace) return;
   R.traceT += dt;
+  updateRival(R, dt);
   while (R.traceT >= 0.1 && R.trace.a.length < 6000) { R.traceT -= 0.1; R.trace.a.push(Math.round(R.alt)); R.trace.x.push(Math.round(R.x)); }
   const g = G.ghost;
   if (g && !S.seen.ghost && R.time > 1.5) { S.seen.ghost = 1; toast('The faded rocket is your <b>ghost</b>: your best run on this route. Beat it!'); }
@@ -5040,6 +5146,7 @@ function drawProgressTrack() {
   if (r) { const yy = toY(r.alt); ctx.save(); ctx.translate(x, yy); ink(ctx, 3); circ(ctx, 0, 0, 11); fillStroke(ctx, R.docked ? '#5fd068' : '#ffffff', 3); text(ctx, R.docked ? '✓' : '★', 0, 1, 12, INK, 'center', null); ctx.restore(); if (!small) text(ctx, fmtAlt(r.alt), x - 18, yy, 12, '#fff', 'right'); }
   if (R.daily) { const yy = toY(R.daily.target); ctx.save(); ctx.translate(x, yy); ink(ctx, 3); circ(ctx, 0, 0, 13); fillStroke(ctx, R.dailyDone ? '#5fd068' : '#ffd6e6', 3); if (R.dailyDone) text(ctx, '✓', 0, 1, 12, INK, 'center', null); else drawParcel(ctx, 0.4); ctx.restore(); if (!small) text(ctx, fmtAlt(R.daily.target), x - 18, yy, 12, '#fff', 'right'); }
   const gp = G.ghost && G.mode === 'flight' ? ghostAt(G.ghost, R.time) : null;
+  if (G.rival && !R.rivalBeat && G.mode === 'flight') { const yy = toY(G.rival.alt); ctx.save(); ctx.translate(x + (small ? 18 : 22), yy); ink(ctx, 2.5); circ(ctx, 0, 0, small ? 9 : 10); fillStroke(ctx, '#3a3554', 2.5); drawFace(ctx, 'baron', small ? 6 : 7, 'happy', G.t); ctx.restore(); }
   if (gp && gp.fade > 0.05) { const yy = toY(gp.alt); ctx.save(); ctx.globalAlpha = 0.85 * gp.fade; ctx.translate(x - 22, yy); drawGhostIcon(ctx, small ? 8 : 9, G.t); ctx.restore(); }
   if (R.apogee > 0 && G.st.control && !R.ended) { const yy = toY(R.apogee); ctx.save(); ctx.globalAlpha = 0.7 + Math.sin(G.t * 6) * 0.3; ink(ctx, 2.5); ctx.beginPath(); ctx.moveTo(x + 8, yy); ctx.lineTo(x + 18, yy - 6); ctx.lineTo(x + 18, yy + 6); ctx.closePath(); fillStroke(ctx, '#f15bb5', 2.5); ctx.restore(); }
   // rocket marker
@@ -5909,6 +6016,8 @@ const UI = (() => {
     if (S.pendingCrash) { S.pendingCrash = false; S.seen.crash = 1; lines.push(...STORY.crash); }
     if (S.pendingSpace) { S.pendingSpace = false; lines.push(...STORY.space); }
     if (S.pendingFork) { S.pendingFork = false; lines.push(...STORY.fork); }
+    if (S.pendingRival) { const c = RIVAL.find(x => x.id === S.pendingRival); S.pendingRival = null; if (c) lines.push(...c.lose); }
+    { const rc = rivalCur(); if (rc && !S.seen['rival_' + rc.id] && lines.length < 6 && S.flights >= 2) { S.seen['rival_' + rc.id] = 1; lines.push(...rc.intro); } }
     if (jobsUnlocked() && !S.seen.jobs) { S.seen.jobs = 1; fillJobs(); S.jobsNew = 3; lines.push(...STORY.jobs); }
     if (dailyUnlocked() && !S.seen.dailyIntro && !lines.length && (S.line || 1) === 1) { S.seen.dailyIntro = 1; lines.push(...STORY.daily); }
     if (S.pendingAch && S.pendingAch.length) { for (const id of S.pendingAch) { const a = ACH.find(x => x.id === id); toast(`Achievement: <b>${a.name}</b> +${fmtMoney(a.reward)}`); } sfx.ach(); S.pendingAch = []; }
@@ -6121,13 +6230,13 @@ requestAnimationFrame(frame);
 
 // debug / test hooks
 window.__skyhop = {
-  G, DEBUG, get S() { return S; }, computeStats, simulateFlight, UPGRADES, ROUTES, UP, art: { drawStation, routeIconCanvas, drawFace, makePostcard, guideIcon, GUIDE },
+  G, DEBUG, RIVAL, get S() { return S; }, computeStats, simulateFlight, UPGRADES, ROUTES, UP, art: { drawStation, routeIconCanvas, drawFace, makePostcard, guideIcon, GUIDE },
   set bot(v) { DEBUG.bot = v; }, set timeScale(v) { DEBUG.timeScale = v; }, set season(v) { DEBUG.season = v; },
   setMoney(v) { S.money = v; if (UI.current === 'hangar') UI.refresh(); },
   setLevel(id, l) { S.up[id] = l; G.look = rocketLook(); G.st = computeStats(); if (UI.current === 'hangar') UI.refresh(); },
   done(id) { S.routes[id] = { done: true, stars: 3, runs: 1 }; const nx = nextRoute(); S.route = nx ? nx.id : 'free'; },
   start: startGame, launch(v = 0.8) { $('scr-results').classList.add('hidden'); if (G.mode !== 'launch') enterLaunch(); G.launch.v = v; doLaunch(); },
-  hangar: () => goHangar(true), reset() { resetSave(); }, LOST, drawLostItem, mail: () => UI.openLetter(),
+  hangar: () => goHangar(true), flush: () => UI.flushPending(), reset() { resetSave(); }, LOST, drawLostItem, mail: () => UI.openLetter(),
   daily() { return todaysDaily(); },
   teleport(alt) { const R = G.R; if (!R) return; R.alt = alt; R.maxAlt = Math.max(R.maxAlt, alt); },
   save: saveGame, music: Music, audio: AudioSys, sfxTest() { const errs = []; for (const k in AudioSys.sfx) { try { AudioSys.sfx[k](); } catch (e) { errs.push(k + ':' + e.message); } } return errs; },

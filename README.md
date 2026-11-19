@@ -32,11 +32,12 @@ Open `index.html` in any modern browser, or enable GitHub Pages for this repo (S
 - Sky Guide: a field book that fills with drawings of every obstacle and boss you meet.
 - Guestbook: every passenger you fly gets a portrait and a short bio.
 - Lost & Found: your passengers keep dropping things (a top hat, a pancake, a bowling ball...). Catch them in the sky at the right height and return them (two of them earn paint jobs).
+- A rival: Baron Vroom of Vroom Rockets Inc. turns up after story milestones and races his own rocket beside yours. Beat his height for a prize; beat all five of his rockets and he becomes your biggest fan.
 - Seasons: the yard follows your calendar, with snow and roof lights in winter, blossoms and tulips in spring, sunflowers and fireflies in summer, falling leaves in autumn and carved pumpkins with bats at the end of October. Tap the seasonal friend next to Ada.
 - Fan mail: thank-you letters with a little gift arrive in the yard's mailbox after deliveries, boss wins and lost-item returns.
 - Route Map with an illustrated panorama of the whole line, from the shed to the Starlight Gate.
 - A pokeable workshop: tap the rocket, Grandma Ada, the crowd or the shed.
-- Paint shop with paint jobs and exhaust trails (rainbow, hearts, stardust, and four earned from the bosses), 31 achievements (two of them secret), a stats panel and shareable postcards of your deliveries.
+- Paint shop with paint jobs and exhaust trails (rainbow, hearts, stardust, and four earned from the bosses), 32 achievements (two of them secret), a stats panel and shareable postcards of your deliveries.
 - After the finale, open a new line (new game plus): start over with a fresh rocket, keep your trophies and cosmetics, and earn +50% per line.
 - Relaxed mode (+2 hearts, fewer hazards), tilt steering on phones, and a calmer-screen option (less shake and flashing).
 - Save codes (Settings): copy your progress from one device and load it on another.
