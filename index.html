@@ -254,6 +254,12 @@ button{font-family:var(--font)}
 .rv-s{color:#e0a800;font-size:15px;letter-spacing:1px}
 .rv-s span{color:var(--ink2);font-size:12px;letter-spacing:0;margin-left:4px}
 #scr-results .panel{overflow-y:auto}
+@media (max-height:520px) and (min-width:540px){
+  #scr-results .panel{max-width:820px;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);grid-template-areas:"title rows" "sub rows" "badges rows" "review rows" "goal btns";grid-template-rows:auto auto auto 1fr auto;column-gap:6px}
+  #scr-results .res-title{grid-area:title}#scr-results .res-sub{grid-area:sub}#scr-results .res-badges{grid-area:badges}#scr-results .res-review{grid-area:review;align-self:start}
+  #scr-results .res-rows{grid-area:rows;align-self:center}#scr-results .res-goal{grid-area:goal;align-self:center}#scr-results .res-btns{grid-area:btns;align-self:center;justify-content:flex-start;padding-right:64px}
+  #scr-results .res-snap{top:auto;bottom:14px;right:14px}
+}
 @media (max-width:560px){
   .route{display:grid;grid-template-columns:64px minmax(0,1fr);column-gap:12px;row-gap:4px;align-items:start}
   .route .r-ico{grid-row:1 / span 2;align-self:center}
