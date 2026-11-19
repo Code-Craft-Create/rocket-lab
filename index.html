@@ -834,6 +834,13 @@ const AudioSys = (() => {
     detach() { tone({ type: 'square', f: 300, f2: 120, dur: 0.1, vol: 0.12 }); noise({ dur: 0.15, vol: 0.2, filter: 'highpass', f: 1000 }); },
     clank() { tone({ type: 'square', f: 220, f2: 150, dur: 0.16, vol: 0.13, filter: 'lowpass', ff: 1600 }); tone({ type: 'triangle', f: 1320, f2: 1250, dur: 0.4, vol: 0.06, delay: 0.01 }); noise({ dur: 0.08, vol: 0.25, filter: 'highpass', f: 1800 }); },
     retro() { noise({ dur: 1.4, vol: 0.22, filter: 'lowpass', f: 900, f2: 220 }); tone({ type: 'sawtooth', f: 72, f2: 48, dur: 1.3, vol: 0.05, filter: 'lowpass', ff: 380 }); },
+    rcs() { noise({ dur: 0.1, vol: 0.14, filter: 'highpass', f: 3500 }); noise({ dur: 0.08, vol: 0.1, filter: 'highpass', f: 4200, delay: 0.12 }); },
+    retroBurn() { noise({ dur: 0.55, vol: 0.28, filter: 'bandpass', f: 1100, f2: 380, q: 0.8, attack: 0.03 }); noise({ dur: 0.5, vol: 0.2, filter: 'lowpass', f: 400, f2: 120, attack: 0.04 }); },
+    inflate() { noise({ dur: 0.4, vol: 0.13, filter: 'bandpass', f: 280, f2: 1300, q: 1.6, attack: 0.05 }); tone({ type: 'sine', f: 120, f2: 210, dur: 0.35, vol: 0.12, attack: 0.04 }); },
+    reentry(d = 1.6) { // a rising roar with a crackle on top as the plasma builds, then fades
+      noise({ dur: d, vol: 0.4, filter: 'lowpass', f: 260, f2: 900, attack: d * 0.45 });
+      noise({ dur: d * 0.9, vol: 0.12, filter: 'bandpass', f: 2600, f2: 900, q: 0.7, attack: d * 0.4 });
+    },
     chute() { noise({ dur: 0.08, vol: 0.3, filter: 'highpass', f: 2000 }); noise({ dur: 0.6, vol: 0.15, filter: 'bandpass', f: 500, f2: 300, delay: 0.06, q: 3 }); },
     dashReady() { tone({ type: 'sine', f: 1568, dur: 0.07, vol: 0.05 }); tone({ type: 'sine', f: 2093, dur: 0.1, vol: 0.04, delay: 0.06 }); },
     beep(hi) { tone({ type: 'square', f: hi ? 1320 : 880, dur: hi ? 0.35 : 0.12, vol: 0.12, filter: 'lowpass', ff: 3000 }); },
@@ -4052,7 +4059,7 @@ function updateObstacles(dt) {
       if (o.py < R.py - 70 && o.hitT <= 0 && !o.wasHit) { o.nm = true; if (o.minD < 34 && o.minD > -5) { const v = coinValue(R.alt) * 3; R.coins += 3; R.coinCash += v; R.nearMiss = (R.nearMiss || 0) + 1; S.stats.close++; floater(R.x, R.py + 60, `CLOSE CALL! +${fmtMoney(v)}`, '#bff8ff', 17); sfx.whoosh(); if (G.slowT <= 0) { G.slow = 0.55; G.slowT = 0.16; } } }
     }
     // collision
-    if (R.crashed || o.hitT > 0) continue;
+    if (R.crashed || R.ended || o.hitT > 0) continue;
     const hit = hitTest(o, hc);
     if (hit) hitRocket(o, false);
   }
@@ -4145,7 +4152,7 @@ function updatePickups(dt) {
     const dx = R.x - p.x, dy = R.py - p.py, dist = Math.hypot(dx, dy);
     if (st.magnet && p.type !== 'ring' && p.type !== 'lost' && p.type !== 'rainbow' && dist < st.magnet && !R.crashed) { const pull = (1 - dist / st.magnet) * 900 + 200; p.x += dx / dist * pull * dt; p.py += dy / dist * pull * dt; }
     if (p.py < camBottom - 200) { p.dead = true; continue; }
-    if (R.crashed) continue;
+    if (R.crashed || R.ended) continue;
     if (S.flights > 0 && p.py - R.py < 340 && p.py - R.py > 0) tipOnce(p.type);
     if (p.type === 'lost' && !p.spotted && p.py - R.py < 520 && p.py > R.py) {
       p.spotted = 1; const it = LOST.find(x => x.id === p.id); sfx.ask();
@@ -4224,20 +4231,113 @@ function endFlight(crashed) {
   if (R.wish && !crashed) updateWish(R, 0);
   G.mode = 'ending';
   AudioSys.setEngine(0, false);
-  if (!crashed) { sfx.chute(); R.chute = true; }
+  startReturn(R, crashed);
   computeResult();
 }
-function updateEnding(dt) {
-  const R = G.R;
-  R.endT += dt;
-  if (R.capsule) { const c = R.capsule; c.vy -= 300 * dt; if (c.vy < -60) { c.vy = -60; if (!c.chute) { c.chute = 0.01; sfx.chute(); } } if (c.chute) c.chute = Math.min(1, c.chute + dt * 3); c.x += c.vx * dt; c.py += c.vy * dt; c.vx *= 0.98; }
-  else if (R.chute) { R.chuteY = Math.min(1, R.chuteY + dt * 2.5); R.py -= 40 * dt; R.tilt *= 0.95; R.x += Math.sin(G.t * 2) * 20 * dt; }
-  G.cam.py += ((R.capsule ? R.capsule.py : R.py) - G.cam.py) * Math.min(1, dt * 3);
-  G.cam.x += ((R.capsule ? R.capsule.x : R.x) - G.cam.x) * Math.min(1, dt * 2);
-  updateObstacles(dt); updatePickups(dt);
-  AudioSys.setWind(0);
-  if (R.endT > (R.crashed ? 2.0 : 1.5) && !G.result.shown) { G.result.shown = true; UI.showResults(G.result); }
+// ---------------------------------------------------------------- the trip home
+// There's no air in space for a parachute to catch. Past the edge of space the rocket (or the escape capsule) fires
+// its nose thrusters to drop out of orbit, inflates a heat shield, plunges back through the atmosphere in a glow of
+// plasma, ditches the shield and only then opens its parachutes. Below the edge it opens a drogue and then the mains.
+const SPACE_EDGE = 10000; // metres: above this there's no air for a chute
+const RET = { retro: 0.08, shield: 0.32, plunge: 0.72, plungeDur: 1.55, endAlt: 7200 };
+const retDrogueT = r => r.space ? RET.plunge + RET.plungeDur + 0.05 : 0.02; // drogue pops once there's air
+const retMainT = r => retDrogueT(r) + (r.space ? 0.32 : 0.3);
+function startReturn(R, crashed) {
+  const body = crashed ? R.capsule : R;
+  R.ret = { t: 0, space: R.alt >= SPACE_EDGE, alt0: Math.max(R.alt, 1), cap: !!crashed, shield: 0, plasma: 0, drogue: 0, retro: 0, sep: false, vpy: 0, x0: body.x };
+  if (R.ret.space && !S.seen.tip_reentry) { S.seen.tip_reentry = 1; toast('<b>Ada:</b> No air up here for a parachute to catch! Retro burn, heat shield, and the chutes open once we’re back in the sky.', 5200, true); }
 }
+function updateReturn(R, dt) {
+  const r = R.ret; if (!r) return;
+  const body = r.cap ? R.capsule : R;
+  const t0 = r.t; r.t += dt;
+  const at = k => t0 < k && r.t >= k;
+  const sc = G.rocketScale;
+  if (r.space) {
+    // 1) retro burn: the nose thrusters kick us out of orbit
+    r.retro = r.t > RET.retro && r.t < RET.plunge + 0.1 ? Math.min(1, (r.t - RET.retro) / 0.08) * (r.t > RET.plunge - 0.1 ? Math.max(0, (RET.plunge + 0.1 - r.t) / 0.2) : 1) : 0;
+    if (at(RET.retro)) { sfx.rcs(); setTimeout(() => sfx.retroBurn(), 40); if (r.cap) floater(body.x, body.py + 40, 'Escape pod: heading home!', '#bff8ff', 16); }
+    if (r.retro > 0 && chance(dt * 30)) { const d = r.cap ? { top: -14 } : { top: -rocketDims(G.look).BL / 2 - rocketDims(G.look).NH * 0.4 }; for (const s of [-1, 1]) G.parts.push({ k: 'puff', x: body.x + s * 16 * sc, py: body.py - d.top * sc, vx: s * rand(60, 120), vy: rand(40, 110), r: rand(3, 6), life: rand(0.3, 0.5), t: 0, col: '#ffffff' }); }
+    // 2) the heat shield inflates under the engine
+    if (!r.sep) r.shield = smooth(clamp((r.t - RET.shield) / 0.38, 0, 1));
+    if (at(RET.shield)) sfx.inflate();
+    // 3) the plunge: fall through the sky in a ball of plasma, the altimeter spinning down
+    const u = clamp((r.t - RET.plunge) / RET.plungeDur, 0, 1);
+    if (at(RET.plunge)) {
+      sfx.reentry(RET.plungeDur + 0.25); buzz([20, 30, 20]);
+      for (const o of G.obs) o.vanish = o.vanish || 0.001; // the sky behind us empties out as we drop away
+      for (const p of G.picks) p.vanish = p.vanish || 0.001;
+    }
+    if (r.t > RET.plunge && u < 1) {
+      const e = u < 0.5 ? 4 * u * u * u : 1 - Math.pow(-2 * u + 2, 3) / 2;
+      const alt = Math.exp(lerp(Math.log(r.alt0), Math.log(Math.min(r.alt0, RET.endAlt)), e));
+      R.vy = (alt - R.alt) / Math.max(dt, 1e-3); R.alt = alt;
+      r.plasma = Math.pow(Math.sin(Math.PI * Math.min(1, u * 1.08)), 0.6) * clamp(Math.log(r.alt0 / RET.endAlt) / 1.2, 0.45, 1);
+      r.vpy = -1500 * Math.sin(Math.PI * u) - 160;
+      if (S.settings.shake) G.cam.shake = Math.max(G.cam.shake, 5 * r.plasma);
+      // glowing plasma streams back from the shield rim
+      const sd = shieldDims(r.cap), n = Math.ceil(r.plasma * 3);
+      for (let i = 0; i < n; i++) { const s = chance(0.5) ? -1 : 1; G.parts.push({ k: 'glow', x: body.x + s * sd.w * sc * rand(0.7, 1.05), py: body.py - (sd.y0 + 2) * sc, vx: s * rand(10, 50), vy: rand(-40, 60), r: rand(5, 11) * (0.6 + r.plasma * 0.6), life: rand(0.25, 0.5), t: 0, col: pick(['#ffb02e', '#ff7b39', '#ff5ab0', '#fff3b0']) }); }
+      if (chance(dt * 26 * r.plasma)) { const vw = W / G.cam.z; G.parts.push({ k: 'line', x: G.cam.x + rand(-vw / 2, vw / 2), py: G.cam.py + rand(-H * 0.4, H * 0.6) / G.cam.z, vx: 0, vy: 0, r: rand(60, 140), life: 0.3, t: 0, col: 'rgba(255,214,170,.55)' }); }
+    } else r.plasma = 0;
+    if (u >= 1) { r.vpy += (-250 - r.vpy) * Math.min(1, dt * 4); if (R.alt > RET.endAlt) R.alt = RET.endAlt; }
+    // 4) back in the air: ditch the shield, then the chutes
+    if (at(retDrogueT(r))) {
+      r.sep = true; sfx.detach();
+      G.parts.push({ k: 'debris', what: 'hshield', x: body.x, py: body.py - shieldDims(r.cap).y0 * sc, vx: rand(-40, 40), vy: -260, r: r.cap ? 0.6 : 1, life: 2.4, t: 0, rot: 0, vr: rand(-2, 2) });
+      r.shield = 0;
+    }
+  } else if (at(retDrogueT(r)) && !r.cap) r.vpy = -120;
+  // drogue first (a small chute to steady things), then the big mains
+  const td = retDrogueT(r), tm = retMainT(r);
+  if (!r.cap || r.space) {
+    if (at(td)) { sfx.chute(); }
+    r.drogue = r.t < td ? 0 : r.t < tm ? smooth(clamp((r.t - td) / 0.14, 0, 1)) : Math.max(0, 1 - (r.t - tm) / 0.15);
+    if (at(tm)) { sfx.chute(); if (r.cap) body.chute = 0.01; else R.chute = true; }
+  }
+  for (const o of G.obs) if (o.vanish) o.vanish += dt;
+  for (const p of G.picks) if (p.vanish) p.vanish += dt;
+  G.obs = G.obs.filter(o => !(o.vanish > 0.35)); G.picks = G.picks.filter(p => !(p.vanish > 0.35));
+}
+function shieldDims(cap) {
+  if (cap) return { y0: 11, w: 21, h: 9 };
+  const L = G.look, d = rocketDims(L), stage2 = G.R && G.R.visStage === 2;
+  if (stage2) return { y0: 3, w: d.BW / 2 + 7, h: 10 };
+  const w = d.BW / 2 + d.FW * 0.85 + 5;
+  return { y0: d.BL / 2 + d.BH - 3, w, h: 8 + w * 0.22 };
+}
+function updateEnding(dt) {
+  const R = G.R, r = R.ret;
+  R.endT += dt;
+  updateReturn(R, dt);
+  const plunging = r && r.space && r.t > RET.plunge && r.t < retMainT(r) + 0.4;
+  if (R.capsule) {
+    const c = R.capsule;
+    if (r && r.space) { c.vx *= Math.pow(0.2, dt); c.x += c.vx * dt; c.py += (r.t < RET.plunge ? Math.max(-60, c.vy *= Math.pow(0.05, dt)) : r.vpy) * dt; if (c.chute) { c.chute = Math.min(1, c.chute + dt * 3); r.vpy += (-60 - r.vpy) * Math.min(1, dt * 3); } c.rot = (c.rot || 0) * Math.pow(0.1, dt); }
+    else { c.vy -= 300 * dt; if (c.vy < -60) { c.vy = -60; if (!c.chute) { c.chute = 0.01; sfx.chute(); } } if (c.chute) c.chute = Math.min(1, c.chute + dt * 3); c.x += c.vx * dt; c.py += c.vy * dt; c.vx *= 0.98; }
+  } else if (r && r.space && !R.chute) {
+    R.py += r.vpy * dt; R.tilt *= Math.pow(0.05, dt);
+    R.x += Math.sin(G.t * 9) * 14 * r.plasma * dt;
+  } else if (R.chute) {
+    R.chuteY = Math.min(1, R.chuteY + dt * 2.5);
+    const sink = r && r.space ? (r.vpy += (-40 - r.vpy) * Math.min(1, dt * 3)) : -40;
+    R.py += sink * dt; R.tilt *= 0.95; R.x += Math.sin(G.t * 2) * 20 * dt;
+  } else if (r && r.drogue > 0) { R.py += (r.vpy += (-80 - r.vpy) * Math.min(1, dt * 4)) * dt; R.tilt *= 0.95; }
+  const fy = R.capsule ? R.capsule.py : R.py, fx = R.capsule ? R.capsule.x : R.x;
+  if (plunging) { G.cam.py = fy; G.cam.anchor += (0.6 - G.cam.anchor) * Math.min(1, dt * 3); }
+  else G.cam.py += (fy - G.cam.py) * Math.min(1, dt * 3);
+  G.cam.x += (fx - G.cam.x) * Math.min(1, dt * 2);
+  updateObstacles(dt); updatePickups(dt);
+  AudioSys.setWind(r && r.space ? r.plasma * 0.8 : 0);
+  if (R.endT > resultDelay(R) && !G.result.shown) showResultsNow();
+}
+// space returns take a little longer to play out; a tap skips straight to the flight report
+function resultDelay(R) { return R.ret && R.ret.space ? retMainT(R.ret) + 0.35 : (R.crashed ? 2.0 : 1.5); }
+function showResultsNow() {
+  if (!G.result || G.result.shown) return;
+  G.result.shown = true; UI.showResults(G.result);
+}
+function skipEnding() { const R = G.R; if (G.mode === 'ending' && R && R.endT > 0.35 && G.result && !G.result.shown) { showResultsNow(); return true; } return false; }
 function computeResult() {
   const R = G.R, st = G.st;
   const alt = R.maxAlt;
@@ -5443,6 +5543,7 @@ function drawStationAndRecord() {
 function drawObstacle(o) {
   ctx.save(); ctx.translate(o.x, -o.py);
   if (o.hitT > 0.5) ctx.globalAlpha = 0.6;
+  if (o.vanish) ctx.globalAlpha *= clamp(1 - o.vanish / 0.35, 0, 1);
   drawObstacleShape(ctx, o, G.t);
   ctx.restore();
 }
@@ -5470,6 +5571,7 @@ function drawObstacleShape(c, o, t) {
 function drawPickup(p) {
   ctx.save(); ctx.translate(p.x, -p.py);
   if (p.fade) ctx.globalAlpha = 1 - p.fade * 2;
+  if (p.vanish) ctx.globalAlpha *= clamp(1 - p.vanish / 0.35, 0, 1);
   if (p.type === 'coin') drawCoin(ctx, p, G.t);
   else if (p.type === 'fuel') drawFuelCan(ctx, p, G.t);
   else if (p.type === 'wrench') drawWrench(ctx, p, G.t);
@@ -5502,6 +5604,7 @@ function drawParticle(p) {
     const sc = G.rocketScale;
     if (p.what === 'booster') { ctx.scale(sc, sc); rr(ctx, -7, -32, 14, 64, 6); fillStroke(ctx, '#fff'); ctx.beginPath(); ctx.moveTo(-7, -28); ctx.quadraticCurveTo(0, -46, 7, -28); fillStroke(ctx, '#ff5a5f'); }
     else if (p.what === 'drop') { ctx.scale(sc, sc); rr(ctx, -6, -18, 12, 36, 6); fillStroke(ctx, '#ff9f43'); }
+    else if (p.what === 'hshield') { ctx.scale(sc * p.r, sc * p.r); const sd = shieldDims(false); ctx.translate(0, -sd.y0); drawHeatShield(1, sd, Math.max(0, 0.5 - k)); }
     else if (p.what === 'stage') { ctx.scale(sc, sc); const d = rocketDims(G.look); rr(ctx, -15, -10, 30, d.BL / 2 + 10, 6); fillStroke(ctx, HULL_COLS[Math.min(7, G.look.hull)]); ctx.beginPath(); ctx.moveTo(-8, d.BL / 2); ctx.lineTo(8, d.BL / 2); ctx.lineTo(d.BELL / 2, d.BL / 2 + d.BH); ctx.lineTo(-d.BELL / 2, d.BL / 2 + d.BH); ctx.closePath(); fillStroke(ctx, '#8a93a6'); }
     else { ctx.beginPath(); ctx.moveTo(-p.r, -p.r * 0.6); ctx.lineTo(p.r, -p.r); ctx.lineTo(p.r * 0.6, p.r); ctx.lineTo(-p.r * 0.8, p.r * 0.7); ctx.closePath(); fillStroke(ctx, p.col, 2.5); }
   }
@@ -5698,7 +5801,7 @@ function drawPlayerRocket() {
     ctx.restore(); return;
   }
   if (R.crashed) {
-    if (R.capsule) { const c = R.capsule; ctx.translate(c.x, -c.py); ctx.scale(G.rocketScale, G.rocketScale); drawCapsule(c.chute); }
+    if (R.capsule) { const c = R.capsule; ctx.translate(c.x, -c.py); ctx.scale(G.rocketScale, G.rocketScale); drawCapsule(c.chute, R.ret); }
     ctx.restore(); return;
   }
   for (const g of R.dashTrail) {
@@ -5709,6 +5812,8 @@ function drawPlayerRocket() {
   if (R.dashFx > 0) { const k = R.dashFx / 0.45; ctx.globalAlpha = k * 0.8; circ(ctx, 0, 0, 40 + (1 - k) * 34); ctx.lineWidth = 4; ctx.strokeStyle = '#4fd8ff'; ctx.stroke(); ctx.globalAlpha = 1; }
   ctx.rotate(R.tilt);
   ctx.scale(G.rocketScale, G.rocketScale);
+  const ret = R.ret, sd = ret && ret.space ? shieldDims(false) : null;
+  if (sd && ret.plasma > 0) drawPlasmaBack(ret.plasma, sd, rocketDims(look));
   ctx.save(); // the barrel roll squashes only the rocket, not its speech bubble or parachute
   if (R.dashT > 0) { const c = Math.cos((1 - R.dashT / DASH_T) * TAU); ctx.scale((c < 0 ? -1 : 1) * Math.max(0.2, Math.abs(c)), 1); }
   if (R.invuln > 0 && Math.sin(G.t * 40) > 0) ctx.globalAlpha = 0.55;
@@ -5716,7 +5821,8 @@ function drawPlayerRocket() {
   drawRocket(ctx, look, { t: G.t, throttle: G.mode === 'launch' ? 0.08 : R.throttle, faces: R.delivered ? [] : R.faces, mood, boostersOn: R.boosters, dropsOn: R.drops, stage: R.visStage, shieldOn: R.shieldOn, ab: R.abT > 0, boostFlame: R.boostT > 0, steer: R.steer });
   ctx.restore();
   ctx.globalAlpha = 1;
-  if (R.chute) drawChute(R.chuteY, rocketDims(look));
+  if (ret) drawReturnKit(ret, sd, rocketDims(look));
+  if (R.chute) drawChute(R.chuteY, rocketDims(look), chuteCount(), look.paint.accent || '#ff5a5f');
   // speech bubble
   if (R.bubble && !R.ended) {
     ctx.rotate(-R.tilt);
@@ -5741,21 +5847,107 @@ function hangarFaces() {
   const px = paxForRoute(r, st);
   return px.faces.length ? px.faces : (routeDone('r0') ? [] : ['buckley']);
 }
-function drawChute(k, d) {
+// bigger rockets come home under three canopies, like the old moon capsules
+function chuteCount() { const L = G.look || rocketLook(); return L.tank >= 5 || L.seats >= 4 ? 3 : 1; }
+function drawChute(k, d, n = 1, col = '#ff5a5f') {
   if (k <= 0) return;
   const top = -d.BL / 2 - d.NH;
-  const w = 70 * k, h = 50 * k;
-  ink(ctx, 2);
-  ctx.beginPath(); ctx.moveTo(-14, top + 10); ctx.lineTo(-w, top - h); ctx.moveTo(14, top + 10); ctx.lineTo(w, top - h); ctx.moveTo(0, top); ctx.lineTo(0, top - h - 20 * k); ctx.stroke();
-  ctx.beginPath(); ctx.moveTo(-w, top - h); ctx.quadraticCurveTo(0, top - h - 70 * k, w, top - h); ctx.quadraticCurveTo(w * 0.5, top - h + 12, 0, top - h); ctx.quadraticCurveTo(-w * 0.5, top - h + 12, -w, top - h); ctx.closePath();
-  ink(ctx, 3); fillStroke(ctx, '#ff5a5f', 3);
-  ctx.save(); ctx.clip(); ctx.fillStyle = '#fff6e5'; ctx.fillRect(-w * 0.2, top - h - 80, w * 0.4, 100); ctx.restore();
+  if (n === 1) {
+    const w = 70 * k, h = 50 * k;
+    ink(ctx, 2);
+    ctx.beginPath(); ctx.moveTo(-14, top + 10); ctx.lineTo(-w, top - h); ctx.moveTo(14, top + 10); ctx.lineTo(w, top - h); ctx.moveTo(0, top); ctx.lineTo(0, top - h - 20 * k); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(-w, top - h); ctx.quadraticCurveTo(0, top - h - 70 * k, w, top - h); ctx.quadraticCurveTo(w * 0.5, top - h + 12, 0, top - h); ctx.quadraticCurveTo(-w * 0.5, top - h + 12, -w, top - h); ctx.closePath();
+    ink(ctx, 3); fillStroke(ctx, col, 3);
+    ctx.save(); ctx.clip(); ctx.fillStyle = '#fff6e5'; ctx.fillRect(-w * 0.2, top - h - 80, w * 0.4, 100); ctx.restore();
+    return;
+  }
+  const w = 40 * k, h = 30 * k, reach = 96 * k + 14, sway = Math.sin(G.t * 1.6) * 0.035;
+  for (const [s, rot] of [[-1, 0.6], [1, 0.6], [0, 0]]) { // the outer two first, so the middle canopy sits in front
+    ctx.save(); ctx.translate(0, top); ctx.rotate(s * rot * k + sway * (s ? 1.4 : 1));
+    const cy = -reach - (s ? 0 : 8 * k);
+    ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(-w * 0.92, cy); ctx.moveTo(0, 0); ctx.lineTo(w * 0.92, cy); ctx.moveTo(0, 0); ctx.lineTo(0, cy);
+    ctx.lineWidth = 1.6; ctx.strokeStyle = 'rgba(43,34,64,.75)'; ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(-w, cy); ctx.quadraticCurveTo(0, cy - h * 1.7, w, cy); ctx.quadraticCurveTo(w * 0.5, cy + 8, 0, cy); ctx.quadraticCurveTo(-w * 0.5, cy + 8, -w, cy); ctx.closePath();
+    ink(ctx, 3); fillStroke(ctx, s ? '#fff6e5' : col, 3);
+    ctx.save(); ctx.clip(); ctx.fillStyle = s ? col : '#fff6e5'; for (const xx of [-0.62, 0.22]) ctx.fillRect(w * xx, cy - h * 2, w * 0.4, h * 3); ctx.restore();
+    ctx.beginPath(); ctx.moveTo(-w, cy); ctx.quadraticCurveTo(0, cy - h * 1.7, w, cy); ctx.stroke();
+    ctx.restore();
+  }
 }
-function drawCapsule(chute) {
+function drawCapsule(chute, ret) {
+  const space = ret && ret.space, sd = space ? shieldDims(true) : null;
+  if (sd && ret.plasma > 0) drawPlasmaBack(ret.plasma, sd, null);
   ink(ctx, 3);
   ctx.beginPath(); ctx.moveTo(-16, 12); ctx.lineTo(16, 12); ctx.lineTo(12, -10); ctx.quadraticCurveTo(0, -24, -12, -10); ctx.closePath(); fillStroke(ctx, '#fff6e5');
   circ(ctx, 0, -2, 6); fillStroke(ctx, '#9fdcff', 2.5);
+  if (ret) drawReturnKit(ret, sd, { BL: 0, NH: 18, BW: 24, cap: true });
   if (chute) drawChute(chute, { BL: 0, NH: 18 });
+}
+// retro jets, heat shield, glowing bow shock and the drogue, for the trip home
+function drawReturnKit(r, sd, d) {
+  const top = -d.BL / 2 - d.NH;
+  if (r.retro > 0) drawRetroJets(r.retro, d.cap ? -12 : -d.BL / 2 + 8, d.cap ? 12 : d.BW / 2 + 1);
+  if (sd && r.shield > 0) drawHeatShield(r.shield, sd, r.plasma);
+  if (sd && r.plasma > 0) drawBowShock(r.plasma, sd);
+  if (r.drogue > 0) drawDrogue(r.drogue, d.cap ? -12 : top);
+}
+function drawRetroJets(k, y, x) {
+  for (const s of [-1, 1]) {
+    ctx.save(); ctx.translate(s * x, y); ctx.rotate(s * 0.55);
+    const f = (14 + 16 * k) * (0.8 + Math.random() * 0.35);
+    ink(ctx, 2); ctx.beginPath(); ctx.moveTo(-4.5, -2); ctx.quadraticCurveTo(0, -2 - f * 1.5, 4.5, -2); ctx.closePath(); fillStroke(ctx, '#9fe0ff', 2);
+    ctx.beginPath(); ctx.moveTo(-2.2, -2); ctx.quadraticCurveTo(0, -2 - f * 0.9, 2.2, -2); ctx.closePath(); ctx.fillStyle = '#ffffff'; ctx.fill();
+    rr(ctx, -4, -3, 8, 6, 2); fillStroke(ctx, '#8a93a6', 2);
+    ctx.restore();
+  }
+}
+// an inflatable heat shield: a stack of puffy rings that unfolds under the engine like an upside-down umbrella
+function drawHeatShield(k, sd, hot) {
+  const w = sd.w * (0.3 + 0.7 * k), bh = sd.h * 0.5 * (0.4 + 0.6 * k), y0 = sd.y0;
+  ctx.save(); ink(ctx, 2.5);
+  const cols = ['#e9b46a', '#d9964f', '#c7783a'];
+  for (let i = 2; i >= 0; i--) { // bottom ring first, each wider one sits on top of it
+    const wi = w * (1 - i * 0.27), yi = y0 + i * bh * 0.82;
+    rr(ctx, -wi, yi - bh / 2, wi * 2, bh, bh / 2);
+    fillStroke(ctx, hot > 0 ? mixHex(cols[i], i === 2 ? '#fff6c8' : '#ffb35c', hot * (0.35 + i * 0.25)) : cols[i], 2.5);
+    ctx.save(); ctx.globalAlpha = 0.35; ctx.fillStyle = '#fff'; rr(ctx, -wi + bh * 0.4, yi - bh * 0.32, wi * 0.9, bh * 0.22, bh * 0.11); ctx.fill(); ctx.restore();
+  }
+  // the dark ablative nose of the shield
+  const yb = y0 + 2 * bh * 0.82 + bh * 0.45;
+  ctx.beginPath(); ctx.ellipse(0, yb - 1, w * 0.36, bh * 0.38, 0, 0, Math.PI); fillStroke(ctx, hot > 0 ? mixHex('#5a3a2e', '#ffe7a0', hot * 0.8) : '#5a3a2e', 2.5);
+  ctx.restore();
+}
+function drawBowShock(k, sd) {
+  const f = 0.92 + Math.random() * 0.16, w = sd.w * 1.25 * f, yc = sd.y0 + sd.h * 0.55, hh = sd.h * 1.25 + 8;
+  ctx.save(); ctx.globalAlpha = Math.min(1, k * 1.15);
+  const g = ctx.createRadialGradient(0, yc + hh * 0.5, 2, 0, yc + hh * 0.4, w * 1.05);
+  g.addColorStop(0, '#ffffff'); g.addColorStop(0.35, '#fff3b0'); g.addColorStop(0.7, '#ffa23a'); g.addColorStop(1, 'rgba(255,79,163,0)');
+  ctx.beginPath(); ctx.ellipse(0, yc, w, hh + 10 * k, 0, 0, Math.PI); ctx.ellipse(0, yc, w * 0.82, hh * 0.62, 0, Math.PI, 0, true); ctx.closePath();
+  ctx.fillStyle = g; ctx.fill();
+  ctx.restore();
+}
+// re-entry glow: layers of fire streaming back past the rocket
+function drawPlasmaBack(k, sd, d) {
+  const f = 0.9 + Math.sin(G.t * 47) * 0.06 + Math.sin(G.t * 31) * 0.05;
+  const w = sd.w + 8, yb = sd.y0 + sd.h * 1.4 + 10, L = ((d ? d.BL + d.NH : 34) * (1 + 0.9 * k) + 50) * f;
+  ctx.save();
+  const cols = ['#ff4fa3', '#ff8c37', '#ffe9a6'], al = [0.42, 0.55, 0.75];
+  for (let i = 0; i < 3; i++) {
+    const q = 1 - i * 0.26, ww = w * q * (1 + 0.2 * k), ll = L * q;
+    ctx.beginPath(); ctx.moveTo(0, yb - i * 5);
+    ctx.bezierCurveTo(ww * 1.3, yb, ww * 1.15, sd.y0 - ll * 0.3, Math.sin(G.t * 13 + i) * 7, sd.y0 - ll);
+    ctx.bezierCurveTo(-ww * 1.15, sd.y0 - ll * 0.3, -ww * 1.3, yb, 0, yb - i * 5);
+    ctx.globalAlpha = k * al[i]; ctx.fillStyle = cols[i]; ctx.fill();
+  }
+  ctx.restore();
+}
+function drawDrogue(k, top) {
+  const y = top - 34 - 46 * k, w = 5 + 13 * k;
+  ink(ctx, 2); ctx.lineWidth = 1.6;
+  ctx.beginPath(); ctx.moveTo(0, top); ctx.lineTo(0, y + 14); ctx.lineTo(-w, y); ctx.moveTo(0, y + 14); ctx.lineTo(w, y); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(-w, y); ctx.quadraticCurveTo(0, y - w * 1.5, w, y); ctx.quadraticCurveTo(0, y - w * 0.3, -w, y); ctx.closePath();
+  ink(ctx, 2.5); fillStroke(ctx, '#ff9f43', 2.5);
+  ctx.save(); ctx.clip(); ctx.fillStyle = '#fff6e5'; ctx.fillRect(-w * 0.18, y - w * 2, w * 0.36, w * 3); ctx.restore();
 }
 
 // ---------------------------------------------------------------- HUD
@@ -5774,7 +5966,7 @@ function drawHUD() {
   const cxH = W < 380 ? W / 2 + 22 : W / 2, nF = R.faces.length && !R.delivered ? Math.min(R.faces.length, 8) : 0, fsF = small ? 9 : 11;
   const fr = fsF + 3, hi = W - (small ? 64 : 84) - fr, spF = small ? 13 : 16;
   ctx.font = `900 ${spF}px ${FONT}`;
-  let spS = `${fmtSpeed(R.vy)}${R.warp > 1.05 ? `  ·  WARP ×${R.warp.toFixed(1)}` : ''}`, spW = ctx.measureText(spS).width;
+  let spS = `${fmtSpeed(R.vy)}${R.warp > 1.05 && !R.ended ? `  ·  WARP ×${R.warp.toFixed(1)}` : ''}`, spW = ctx.measureText(spS).width;
   // a full cabin on a very narrow phone: the warp tag drops its word so the faces still fit
   if (R.warp > 1.05 && nF > 1 && pad + 2 + spW + 8 + fr + (nF - 1) * fsF * 1.5 > hi) { spS = `${fmtSpeed(R.vy)} · ×${R.warp.toFixed(1)}`; spW = ctx.measureText(spS).width; }
   text(ctx, spS, pad + 2, pad + (small ? 44 : 58), spF, '#bff8ff', 'left');
@@ -7041,6 +7233,7 @@ window.addEventListener('keydown', e => {
   if (e.code === 'Space' || e.code === 'ArrowUp' || e.code === 'KeyW') {
     if (G.mode === 'launch') doLaunch();
     else if (G.mode === 'flight') { G.input.boostPressed = true; tryAfterburner(); }
+    else if (G.mode === 'ending') { e.preventDefault(); skipEnding(); }
     else if (G.mode === 'title' && e.code === 'Space') { e.preventDefault(); startGame(); }
   }
   if (e.code === 'Space' || e.code === 'Enter') {
@@ -7060,6 +7253,7 @@ cv.addEventListener('pointerdown', e => {
   if (Dialog.active) { Dialog.next(); return; }
   if (G.paused) return;
   cv.focus();
+  if (skipEnding()) return;
   if (G.mode === 'title') { startGame(); return; }
   if (G.mode === 'launch') { doLaunch(); return; }
   if (G.mode === 'hangar' && UI.current === 'hangar') { pokeHangar(e.clientX, e.clientY); return; }
@@ -7281,6 +7475,7 @@ window.__skyhop = {
   hangar: () => goHangar(true), flush: () => UI.flushPending(), reset() { resetSave(); }, LOST, drawLostItem, mail: () => UI.openLetter(),
   daily() { return todaysDaily(); }, toast, floater, UI, AudioSys,
   skyEvent(id) { DEBUG.forceEvent = id; },
+  crash() { if (G.R && G.mode === 'flight') crash(); },
   teleport(alt) { const R = G.R; if (!R) return; R.alt = alt; R.maxAlt = Math.max(R.maxAlt, alt); },
   save: saveGame, music: Music, audio: AudioSys, sfxTest() { const errs = []; for (const k in AudioSys.sfx) { try { AudioSys.sfx[k](); } catch (e) { errs.push(k + ':' + e.message); } } return errs; },
   candidates() { return UPGRADES.filter(u => upState(u) === 'open').map(u => ({ id: u.id, cost: upCost(u) })); },
