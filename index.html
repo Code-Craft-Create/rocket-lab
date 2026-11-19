@@ -5547,6 +5547,10 @@ function drawLaunchGauge() {
   seg(0, zn.yellow, '#ff7b7f'); seg(zn.yellow, zn.center - zn.gw, '#ffd93d'); seg(zn.center - zn.gw, zn.center + zn.gw, '#5fd068'); seg(zn.center + zn.gw, 1, '#ff9f43');
   seg(zn.center - zn.pw, zn.center + zn.pw, '#1d9e4c');
   ctx.lineWidth = 3; ctx.strokeStyle = INK; ctx.beginPath(); ctx.arc(cx, cy, rad + 9, a0, a1); ctx.stroke(); ctx.beginPath(); ctx.arc(cx, cy, rad - 9, a0, a1); ctx.stroke();
+  // a little star marks the perfect spot, so the target doesn't rely on colour alone
+  { const sa = ang(zn.center), sx = cx + Math.cos(sa) * rad, sy = cy + Math.sin(sa) * rad, sr = small ? 6.5 : 7.5;
+    ctx.beginPath(); for (let i = 0; i < 10; i++) { const a = -Math.PI / 2 + i * Math.PI / 5, r = i % 2 ? sr * 0.45 : sr; ctx.lineTo(sx + Math.cos(a) * r, sy + Math.sin(a) * r); } ctx.closePath();
+    ctx.fillStyle = '#fff'; ctx.fill(); ctx.lineWidth = 2; ctx.strokeStyle = INK; ctx.lineJoin = 'round'; ctx.stroke(); }
   const na = ang(L.v);
   ctx.lineWidth = 7; ctx.strokeStyle = INK; ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(cx + Math.cos(na) * (rad + 6), cy + Math.sin(na) * (rad + 6)); ctx.stroke();
   ctx.lineWidth = 3; ctx.strokeStyle = '#ff5a5f'; ctx.stroke();
