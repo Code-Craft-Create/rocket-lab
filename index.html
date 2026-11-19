@@ -294,8 +294,10 @@ button{font-family:var(--font)}
 @media (max-height:520px) and (min-width:540px){
   #scr-results .panel{max-width:820px;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);grid-template-areas:"title rows" "sub rows" "badges rows" "review rows" "goal btns";grid-template-rows:auto auto auto 1fr auto;column-gap:6px}
   #scr-results .res-title{grid-area:title}#scr-results .res-sub{grid-area:sub}#scr-results .res-badges{grid-area:badges}#scr-results .res-review{grid-area:review;align-self:start}
-  #scr-results .res-rows{grid-area:rows;align-self:center}#scr-results .res-goal{grid-area:goal;align-self:center}#scr-results .res-btns{grid-area:btns;align-self:center;justify-content:flex-start;padding-right:64px}
+  #scr-results .res-rows{grid-area:rows;align-self:stretch;overflow-y:auto;min-height:0} /* long payslips scroll instead of spilling past the top */#scr-results .res-goal{grid-area:goal;align-self:center}#scr-results .res-btns{grid-area:btns;align-self:center;justify-content:flex-start;padding-right:64px}
   #scr-results .res-snap{top:auto;bottom:14px;right:14px}
+  #scr-results .res-row{font-size:13px;padding:2px 0;border-bottom-width:2px}
+  #scr-results .res-row.total{font-size:18px;padding-top:4px}
 }
 @media (max-width:560px){
   .route{display:grid;grid-template-columns:64px minmax(0,1fr);column-gap:12px;row-gap:4px;align-items:start}
@@ -5425,17 +5427,18 @@ function drawLaunchGauge() {
   ctx.restore();
 }
 function drawBanners() {
-  let yAcc = Math.max(H * 0.3, W < 600 ? Math.max(126, G.hudB || 0) + 82 : 0); // phones: start below the in-flight toasts
+  const compactB = W < 600 || H < 520;
+  let yAcc = Math.max(H * 0.3, W < 600 ? Math.max(126, G.hudB || 0) + 82 : H < 520 ? 140 : 0); // phones: below the tips; landscape: below the coins and faces
   G.banners.forEach((b, i) => {
     const k = b.t / b.dur;
     void i;
     const sIn = easeOutBack(clamp(b.t * 4, 0, 1));
     const a = 1 - clamp((k - 0.8) / 0.2, 0, 1);
-    const y = yAcc + (b.sub ? 18 : 0); yAcc = y + (W < 600 ? 52 : 70);
-    const size = W < 600 ? 34 : 50; ctx.font = `900 ${size}px ${FONT}`;
+    const y = yAcc + (b.sub ? 18 : 0); yAcc = y + (compactB ? 52 : 70);
+    const size = compactB ? 34 : 50; ctx.font = `900 ${size}px ${FONT}`;
     const fit = Math.min(1, (W - 28) / (ctx.measureText(b.text).width + size * 0.4)); // long titles shrink to fit narrow phones
     ctx.save(); ctx.globalAlpha = a; ctx.translate(W / 2, y); ctx.scale(sIn * fit, sIn * fit); ctx.rotate(-0.04);
-    if (b.sub) text(ctx, b.sub, 0, -34, W < 600 ? 14 : 18, '#ffffff');
+    if (b.sub) text(ctx, b.sub, 0, compactB ? -28 : -34, compactB ? 14 : 18, '#ffffff');
     text(ctx, b.text, 0, 0, size, b.col);
     ctx.restore();
   });
