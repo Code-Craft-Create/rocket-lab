@@ -25,9 +25,11 @@ Open `index.html` in any modern browser, or enable GitHub Pages for this repo (S
 - Job Board side jobs (collect coins, skim obstacles, fly clean...) that scale with how you play.
 - Sky forecast before each flight: sunset, night, tailwind, coin shower or ring festival, each with its own bonus.
 - Surprise sky events mid-flight: gold rush, bird migration, meteor shower, ice storm.
+- Three sky bosses with their own music: the Storm King (dodge his lightning), Big Blue the sky whale (ride its spout) and the Space Kraken (slip between its arms).
 - Ghost racer: a faded rocket replays your best run on each route.
+- Sky Guide: a field book that fills with drawings of every obstacle and boss you meet.
 - A pokeable workshop: tap the rocket, Grandma Ada, the crowd or the shed.
-- Paint shop, achievements (one of them secret), a stats panel and shareable postcards of your deliveries.
+- Paint shop, 23 achievements (one of them secret), a stats panel and shareable postcards of your deliveries.
 - Your rocket visibly changes as you upgrade: nose cones, fins, boosters, drop tanks, stages, shield bubble, ram prow and more.
-- Procedural music (six songs) and ~40 synthesized sound effects.
+- Procedural music (seven songs) and ~40 synthesized sound effects.
 - Plays on desktop and phones (portrait and landscape). Progress is saved in your browser (localStorage).
