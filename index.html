@@ -442,6 +442,7 @@ body.in-hangar #toasts{left:calc((100vw - min(580px,54vw) - 16px)/2)}
 .lt-gift svg{width:26px;height:26px}
 #lt-ok{align-self:center}
 .lt-foot{display:flex;flex-direction:column;align-items:center;flex:none}
+@media (max-width:360px){.lt-head{margin-right:70px;gap:10px}.lt-head canvas{width:52px;height:52px}.lt-name{font-size:19px}.lt-body{font-size:16px;line-height:1.45}}
 @media (max-height:520px){.lt-body{font-size:15px;line-height:1.35}#scr-letter .panel{padding:12px 16px;max-width:600px}.lt-head{margin-bottom:4px}.lt-head canvas{width:48px;height:48px}.lt-foot{flex-direction:row;justify-content:center;gap:12px;margin-top:8px}.lt-gift{margin:0}}
 #scr-code .panel{max-width:440px}
 .name-row{display:flex;gap:8px;align-items:center;margin:4px 0 10px}
@@ -892,6 +893,10 @@ const AudioSys = (() => {
     squawk() { if (!gate('sq', 120)) return; tone({ type: 'sawtooth', f: rand(900, 1300), f2: rand(500, 700), dur: 0.12, vol: 0.07, filter: 'bandpass', ff: 1500, q: 3 }); },
     jelly() { tone({ type: 'sine', f: 400, f2: 900, dur: 0.25, vol: 0.12 }); },
     chime() { [0, 7, 12, 19].forEach((s, i) => tone({ type: 'sine', f: N(84 + s), dur: 0.35, vol: 0.07, delay: i * 0.04 })); noise({ dur: 0.12, vol: 0.12, filter: 'highpass', f: 5000, q: 0.8 }); },
+    constellation() { // a slow music-box run up the pentatonic as the lines join, then a soft shimmer
+      [0, 4, 7, 12, 16, 19, 24].forEach((s, i) => { tone({ type: 'sine', f: N(76 + s), dur: 0.9, vol: 0.06, delay: 0.15 + i * 0.16 }); tone({ type: 'triangle', f: N(88 + s), dur: 0.4, vol: 0.02, delay: 0.15 + i * 0.16 }); });
+      noise({ dur: 1.6, vol: 0.05, filter: 'highpass', f: 6000, q: 0.7, delay: 1.1 });
+    },
     eel() { if (!gate('eel', 700)) return; tone({ type: 'square', f: 120, f2: 140, dur: 0.5, vol: 0.035, filter: 'lowpass', ff: 700 }); noise({ dur: 0.5, vol: 0.05, filter: 'bandpass', f: 3000, f2: 2000, q: 6 }); },
     slurp() { noise({ dur: 1.1, vol: 0.16, filter: 'bandpass', f: 300, f2: 1800, q: 2.5 }); tone({ type: 'sine', f: 220, f2: 420, dur: 1.0, vol: 0.05 }); },
     splat() { noise({ dur: 0.5, vol: 0.3, filter: 'lowpass', f: 900, f2: 160, q: 1.2 }); tone({ type: 'sine', f: 180, f2: 60, dur: 0.3, vol: 0.18 }); },
@@ -1459,6 +1464,10 @@ const MAIL = [
     text: 'Dear friend,\nThe lamp is burning brighter than ever. Last night three starships found their way home by it, and one of them was full of puppies. I’ve sent you the colours of the aurora for your rocket (see the Paint Shop).\n\nKeep your light on.', sign: '— Keeper Lumen' },
   { id: 'x5', from: 'ember', stamp: 'edge', gift: 250000, when: () => routeDone('x5'),
     text: 'Dear Pilot,\nThe shed is SO cozy. The boiler is my favourite thing. Ada says I can’t sleep IN the boiler. I have painted your rocket in my scales (look in the Paint Shop!).\n\nEnclosed: the dragon hoard. It was mostly buttons, but there was a lot of gold under them.', sign: '— Ember (rawr)' },
+  { id: 'stars3', from: 'lumen', stamp: 'lighthouse', gift: 400000, when: () => chartedN() >= 3,
+    text: 'Dear Pilot,\nThree new constellations in my sky! I have added them to the lighthouse charts, and the lost starships are using them already. One captain told me he steered home by the Teapot.\n\nEnclosed: the Starship Guild’s thanks. Keep looking up.', sign: '— Keeper Lumen' },
+  { id: 'atlasmail', from: 'pip', stamp: 'pip', gift: 1000000, when: () => chartedN() >= STAR_CHARTS.length,
+    text: 'BEEP!\nPilot! My whole family went outside to see the new sky. Grandpa Pip cried. Then Grandma Pip cried. Then the dog cried, but I think it was hungry.\n\nWe made you a present. It is money. Pip money is the same as your money. Probably.', sign: '— Pip (and all the Pips)' },
   { id: 'gobble', from: 'earl', stamp: 'teapot', gift: 150000, when: () => (S.stats.gobble || 0) > 0,
     text: 'My dear Pilot,\nI watched you give that greedy Gobble Nebula the slip through my opera glasses. Splendid! The beastly thing once swallowed an entire tea trolley, scones and all.\n\nEnclosed: a reward from the Tea Room Society. Do mind the goo.', sign: '— The Earl of Grey' },
   { id: 'king', from: 'nimbus', stamp: 'storm', gift: 250, when: () => S.stats.king > 0,
@@ -4456,7 +4465,7 @@ function updateFlight(dt) {
     S.charted = S.charted || {}; R.charts = R.charts || [];
     for (const ch of STAR_CHARTS) if (R.alt >= ch.alt && !S.charted[ch.id]) {
       S.charted[ch.id] = 1; R.charts.push(ch.id); R.chartT = R.chartT || {}; R.chartT[ch.id] = 0;
-      banner(ch.name, '#ffe58a', 2.6, 'NEW CONSTELLATION!'); sfx.chime(); sfx.bigcoin(); confetti(R.x, R.py + 120, 50); floater(R.x, R.py + 90, 'Starlight: +2% thrust from now on', '#ffe58a', 16);
+      banner(ch.name, '#ffe58a', 2.6, 'NEW CONSTELLATION!'); sfx.chime(); sfx.constellation(); confetti(R.x, R.py + 120, 50); floater(R.x, R.py + 90, 'Starlight: +2% thrust from now on', '#ffe58a', 16);
       if (R.faces.length) R.bubble = { s: pick(['It looks just like it!', 'Write that down!', 'Ooooh, pretty!', 'Our very own stars!']), t: 0 };
     }
   }
