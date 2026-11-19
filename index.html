@@ -4,6 +4,10 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <meta name="theme-color" content="#7fd4ff">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Skyhop">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="description" content="Skyhop Express: build a passenger rocket line from Grandma Ada's backyard to the stars.">
 <title>Skyhop Express</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cpath d='M32 4c10 8 14 20 14 32H18C18 24 22 12 32 4z' fill='%23fff6e5' stroke='%232b2240' stroke-width='4'/%3E%3Ccircle cx='32' cy='26' r='6' fill='%234d96ff' stroke='%232b2240' stroke-width='3'/%3E%3Cpath d='M18 36l-8 14h12zM46 36l8 14H42z' fill='%23ff5a5f' stroke='%232b2240' stroke-width='3'/%3E%3Cpath d='M26 46l6 14 6-14z' fill='%23ffd93d' stroke='%232b2240' stroke-width='3'/%3E%3C/svg%3E">
@@ -6284,6 +6288,22 @@ if (S.seen.intro) {
   if (dailyUnlocked()) { const d = todaysDaily(); const pill = document.createElement('div'); pill.className = 'title-daily'; pill.innerHTML = d.done ? `Today's special delivered! Come back tomorrow.` : `Today's special: <b>${d.cargo}</b> for ${d.to} · ${fmtAlt(d.target)}${dailyStreakAlive() ? ` · ${dailyStreakAlive()}-day streak` : ''}`; document.querySelector('#scr-title .tagline').after(pill); }
 }
 Music.play('title');
+// home-screen icon and app manifest, drawn in code so "Add to Home Screen" gives a proper app icon
+try {
+  const icon = size => {
+    const c = document.createElement('canvas'); c.width = c.height = size; const x = c.getContext('2d'), k = size / 180;
+    const g = x.createLinearGradient(0, 0, 0, size); g.addColorStop(0, '#5ec8ff'); g.addColorStop(1, '#bfe9ff'); x.fillStyle = g; x.fillRect(0, 0, size, size);
+    x.fillStyle = '#ffd93d'; x.strokeStyle = INK; x.lineWidth = 5 * k; x.beginPath(); x.arc(142 * k, 38 * k, 20 * k, 0, TAU); x.fill(); x.stroke();
+    x.fillStyle = '#6cc35f'; x.fillRect(0, 150 * k, size, 30 * k);
+    x.save(); x.translate(86 * k, 96 * k); x.rotate(0.35); x.scale(1.2 * k, 1.2 * k); drawRocket(x, rocketLook(), { t: 0.3, throttle: 1, faces: ['ada'] }); x.restore();
+    return c.toDataURL('image/png');
+  };
+  const add = (rel, href, extra) => { const l = document.createElement('link'); l.rel = rel; l.href = href; if (extra) for (const k in extra) l.setAttribute(k, extra[k]); document.head.appendChild(l); };
+  add('apple-touch-icon', icon(180));
+  const man = { name: 'Skyhop Express', short_name: 'Skyhop', display: 'fullscreen', orientation: 'any', background_color: '#7fd4ff', theme_color: '#7fd4ff', start_url: location.href.split('#')[0],
+    icons: [{ src: icon(192), sizes: '192x192', type: 'image/png' }, { src: icon(512), sizes: '512x512', type: 'image/png' }] };
+  add('manifest', 'data:application/manifest+json,' + encodeURIComponent(JSON.stringify(man)));
+} catch (e) { /* icons are a nice-to-have */ }
 requestAnimationFrame(frame);
 
 // debug / test hooks
