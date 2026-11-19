@@ -1791,7 +1791,7 @@ const STORY = {
   ],
   x5: [
     ['ada', 'The edge of the map... it just stops, like the last page of a book.'],
-    ['ember', 'Rawr! I mean... hello. Nobody ever visits the edge. I’m Ember. I guard it. Mostly I nap on it.'],
+    ['ember', 'Rawr! I mean... hello. Only my little cousins ever fly out this far. I’m Ember. I guard the edge. Mostly I nap on it.'],
     ['pip', 'Beep! A real dragon! She is small. And very warm.'],
     ['ada', 'Ember, dear, would you like to come and live in the shed? There’s a cozy spot by the boiler.'],
     ['ember', 'A shed?! With a BOILER?! I’ll paint your rocket in my scales as a thank-you!'],
@@ -7275,8 +7275,8 @@ const UI = (() => {
       list.appendChild(card);
     }
     overlay('scr-map', true);
-    if (skyWrap) skyWrap.appendChild(skyMapCanvas(Math.max(240, Math.min(680, list.clientWidth || 340)), 118));
-    if (frWrap) frWrap.appendChild(skyMapCanvas(Math.max(240, Math.min(680, list.clientWidth || 340)), 104, true));
+    if (skyWrap) skyWrap.appendChild(skyMapCanvas(Math.max(200, Math.min(680, list.clientWidth || 340)), 118));
+    if (frWrap) frWrap.appendChild(skyMapCanvas(Math.max(200, Math.min(680, list.clientWidth || 340)), 104, true));
     renderHeadBtns();
     saveGame();
   }
@@ -7500,7 +7500,7 @@ const UI = (() => {
     const c = cnv.getContext('2d'); c.scale(2, 2);
     const g = c.createLinearGradient(0, 0, 0, 280); g.addColorStop(0, '#241638'); g.addColorStop(1, '#6e4a36'); c.fillStyle = g; c.fillRect(0, 0, 500, 280);
     for (let i = 0; i < 70; i++) { c.fillStyle = '#fff6e5'; c.globalAlpha = hash(i * 3) * 0.8; c.beginPath(); c.arc(hash(i * 7) * 500, hash(i * 11) * 200, 0.6 + hash(i) * 1.3, 0, TAU); c.fill(); } c.globalAlpha = 1;
-    c.save(); c.translate(250, 150); drawStation(c, 'edge', 2, 0.95); c.restore();
+    c.save(); c.beginPath(); c.rect(0, 0, 500, 212); c.clip(); c.translate(250, 128); drawStation(c, 'edge', 2, 0.92); c.restore(); // scroll and dragon only: the name label would sit under the faces
     c.fillStyle = 'rgba(36,22,56,.55)'; c.fillRect(0, 214, 500, 66);
     const who = ['ada', 'earl', 'pip', 'ringo', 'lumen', 'ember', 'buckley', 'plum', 'baron', 'cat'];
     who.forEach((k, i) => { c.save(); c.translate(250 + (i - (who.length - 1) / 2) * 44, 246); drawFace(c, k, 16, 'joy', i); c.restore(); });
