@@ -729,6 +729,8 @@ const AudioSys = (() => {
     whale() { tone({ type: 'sine', f: 180, f2: 320, dur: 0.9, vol: 0.16, attack: 0.25 }); tone({ type: 'sine', f: 320, f2: 150, dur: 1.2, vol: 0.12, attack: 0.3, delay: 0.85 }); tone({ type: 'triangle', f: 90, f2: 120, dur: 1.6, vol: 0.06, attack: 0.4 }); },
     cannon() { noise({ dur: 0.5, vol: 0.45, filter: 'lowpass', f: 1400, f2: 80 }); tone({ type: 'sine', f: 110, f2: 32, dur: 0.4, vol: 0.45 }); noise({ dur: 0.25, vol: 0.12, filter: 'highpass', f: 2500, delay: 0.02 }); },
     arr() { tone({ type: 'sawtooth', f: 260, f2: 170, dur: 0.38, vol: 0.07, filter: 'bandpass', ff: 900, q: 2 }); tone({ type: 'square', f: 90, f2: 70, dur: 0.38, vol: 0.04, filter: 'lowpass', ff: 600 }); },
+    boo() { tone({ type: 'sine', f: 520, f2: 180, dur: 0.7, vol: 0.12, attack: 0.05 }); tone({ type: 'triangle', f: 540, f2: 190, dur: 0.7, vol: 0.06, delay: 0.02 }); },
+    buzz() { for (let i = 0; i < 3; i++) tone({ type: 'sawtooth', f: 190 + i * 14, f2: 230 - i * 10, dur: 0.16, vol: 0.04, delay: i * 0.13, filter: 'lowpass', ff: 1100 }); },
     creak() { tone({ type: 'sawtooth', f: 110, f2: 190, dur: 0.45, vol: 0.06, filter: 'bandpass', ff: 700, q: 6 }); },
     talk(pitch = 1) { if (!gate('talk', 55)) return; tone({ type: 'triangle', f: rand(300, 420) * pitch, dur: 0.05, vol: 0.06 }); },
   };
@@ -2537,7 +2539,7 @@ const G = {
   R: null, st: null, look: null,
   obs: [], picks: [], parts: [], floaters: [], banners: [],
   spawnY: 0, launch: null, result: null, station: null, hangarPop: 0,
-  poke: { rocket: 0, ada: 0, adaLine: '', crowd: 0, shed: 0, rocketLine: '', rocketLineT: 0 },
+  poke: { rocket: 0, ada: 0, adaLine: '', crowd: 0, shed: 0, rocketLine: '', rocketLineT: 0, deco: 0 },
   input: { keys: {}, pointers: new Map(), steer: 0, boostPressed: false },
   rocketScale: 1.1, warnings: [],
 };
@@ -4073,6 +4075,7 @@ function render() {
   // ---- screen space
   ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
   drawCloudLayer(alt, 1.25, 0.35, 2);
+  if (G.mode === 'hangar') drawSeasonFall();
   drawWishBubble();
   if (G.mode === 'flight' || G.mode === 'ending') drawHUD();
   if (G.mode === 'launch') { drawHUD(); drawLaunchGauge(); }
@@ -4312,13 +4315,111 @@ function drawGroundLayers(alt, sx, sy) {
     ctx.beginPath(); ctx.moveTo(-10, H + 400);
     const off = G.cam.x * 0.3 * z;
     for (let x = -20; x <= W + 40; x += 20) { const wx = (x + off) / z; ctx.lineTo(x, y2 - (40 + Math.sin(wx * 0.006) * 30 + Math.sin(wx * 0.017) * 14) * z); }
-    ctx.lineTo(W + 10, H + 400); ctx.closePath(); fillStroke(ctx, '#7fd17a', 3);
+    const sn = season();
+    ctx.lineTo(W + 10, H + 400); ctx.closePath(); fillStroke(ctx, { winter: '#eef5ff', autumn: '#b9cf6a', spooky: '#a9bf6a', spring: '#8adb7f' }[sn] || '#7fd17a', 3);
+    const treeCols = { winter: ['#ffffff', '#e2eefc'], autumn: ['#ff9f43', '#e8743b', '#ffd93d', '#4fb06a'], spooky: ['#e8743b', '#b4532a', '#ff9f43'], spring: ['#ffb3d9', '#4fb06a', '#ffd6e8'] }[sn] || ['#4fb06a'];
     // trees on hills
-    for (let i = 0; i < 16; i++) { const wx = i * 170 + 40; const x = ((wx * z - off) % (W + 400) + W + 400) % (W + 400) - 200; const ty = y2 - (40 + Math.sin(((x + off) / z) * 0.006) * 30 + Math.sin(((x + off) / z) * 0.017) * 14) * z; circ(ctx, x, ty - 10 * z, 12 * z); fillStroke(ctx, '#4fb06a', 2.5); }
+    for (let i = 0; i < 16; i++) { const wx = i * 170 + 40; const x = ((wx * z - off) % (W + 400) + W + 400) % (W + 400) - 200; const ty = y2 - (40 + Math.sin(((x + off) / z) * 0.006) * 30 + Math.sin(((x + off) / z) * 0.017) * 14) * z; circ(ctx, x, ty - 10 * z, 12 * z); fillStroke(ctx, treeCols[i % treeCols.length], 2.5); }
     ctx.restore();
   }
 }
 
+// ---------------------------------------------------------------- seasons: the yard dresses up for the time of year (device date)
+function seasonOf(d) { const m = d.getMonth(), day = d.getDate(); if (m === 9 && day >= 18) return 'spooky'; if (m === 11 || m <= 1) return 'winter'; if (m <= 4) return 'spring'; if (m <= 7) return 'summer'; return 'autumn'; }
+const SEASON_NOW = seasonOf(new Date());
+const season = () => DEBUG.season || SEASON_NOW;
+const SEASON_POKE = {
+  winter: ['Brrr!', '#cfeaff'], spooky: ['BOO!', '#ff9f43'], autumn: ['Crunch!', '#ffb36b'], spring: ['Achoo!', '#ff9fd0'], summer: ['Bzzz!', '#ffd93d'],
+};
+// the little seasonal friend between Ada and the tower: snowman, pumpkins, tulips or sunflowers
+function drawSeasonDeco(x) {
+  const sn = season(), P = G.poke, pk = P.deco > 0 ? P.deco / 1.6 : 0, t = G.t;
+  ink(ctx, 2.5);
+  if (sn === 'winter') {
+    circ(ctx, x, -16, 16); fillStroke(ctx, '#ffffff', 2.5);
+    circ(ctx, x, -41, 12); fillStroke(ctx, '#ffffff', 2.5);
+    const hy = -60 - Math.abs(Math.sin(pk * Math.PI * 2)) * 16 * (pk > 0 ? 1 : 0);
+    circ(ctx, x, -60, 9); fillStroke(ctx, '#ffffff', 2.5);
+    ctx.beginPath(); ctx.moveTo(x - 11, -46); ctx.lineTo(x + 11, -46); ctx.lineWidth = 5; ctx.strokeStyle = '#ff5a5f'; ctx.stroke(); ctx.strokeStyle = INK; ctx.lineWidth = 2.5;
+    ctx.beginPath(); ctx.moveTo(x - 12, -42); ctx.lineTo(x - 26, -52 - Math.sin(t * 3) * 3); ctx.moveTo(x + 12, -42); ctx.lineTo(x + 26, -50); ctx.stroke();
+    ctx.fillStyle = INK; circ(ctx, x - 3, -62, 1.6); ctx.fill(); circ(ctx, x + 3.5, -62, 1.6); ctx.fill(); circ(ctx, x, -41, 1.5); ctx.fill(); circ(ctx, x, -33, 1.5); ctx.fill();
+    ctx.beginPath(); ctx.moveTo(x, -59); ctx.lineTo(x + 10, -57); ctx.lineTo(x, -56); ctx.closePath(); fillStroke(ctx, '#ff9f43', 1.5);
+    ctx.save(); ctx.translate(x, hy - 7); ctx.rotate(pk > 0 ? Math.sin(pk * 12) * 0.3 : -0.08);
+    rr(ctx, -7, -12, 14, 12, 2); fillStroke(ctx, '#3a3554', 2.5); rr(ctx, -11, -1, 22, 4, 2); fillStroke(ctx, '#3a3554', 2.5);
+    ctx.restore();
+  } else if (sn === 'autumn' || sn === 'spooky') {
+    const pumpkin = (px, r, face) => {
+      ctx.save(); ctx.translate(px, -r * 0.82); const sq = pk > 0 ? 1 + Math.sin(pk * 20) * 0.08 * pk : 1; ctx.scale(sq, 2 - sq);
+      ctx.beginPath(); ctx.ellipse(0, 0, r * 1.2, r * 0.82, 0, 0, TAU); fillStroke(ctx, '#ff9f43', 2.5);
+      ctx.beginPath(); ctx.ellipse(0, 0, r * 0.5, r * 0.82, 0, 0, TAU); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(0, -r * 0.8); ctx.lineTo(r * 0.15, -r * 1.15); ctx.lineWidth = 4; ctx.strokeStyle = '#4f8a3a'; ctx.stroke(); ctx.strokeStyle = INK; ctx.lineWidth = 2.5;
+      if (face) {
+        const glow = 0.6 + Math.sin(t * 5) * 0.2 + pk * 0.4; ctx.fillStyle = `rgba(255,${210 + Math.round(40 * pk)},90,${clamp(glow, 0, 1)})`;
+        ctx.beginPath(); ctx.moveTo(-r * 0.55, -r * 0.12); ctx.lineTo(-r * 0.3, -r * 0.42); ctx.lineTo(-r * 0.12, -r * 0.12); ctx.closePath(); ctx.fill();
+        ctx.beginPath(); ctx.moveTo(r * 0.55, -r * 0.12); ctx.lineTo(r * 0.3, -r * 0.42); ctx.lineTo(r * 0.12, -r * 0.12); ctx.closePath(); ctx.fill();
+        ctx.beginPath(); ctx.moveTo(-r * 0.6, r * 0.18); for (let i = 0; i <= 6; i++) ctx.lineTo(-r * 0.6 + i * r * 0.2, r * (i % 2 ? 0.48 : 0.24)); ctx.lineTo(r * 0.6, r * 0.18); ctx.closePath(); ctx.fill();
+      }
+      ctx.restore();
+    };
+    if (sn === 'autumn') { ctx.fillStyle = '#e8743b'; for (let i = 0; i < 7; i++) { ctx.beginPath(); ctx.ellipse(x - 30 + i * 4 + hash(i) * 6, -3 - (i % 3) * 3, 7, 3.5, hash(i * 3) * 2, 0, TAU); ctx.fillStyle = ['#e8743b', '#ffb347', '#d94f30'][i % 3]; ctx.fill(); ctx.stroke(); } }
+    pumpkin(x - 4, 17, sn === 'spooky'); pumpkin(x + 22, 10.5, sn === 'spooky');
+  } else if (sn === 'spring') {
+    const cols = ['#ff5a8a', '#ffd93d', '#ff9f43', '#c58cff', '#ff5a5f'];
+    for (let i = 0; i < 5; i++) {
+      const fx = x - 22 + i * 11, h = 26 + (i % 2) * 8, sw = Math.sin(t * 2 + i) * 2 + (pk > 0 ? Math.sin(pk * 25 + i) * 6 * pk : 0);
+      ctx.beginPath(); ctx.moveTo(fx, 0); ctx.quadraticCurveTo(fx, -h * 0.5, fx + sw, -h); ctx.lineWidth = 3; ctx.strokeStyle = '#3f8f3a'; ctx.stroke(); ctx.strokeStyle = INK; ctx.lineWidth = 2.5;
+      ctx.beginPath(); ctx.moveTo(fx + sw - 6, -h - 2); ctx.lineTo(fx + sw - 6, -h - 12); ctx.lineTo(fx + sw - 3, -h - 8); ctx.lineTo(fx + sw, -h - 13); ctx.lineTo(fx + sw + 3, -h - 8); ctx.lineTo(fx + sw + 6, -h - 12); ctx.lineTo(fx + sw + 6, -h - 2); ctx.quadraticCurveTo(fx + sw, -h + 4, fx + sw - 6, -h - 2); ctx.closePath(); fillStroke(ctx, cols[i], 2);
+    }
+  } else { // summer sunflowers
+    for (let i = 0; i < 3; i++) {
+      const fx = x - 18 + i * 18, h = 44 + (i === 1 ? 14 : 0), sw = Math.sin(t * 1.5 + i) * 2, spin = pk > 0 ? pk * 8 : 0;
+      ctx.beginPath(); ctx.moveTo(fx, 0); ctx.lineTo(fx + sw, -h); ctx.lineWidth = 3.5; ctx.strokeStyle = '#3f8f3a'; ctx.stroke(); ctx.strokeStyle = INK; ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.ellipse(fx + 6, -h * 0.5, 6, 3, -0.5, 0, TAU); ctx.fillStyle = '#5fb04f'; ctx.fill(); ctx.stroke();
+      ctx.save(); ctx.translate(fx + sw, -h); ctx.rotate(spin + i);
+      for (let k = 0; k < 10; k++) { ctx.rotate(TAU / 10); ctx.beginPath(); ctx.ellipse(0, -9, 3.5, 6, 0, 0, TAU); ctx.fillStyle = '#ffd93d'; ctx.fill(); ctx.stroke(); }
+      circ(ctx, 0, 0, 6); fillStroke(ctx, '#8b5a3c', 2); ctx.restore();
+    }
+  }
+  ctx.lineWidth = 3;
+}
+// seasonal confetti over the yard: snowflakes, leaves, petals or fireflies (screen space, no particles kept)
+function drawSeasonFall() {
+  const sn = season(), t = G.t;
+  ctx.save();
+  if (sn === 'winter') {
+    ctx.fillStyle = '#ffffff';
+    for (let i = 0; i < 70; i++) {
+      const sp = 26 + hash(i * 7) * 40, x = ((hash(i * 13) * (W + 40) + Math.sin(t * 0.8 + i) * 18) % (W + 40)) - 20, y = ((hash(i * 3) * (H + 30) + t * sp) % (H + 30)) - 15;
+      ctx.globalAlpha = 0.55 + hash(i * 11) * 0.45; ctx.beginPath(); ctx.arc(x, y, 1.4 + hash(i * 5) * 2.4, 0, TAU); ctx.fill();
+    }
+  } else if (sn === 'summer') {
+    for (let i = 0; i < 12; i++) { // fireflies drift low over the grass
+      const x = (hash(i * 13) * W + Math.sin(t * 0.5 + i * 2) * 40 + W) % W, y = H * (0.45 + hash(i * 7) * 0.4) + Math.sin(t * 0.9 + i) * 20;
+      const a = 0.35 + 0.35 * Math.sin(t * 3 + i * 1.7);
+      ctx.globalAlpha = a; ctx.fillStyle = '#fff6a0'; ctx.beginPath(); ctx.arc(x, y, 2.5, 0, TAU); ctx.fill();
+      ctx.globalAlpha = a * 0.35; ctx.beginPath(); ctx.arc(x, y, 7, 0, TAU); ctx.fill();
+    }
+  } else {
+    const leaf = sn !== 'spring', n = leaf ? 16 : 22;
+    const cols = leaf ? (sn === 'spooky' ? ['#ff9f43', '#e8743b', '#9b5de5'] : ['#ff9f43', '#e8743b', '#ffd93d', '#d94f30']) : ['#ffb3d9', '#ffd6e8', '#ff9fd0'];
+    for (let i = 0; i < n; i++) {
+      const sp = 22 + hash(i * 7) * 30, x = ((hash(i * 13) * (W + 60) + t * (leaf ? 14 : 20) + Math.sin(t * 1.3 + i) * 26) % (W + 60)) - 30, y = ((hash(i * 3) * (H + 40) + t * sp) % (H + 40)) - 20;
+      const sz = leaf ? 5 + hash(i * 5) * 3 : 3 + hash(i * 5) * 2;
+      ctx.save(); ctx.translate(x, y); ctx.rotate(t * (1 + hash(i) * 2) + i); ctx.scale(1, Math.abs(Math.sin(t * 2 + i)) * 0.7 + 0.3);
+      ctx.globalAlpha = 0.9; ctx.fillStyle = cols[i % cols.length]; ctx.beginPath(); ctx.ellipse(0, 0, sz, sz * 0.55, 0, 0, TAU); ctx.fill();
+      if (leaf) { ctx.strokeStyle = 'rgba(42,35,64,.6)'; ctx.lineWidth = 1.2; ctx.stroke(); }
+      ctx.restore();
+    }
+    if (sn === 'spooky') { // a few bats flap across the sky
+      ctx.globalAlpha = 1; ink(ctx, 2);
+      for (let i = 0; i < 3; i++) {
+        const x = ((t * (40 + i * 12) + i * W * 0.37) % (W + 80)) - 40, y = H * (0.12 + i * 0.08) + Math.sin(t * 2 + i) * 14, f = Math.sin(t * 14 + i) * 7;
+        ctx.beginPath(); ctx.moveTo(x - 14, y - f); ctx.quadraticCurveTo(x - 7, y + 4, x, y); ctx.quadraticCurveTo(x + 7, y + 4, x + 14, y - f); ctx.quadraticCurveTo(x + 7, y - 2, x, y - 3); ctx.quadraticCurveTo(x - 7, y - 2, x - 14, y - f); ctx.fillStyle = '#3a3554'; ctx.fill(); ctx.stroke();
+      }
+    }
+  }
+  ctx.restore();
+}
 // ---- foreground ground in world coords
 function drawGround() {
   const st = G.st || computeStats();
@@ -4336,6 +4437,7 @@ function drawGround() {
     ctx.beginPath(); ctx.moveTo(-170, 0); ctx.lineTo(-170, -70); ctx.stroke(); ctx.beginPath(); ctx.moveTo(-170, -70); ctx.lineTo(-130, -60); ctx.lineTo(-170, -50); fillStroke(ctx, '#ff5a5f', 3);
   } else {
     // town (behind ground)
+    const winter = season() === 'winter';
     const houses = [[-620, '#ff9f43', 70], [-520, '#4d96ff', 54], [-440, '#ffd93d', 80], [380, '#f15bb5', 60], [470, '#5fd068', 74], [570, '#9b5de5', 56], [680, '#ff5a5f', 66], [-760, '#2ec4b6', 60]];
     for (const [hx, col, hh] of houses) {
       if (hx < x0 - 200 || hx > x1 + 200) continue;
@@ -4343,11 +4445,16 @@ function drawGround() {
       ctx.beginPath(); ctx.moveTo(hx - 38, -hh + 2); ctx.lineTo(hx, -hh - 34); ctx.lineTo(hx + 38, -hh + 2); ctx.closePath(); fillStroke(ctx, col);
       rr(ctx, hx - 18, -hh + 14, 14, 14, 3); fillStroke(ctx, '#9fdcff', 2.5); rr(ctx, hx + 4, -hh + 14, 14, 14, 3); fillStroke(ctx, '#9fdcff', 2.5);
       rr(ctx, hx - 8, -24, 16, 24, 3); fillStroke(ctx, col, 2.5);
+      if (winter) {
+        ctx.beginPath(); ctx.moveTo(hx, -hh - 38); ctx.lineTo(hx + 20, -hh - 16); ctx.quadraticCurveTo(hx + 12, -hh - 10, hx + 6, -hh - 17); ctx.quadraticCurveTo(hx, -hh - 11, hx - 7, -hh - 17); ctx.quadraticCurveTo(hx - 13, -hh - 10, hx - 20, -hh - 16); ctx.closePath(); fillStroke(ctx, '#ffffff', 2.5);
+        for (let k = 0; k < 7; k++) { const u = k / 6, lx = hx - 36 + u * 72, ly = -hh + 4 - (1 - Math.abs(u - 0.5) * 2) * 34 + 5; ctx.fillStyle = ['#ff5a5f', '#ffd93d', '#5fd068', '#4d96ff'][(k + Math.floor(G.t * 2)) % 4]; circ(ctx, lx, ly, 2.6); ctx.fill(); }
+      }
     }
     // shed
     const shx = -300;
     rr(ctx, shx - 70, -90, 140, 90, 6); fillStroke(ctx, '#d9534f');
     ctx.beginPath(); ctx.moveTo(shx - 82, -86); ctx.lineTo(shx, -140); ctx.lineTo(shx + 82, -86); ctx.closePath(); fillStroke(ctx, '#8b3a3a');
+    if (winter) { ctx.beginPath(); ctx.moveTo(shx - 80, -88); ctx.lineTo(shx, -144); ctx.lineTo(shx + 80, -88); ctx.quadraticCurveTo(shx + 64, -80, shx + 50, -90); ctx.quadraticCurveTo(shx + 30, -82, shx + 12, -92); ctx.quadraticCurveTo(shx - 10, -82, shx - 30, -91); ctx.quadraticCurveTo(shx - 55, -81, shx - 80, -88); ctx.closePath(); fillStroke(ctx, '#ffffff', 3); }
     if (G.poke.shed > 0) { // door swings open and Buckley peeks out
       const op = clamp(Math.min(G.poke.shed, 2.6 - G.poke.shed) * 4, 0, 1);
       rr(ctx, shx - 30, -64, 60, 64, 4); fillStroke(ctx, '#3a2f52');
@@ -4400,16 +4507,22 @@ function drawGround() {
     const wave = Math.sin(G.t * 6) * 0.5;
     ctx.beginPath(); ctx.moveTo(8, -24); ctx.lineTo(18 + wave * 6, -44); ctx.lineWidth = 4; ctx.stroke();
     if (G.mode === 'hangar' && G.poke.ada > 0) speechBubble(ctx, G.poke.adaLine, 30, -70, clamp(G.poke.ada * 3, 0, 1) * clamp((3 - G.poke.ada) * 6, 0, 1), 170, true);
-    else if (G.mode === 'hangar' && S.flights > 0) {
+    else if (G.mode === 'hangar' && S.flights > 0 && !(G.poke.deco > 0)) {
       const ti = Math.floor(G.t / 7) % ADA_TIPS.length, k = (G.t % 7);
       const a = clamp(k * 3, 0, 1) * clamp((6.5 - k) * 3, 0, 1);
       speechBubble(ctx, ADA_TIPS[ti], 30, -70, a, 170, true);
     }
     ctx.restore();
+    drawSeasonDeco(-136);
     // ground
-    ctx.beginPath(); ctx.rect(x0, 0, x1 - x0, 1600); ctx.fillStyle = '#6cc35f'; ctx.fill();
+    const sn = season();
+    ctx.beginPath(); ctx.rect(x0, 0, x1 - x0, 1600); ctx.fillStyle = winter ? '#f4f8ff' : '#6cc35f'; ctx.fill();
     ctx.beginPath(); ctx.moveTo(x0, 0); ctx.lineTo(x1, 0); ctx.lineWidth = 4; ctx.stroke();
-    ctx.fillStyle = '#58ad4e'; for (let i = Math.floor(x0 / 60); i < x1 / 60; i++) { ctx.beginPath(); ctx.ellipse(i * 60 + hash(i) * 30, 30 + hash(i * 3) * 40, 18, 5, 0, 0, TAU); ctx.fill(); }
+    ctx.fillStyle = winter ? '#dbe7f7' : '#58ad4e'; for (let i = Math.floor(x0 / 60); i < x1 / 60; i++) { ctx.beginPath(); ctx.ellipse(i * 60 + hash(i) * 30, 30 + hash(i * 3) * 40, 18, 5, 0, 0, TAU); ctx.fill(); }
+    if (sn !== 'winter') { // fallen leaves or little flowers dotted over the grass
+      const dots = sn === 'autumn' || sn === 'spooky' ? ['#ff9f43', '#e8743b', '#ffd93d'] : sn === 'spring' ? ['#ffb3d9', '#ffffff', '#ffd93d'] : ['#ffd93d', '#ffffff'];
+      for (let i = Math.floor(x0 / 45); i < x1 / 45; i++) { if (hash(i * 7 + 1) < 0.45) continue; ctx.fillStyle = dots[i % dots.length]; ctx.beginPath(); ctx.ellipse(i * 45 + hash(i * 5) * 30, 12 + hash(i * 9) * 90, sn === 'autumn' || sn === 'spooky' ? 5 : 3, sn === 'autumn' || sn === 'spooky' ? 2.6 : 3, hash(i) * 3, 0, TAU); ctx.fill(); }
+    }
     ctx.fillStyle = '#8b5a3c'; ctx.fillRect(x0, 120, x1 - x0, 1600);
     ctx.beginPath(); ctx.moveTo(x0, 120); ctx.lineTo(x1, 120); ctx.stroke();
     // fence
@@ -4460,6 +4573,11 @@ function drawGround() {
 }
 
 const ADA_TIP_LIST = [
+  ['Brrr! Snow day. Rockets don’t mind the cold.', () => season() === 'winter'],
+  ['Spring! The birds are back, so mind those beaks.', () => season() === 'spring'],
+  ['Hot one today! Perfect launch weather.', () => season() === 'summer'],
+  ['Leaves everywhere! Buckley, fetch the rake.', () => season() === 'autumn'],
+  ['Pumpkin season! Give those pumpkins a tap.', () => season() === 'spooky'],
   ['Perfect launches pay 10% extra!', () => true],
   ['Upgrades show how much higher you’ll fly.', () => true],
   ['Tilting steers you, but costs a little lift.', () => S.flights >= 1],
@@ -4524,6 +4642,14 @@ function pokeHangar(sx, sy) {
     for (let i = 0; i < 6; i++) setTimeout(() => sfx.talk(1.25), i * 70);
     return true;
   }
+  if (Math.abs(wx + 136) < 28 && wpy > 0 && wpy < 74) {
+    const sn = season(), [line, col] = SEASON_POKE[sn];
+    if (P.deco <= 0.6) {
+      P.deco = 1.6; floater(-136, 84, line, col, 18);
+      if (sn === 'winter') { sfx.boing(); puff(-136, 70, 6, '#ffffff', 50); } else if (sn === 'spooky') sfx.boo(); else if (sn === 'autumn') { sfx.paper(); sparks(-150, 10, 10, ['#ff9f43', '#e8743b', '#ffd93d']); } else if (sn === 'spring') { sfx.wish(); sparks(-136, 40, 12, ['#ffb3d9', '#ffd6e8', '#ffffff']); } else sfx.buzz();
+    }
+    return true;
+  }
   if (wx > 155 && wx < 395 && wpy > 0 && wpy < 90) {
     const guests = crowdGuests();
     for (let k = 0; k < guests.length; k++) {
@@ -4546,7 +4672,7 @@ function pokeHangar(sx, sy) {
   }
   return false;
 }
-function updatePokes(dt) { const P = G.poke; for (const k of ['rocket', 'ada', 'crowd', 'shed', 'rocketLineT', 'mail', 'guestT']) if (P[k] > 0) P[k] = Math.max(0, P[k] - dt); }
+function updatePokes(dt) { const P = G.poke; for (const k of ['rocket', 'ada', 'crowd', 'shed', 'rocketLineT', 'mail', 'guestT', 'deco']) if (P[k] > 0) P[k] = Math.max(0, P[k] - dt); }
 function wrapText(str, maxW) { const words = str.split(' '); const out = []; let line = ''; for (const w of words) { const t = line ? line + ' ' + w : w; if (ctx.measureText(t).width > maxW && line) { out.push(line); line = w; } else line = t; } if (line) out.push(line); return out; }
 function drawStationAndRecord() {
   const R = G.R;
@@ -5996,7 +6122,7 @@ requestAnimationFrame(frame);
 // debug / test hooks
 window.__skyhop = {
   G, DEBUG, get S() { return S; }, computeStats, simulateFlight, UPGRADES, ROUTES, UP, art: { drawStation, routeIconCanvas, drawFace, makePostcard, guideIcon, GUIDE },
-  set bot(v) { DEBUG.bot = v; }, set timeScale(v) { DEBUG.timeScale = v; },
+  set bot(v) { DEBUG.bot = v; }, set timeScale(v) { DEBUG.timeScale = v; }, set season(v) { DEBUG.season = v; },
   setMoney(v) { S.money = v; if (UI.current === 'hangar') UI.refresh(); },
   setLevel(id, l) { S.up[id] = l; G.look = rocketLook(); G.st = computeStats(); if (UI.current === 'hangar') UI.refresh(); },
   done(id) { S.routes[id] = { done: true, stars: 3, runs: 1 }; const nx = nextRoute(); S.route = nx ? nx.id : 'free'; },
