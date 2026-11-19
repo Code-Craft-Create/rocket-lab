@@ -189,7 +189,7 @@ button{font-family:var(--font)}
   #detail .dact .btn{font-size:15px;padding:7px 10px}
   .side-foot{padding:8px 10px 10px}
   #route-chip{padding:4px 8px}
-  #route-chip .rc-n{font-size:14px}
+  #route-chip .rc-n{font-size:14px}#route-chip .rc-n.long{font-size:12.5px;letter-spacing:-.2px}
   .toast{font-size:13px;padding:6px 12px}
   .rc-pre{display:none}
   .btn.big{font-size:22px;padding:10px 18px}
@@ -320,6 +320,7 @@ button{font-family:var(--font)}
 .map-sec .ms-t{font-size:22px;font-weight:900;letter-spacing:.5px;text-shadow:0 2px 0 var(--ink)}.map-sec .ms-s{font-size:13px;font-weight:800;opacity:.85;margin-top:2px}
 .map-sec::after{content:'';position:absolute;right:-20px;top:-30px;width:120px;height:120px;border-radius:50%;background:radial-gradient(rgba(138,255,193,.35),transparent 70%)}
 .route.fr{background:linear-gradient(135deg,#fff 55%,#e9f6ff)}.route.fr.locked{background:#ddd6e8}
+.route.consts{display:block;background:linear-gradient(135deg,#fff 50%,#f3ecff)}.route.consts .c-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin-top:10px}.route.consts .c-cell{text-align:center;min-width:0}.route.consts .c-cell canvas{width:100%;max-width:72px;aspect-ratio:1;display:block;margin:0 auto;border-radius:12px;border:3px solid var(--ink);box-sizing:border-box}.route.consts .c-cell.lit canvas{box-shadow:0 0 0 3px #ffd93d}.route.consts .c-n{font-size:11px;font-weight:900;color:var(--ink2);margin-top:3px;line-height:1.1;overflow-wrap:anywhere}.route.consts .c-cell.lit .c-n{color:var(--ink)}.route.consts .r-act{margin-top:10px;text-align:right}
 .skymap{margin:0 0 14px;line-height:0}.skymap canvas{display:block;max-width:100%;border-radius:14px;box-shadow:0 4px 0 var(--ink)}
 .route-link{position:absolute;left:44px;width:6px;height:18px;background:repeating-linear-gradient(var(--ink) 0 4px,transparent 4px 8px);top:-18px}
 .route-link{display:none} /* a lone dash between cards read as a stray mark */
@@ -640,7 +641,7 @@ function srand(seed) { let s = seed >>> 0 || 1; return () => { s ^= s << 13; s ^
 const SAVE_KEY = 'skyhop_express_save_v1';
 function defaultSave() {
   return {
-    v: 1, money: 0, earned: 0, flights: 0, bestAlt: 0,
+    v: 1, money: 0, earned: 0, flights: 0, bestAlt: 0, charted: {},
     up: {},            // upgrade id -> level
     routes: {},        // route id -> {done, stars, runs}
     route: 'r0',       // selected route id ('free' = free flight)
@@ -1310,6 +1311,32 @@ const ROUTES = [
 const MAIN_ROUTES = ROUTES.filter(r => !r.fr), FRONT_ROUTES = ROUTES.filter(r => r.fr);
 const frontierOpen = () => routeDone('r7');
 const townOpen = () => routeDone('x1') || lvl('fountain') > 0; // Mayor Plum's town projects: the late-game place to spend coins
+// ---- constellations out past the Edge of the Map. Fly past one to find it (x, y in -1..1; ln joins stars)
+const STAR_CHARTS = [
+  { id: 'teapot', name: 'The Teapot', alt: 11000000, reward: 500000, pts: [[-0.55, 0.35], [0.55, 0.35], [0.65, -0.15], [0.3, -0.45], [-0.3, -0.45], [-0.65, -0.15], [1, -0.5], [-1, 0], [0, -0.75]], ln: [[0, 1], [1, 2], [2, 3], [3, 4], [4, 5], [5, 0], [2, 6], [5, 7], [7, 0], [3, 8], [4, 8]] },
+  { id: 'helmet', name: 'Buckley’s Helmet', alt: 12000000, reward: 700000, pts: [[-0.7, 0.5], [0.7, 0.5], [0.85, -0.05], [0.4, -0.55], [-0.4, -0.55], [-0.85, -0.05], [0.4, 0.05], [-0.4, 0.05], [0, -1]], ln: [[0, 1], [1, 2], [2, 3], [3, 4], [4, 5], [5, 0], [5, 7], [7, 6], [6, 2], [4, 8], [3, 8]] },
+  { id: 'rocket', name: 'The Great Rocket', alt: 13500000, reward: 900000, pts: [[0, -1], [0.28, -0.5], [0.28, 0.4], [0.62, 0.8], [-0.62, 0.8], [-0.28, 0.4], [-0.28, -0.5], [0, -0.1]], ln: [[0, 1], [1, 2], [2, 3], [3, 4], [4, 5], [5, 6], [6, 0], [2, 5]] },
+  { id: 'pip', name: 'Pip', alt: 15000000, reward: 1200000, pts: [[-0.55, 0.55], [0.55, 0.55], [0.7, 0], [0.25, -0.4], [-0.25, -0.4], [-0.7, 0], [0.45, -0.95], [-0.45, -0.95], [-0.25, 0.05], [0.25, 0.05]], ln: [[0, 1], [1, 2], [2, 3], [3, 4], [4, 5], [5, 0], [3, 6], [4, 7]] },
+  { id: 'cane', name: 'Ada’s Cane', alt: 16500000, reward: 1500000, pts: [[0.25, 1], [0.25, 0.25], [0.25, -0.45], [0.05, -0.85], [-0.35, -0.88], [-0.55, -0.6], [-0.45, -0.35]], ln: [[0, 1], [1, 2], [2, 3], [3, 4], [4, 5], [5, 6]] },
+  { id: 'kraken', name: 'The Kraken', alt: 18000000, reward: 2000000, pts: [[0, -0.95], [0.42, -0.45], [-0.42, -0.45], [0, -0.05], [-0.95, 0.55], [-0.35, 0.95], [0.35, 0.95], [0.95, 0.55]], ln: [[0, 1], [0, 2], [1, 3], [2, 3], [3, 4], [3, 5], [3, 6], [3, 7]] },
+  { id: 'ember', name: 'Ember', alt: 20000000, reward: 2500000, pts: [[-1, 0.45], [-0.4, 0.2], [0.2, 0.15], [0.7, -0.2], [1, 0], [-0.15, -0.8], [0.3, -0.6], [-0.1, 0.65], [0.35, 0.6]], ln: [[0, 1], [1, 2], [2, 3], [3, 4], [1, 5], [5, 2], [2, 6], [6, 3], [1, 7], [2, 8]] },
+  { id: 'home', name: 'Home', alt: 22000000, reward: 4000000, pts: [[-0.7, 0.75], [0.7, 0.75], [0.7, -0.05], [0, -0.8], [-0.7, -0.05], [-0.15, 0.75], [-0.15, 0.2], [0.15, 0.2], [0.15, 0.75]], ln: [[0, 1], [1, 2], [2, 3], [3, 4], [4, 0], [2, 4], [5, 6], [6, 7], [7, 8]] },
+];
+const chartsOpen = () => routeDone('x5');
+const chartedN = () => STAR_CHARTS.filter(c => S.charted && S.charted[c.id]).length;
+const nextChart = () => STAR_CHARTS.find(c => !(S.charted && S.charted[c.id]));
+function drawChartShape(c, ch, size, k = 1, lit = true, t = 0) {
+  // k: how much of the joining lines are drawn (0..1); lit: gold once charted, pale before
+  c.save(); c.lineCap = 'round';
+  const P = ch.pts.map(([x, y]) => [x * size, y * size]);
+  c.strokeStyle = lit ? 'rgba(255,229,138,.9)' : 'rgba(255,255,255,.35)'; c.lineWidth = Math.max(1.5, size * 0.035);
+  if (!lit) c.setLineDash([size * 0.05, size * 0.07]);
+  ch.ln.forEach(([a, b], i) => { const f = clamp(k * ch.ln.length - i, 0, 1); if (f <= 0) return; const [x1, y1] = P[a], [x2, y2] = P[b]; c.beginPath(); c.moveTo(x1, y1); c.lineTo(lerp(x1, x2, f), lerp(y1, y2, f)); c.stroke(); });
+  c.setLineDash([]);
+  P.forEach(([x, y], i) => { const tw = 0.75 + 0.25 * Math.sin(t * 3 + i * 1.9), r = size * (0.05 + 0.02 * hash(i * 3.3)) * tw;
+    c.fillStyle = lit ? '#fff6c8' : '#ffffff'; c.beginPath(); c.moveTo(x, y - r * 2); c.quadraticCurveTo(x, y, x + r * 2, y); c.quadraticCurveTo(x, y, x, y + r * 2); c.quadraticCurveTo(x, y, x - r * 2, y); c.quadraticCurveTo(x, y, x, y - r * 2); c.fill(); });
+  c.restore();
+}
 const routeById = id => ROUTES.find(r => r.id === id);
 const routeDone = id => !!(S.routes[id] && S.routes[id].done);
 function nextRoute() { return ROUTES.find(r => !routeDone(r.id)) || null; }
@@ -3334,6 +3361,10 @@ function prepareRocket() {
   R.wish = null; R.wishT = rand(3, 5.5); R.wishN = 0; R.wishOk = 0;
   const cd = CONDS[R.cond];
   if (cd.thrustMul) { G.st = Object.assign({}, G.st, { thrust: G.st.thrust * cd.thrustMul }); }
+  // cheer squad: after two misses on a new frontier stop, the whole town cheers you on (+4% thrust per miss, up to +20%)
+  const tries = route && route.fr && !routeDone(route.id) && S.frTries ? S.frTries[route.id] || 0 : 0;
+  R.cheer = tries >= 2 ? Math.min(0.2, 0.04 * (tries - 1)) : 0;
+  if (R.cheer) G.st = Object.assign({}, G.st, { thrust: G.st.thrust * (1 + R.cheer) });
   R.startPy = R.py;
   R.trace = { a: [], x: [], f: [] }; R.traceT = 0; R.ghostBeat = false;
   R.boss = null; R.bossN = 0; R.bossOk = { storm: !S.seen.boss_storm || chance(0.4), whale: !S.seen.boss_whale || chance(0.45), pirates: !S.seen.boss_pirates || chance(0.4), kraken: !S.seen.boss_kraken || chance(0.4), bandit: !S.seen.boss_bandit || chance(0.45), gobble: !S.seen.boss_gobble || chance(0.5) };
@@ -3359,6 +3390,7 @@ function enterLaunch() {
   const cd = CONDS[G.R.cond];
   if (G.R.daily) { const d = G.R.daily, tw = TWISTS[d.twist]; toast(`<b>Special delivery:</b> ${d.cargo} to ${fmtAlt(d.target)}<br><b>${tw.name}:</b> ${tw.fx} · <b>${cd.name}:</b> ${cd.fx}`, 4200); }
   else if (cd && cd.fx) toast(`<b>${cd.name}:</b> ${cd.fx}`, 3000);
+  if (G.R.cheer) toast(`<b>Cheer squad:</b> ${pick(['Pip’s whole family is', 'All of Pebbleton is', 'Ada and Buckley are', 'Mayor Plum is'])} cheering you on! Thrust +${Math.round(G.R.cheer * 100)}%`, 3400);
   if (G.R.route && !G.R.paxOk && G.R.route.pax > 0) {
     toast(`${G.R.route.to} needs <b>${G.R.route.pax} seats</b>. Add <b>Passenger Seats</b> in the Cabin tab!`);
   }
@@ -4395,6 +4427,15 @@ function updateFlight(dt) {
   // --- milestones
   const zi = zoneIndex(R.alt);
   if (zi > R.zi) { R.zi = zi; banner(ZONES[zi].name, '#bff8ff', 2.2, 'NOW ENTERING'); sfx.zone(); if (zi === 3 && !S.seen.space) { S.seen.space = 1; S.pendingSpace = true; } }
+  if (R.chartT) for (const k in R.chartT) R.chartT[k] += dt; // found constellations draw their lines in
+  if (R.alt > 10000000 && chartsOpen() && !R.crashed) { // constellations past the Edge
+    S.charted = S.charted || {}; R.charts = R.charts || [];
+    for (const ch of STAR_CHARTS) if (R.alt >= ch.alt && !S.charted[ch.id]) {
+      S.charted[ch.id] = 1; R.charts.push(ch.id); R.chartT = R.chartT || {}; R.chartT[ch.id] = 0;
+      banner(ch.name, '#ffe58a', 2.6, 'NEW CONSTELLATION!'); sfx.chime(); sfx.bigcoin(); confetti(R.x, R.py + 120, 50);
+      if (R.faces.length) R.bubble = { s: pick(['It looks just like it!', 'Write that down!', 'Ooooh, pretty!', 'Our very own stars!']), t: 0 };
+    }
+  }
   if (R.alt > 990000 && !R.teaSeen) { R.teaSeen = 1; if (R.faces.length) R.bubble = { s: pick(['Is that... a TEAPOT?', 'Who left a teapot up here?', 'Tea break in space!']), t: 0 }; }
   if (R.alt > 1350000 && !R.pipWave) { R.pipWave = 1; banner('Pip\u2019s home planet!', '#c8ffb0', 2.6, 'THE WHOLE FAMILY IS WAVING'); sfx.cheer(); if (!S.seen.pipPlanet) { S.seen.pipPlanet = 1; } }
   if (R.daily && !R.dailyDone && R.alt >= R.daily.target) { R.dailyDone = true; banner('SPECIAL DELIVERED!', '#f15bb5', 2); sfx.cheer(); buzz([30, 40, 30]); confetti(R.x, R.py, 50); fireworks(R.x, R.py + 40, 3); floater(R.x, R.py + 80, `${R.daily.to} got ${R.daily.cargo}!`, '#ffd6e6', 18); }
@@ -5026,6 +5067,9 @@ function computeResult() {
   if (record) rows.push(['New record bonus', Math.round(altPay * 0.25)]);
   if (st.gift) rows.push(['Gift shop sales', st.gift]);
   if (st.museum) rows.push(['Space Museum tickets', 40000 * st.museum]);
+  { const found = (R.charts || []).map(id => STAR_CHARTS.find(c => c.id === id)).filter(Boolean); // one row each, or one row for a big haul
+    if (found.length > 2) rows.push([`${found.length} new constellations`, found.reduce((a, c) => a + c.reward, 0)]);
+    else for (const ch of found) rows.push([`Constellation: ${ch.name}`, ch.reward]); }
   if (st.catcher && R.boosterDropped) { // the tower catches the spent boosters; the yard shows the catch when you get back
     const both = R.visStage === 2;
     rows.push([both ? 'Booster + stage catch' : 'Booster catch', Math.round(STAT.recover(st.catcher) * (both ? 1.5 : 1))]);
@@ -5061,6 +5105,7 @@ function computeResult() {
   if (R.smashed >= 3) badges.push(`${R.smashed} smashed`);
   if (R.wishOk) badges.push(R.wishOk > 1 ? `${R.wishOk} wishes granted` : 'Wish granted');
   if (R.foundLost) badges.push('Lost item found');
+  if (R.charts && R.charts.length) badges.push(R.charts.length > 1 ? `${R.charts.length} constellations` : 'Constellation found');
   if (rivalWon) badges.push('Rival beaten');
   if ((R.nearMiss || 0) >= 3) badges.push(`${R.nearMiss} close calls`);
   if (jobsPaid) badges.push(jobsPaid > 1 ? `${jobsPaid} jobs done` : 'Job done');
@@ -5076,6 +5121,8 @@ function computeResult() {
   if (R.delivered && R.faces) { S.met = S.met || {}; for (const f of R.faces) if (GUESTS[f]) S.met[f] = (S.met[f] || 0) + 1; }
   if (R.delivered && r && r.id === 'x5') S.met.ember = (S.met.ember || 0) + 1; // she moves into the shed
   if (alt > S.bestAlt) S.bestAlt = alt;
+  if (r && r.fr && !R.delivered && !routeDone(r.id)) { S.frTries = S.frTries || {}; S.frTries[r.id] = (S.frTries[r.id] || 0) + 1; }
+  if (r && R.delivered && S.frTries) delete S.frTries[r.id];
   if (r && R.delivered) {
     const rec = S.routes[r.id] || { done: false, stars: 0, runs: 0 };
     rec.done = true; rec.stars = Math.max(rec.stars, stars); rec.runs++;
@@ -5146,6 +5193,8 @@ const ACH = [
   { id: 'bandit', name: 'Lost Luggage Hero', desc: 'Catch the Comet Bandit and win the luggage back', test: () => (S.stats.bandit || 0) >= 1, reward: 30000 },
   { id: 'statue', name: 'Pebbleton’s Pride', desc: 'Build the Golden Ada Statue', test: () => lvl('statue') > 0, reward: 1000000 },
   { id: 'town', name: 'Town Planner', desc: 'Finish every Pebbleton town project', test: () => UPGRADES.filter(u => u.br === 'town').every(u => lvl(u.id) >= u.max), reward: 3000000 },
+  { id: 'stargazer', name: 'Stargazer', desc: 'Find a constellation past the Edge of the Map', test: () => chartedN() >= 1, reward: 600000 },
+  { id: 'atlas', prog: () => [chartedN(), STAR_CHARTS.length], name: 'Sky Atlas', desc: 'Find all eight constellations', test: () => chartedN() >= STAR_CHARTS.length, reward: 6000000 },
   { id: 'gobble', name: 'Unslurpable', desc: 'Escape the Gobble Nebula without a scratch', test: () => (S.stats.gobble || 0) >= 1, reward: 400000 },
   { id: 'kraken', name: 'Eight-Arm Escape', desc: 'Slip past every arm of the Space Kraken', test: () => S.stats.kraken >= 1, reward: 20000 },
   { id: 'guide', prog: () => [GUIDE.filter(guideSeen).length, GUIDE.length], name: 'Sky Spotter', desc: 'Fill every page of the Sky Guide', test: () => GUIDE.every(guideSeen), reward: 50000 },
@@ -5166,6 +5215,8 @@ const ACH = [
 const T_ = (t, fs = 12) => `<text x="32" y="${28 + fs * 0.36}" text-anchor="middle" font-size="${fs}" font-weight="900" font-family="Fredoka, 'Arial Rounded MT Bold', Nunito, sans-serif" fill="${INK}" stroke="none">${t}</text>`;
 const T_KM = (n, fs) => `<text x="32" y="${27.5 + fs * 0.1}" text-anchor="middle" font-size="${fs}" font-weight="900" font-family="Fredoka, 'Arial Rounded MT Bold', Nunito, sans-serif" fill="${INK}" stroke="none">${n}</text><text x="32" y="38" text-anchor="middle" font-size="7.5" font-weight="800" font-family="Fredoka, 'Arial Rounded MT Bold', Nunito, sans-serif" fill="#5b4e72" stroke="none">km</text>`;
 const ACH_SYM = {
+  stargazer: '<path d="M14 40L24 22 36 30 48 14" fill="none" stroke="#e0a800" stroke-width="2.5" stroke-dasharray="0"/><path d="M14 36l1.6 3.4 3.4 1.6-3.4 1.6L14 46l-1.6-3.4L9 41l3.4-1.6zM24 17l1.6 3.4 3.4 1.6-3.4 1.6L24 27l-1.6-3.4L19 22l3.4-1.6zM36 25l1.6 3.4 3.4 1.6-3.4 1.6L36 35l-1.6-3.4L31 30l3.4-1.6zM48 9l1.6 3.4 3.4 1.6-3.4 1.6L48 19l-1.6-3.4L43 14l3.4-1.6z" fill="#fff6c8" stroke-width="1.5"/>',
+  atlas: '<path d="M14 16l12-4 12 4 12-4v30l-12 4-12-4-12 4z" fill="#2a1450" stroke-width="2.5"/><path d="M26 12v30M38 16v30" stroke-width="2"/><path d="M18 34l5-9 8 5 6-10 7 6" fill="none" stroke="#ffd93d" stroke-width="2"/><circle cx="18" cy="34" r="1.8" fill="#fff6c8" stroke="none"/><circle cx="23" cy="25" r="1.8" fill="#fff6c8" stroke="none"/><circle cx="31" cy="30" r="1.8" fill="#fff6c8" stroke="none"/><circle cx="37" cy="20" r="1.8" fill="#fff6c8" stroke="none"/><circle cx="44" cy="26" r="1.8" fill="#fff6c8" stroke="none"/>',
   fly1: '<path d="M32 15c5 4 7 9 7 13v6H25v-6c0-4 2-9 7-13z" fill="#fff6e5"/><circle cx="32" cy="25" r="2.6" fill="#4d96ff" stroke-width="2"/><path d="M25 30l-4 6h4M39 30l4 6h-4" fill="#ff5a5f" stroke-width="2"/><path d="M29 35l3 5 3-5" fill="#ff9f43" stroke-width="2"/>',
   perf5: '<circle cx="32" cy="28" r="12" fill="#fff"/><circle cx="32" cy="28" r="7.5" fill="#ff5a5f" stroke-width="2.5"/><circle cx="32" cy="28" r="3" fill="#fff" stroke-width="2"/>',
   coins500: '<circle cx="32" cy="28" r="11" fill="#ffd93d"/><circle cx="32" cy="28" r="6.5" stroke="#e0a800" stroke-width="2.5"/>',
@@ -5333,6 +5384,7 @@ function render() {
   ctx.fillStyle = sg; ctx.fillRect(0, 0, W, H);
   drawStars(alt);
   if (alt > 700000) drawFrontierSky(alt);
+  if (alt > 9000000 && chartsOpen()) drawStarChartsSky(alt);
   drawSunAndPlanets(alt);
   // shake
   let sx = 0, sy = 0;
@@ -5483,6 +5535,21 @@ function drawStars(alt) {
   ctx.restore();
 }
 // ---- the frontier skies: nebula clouds, aurora curtains and, at the very end, the old map's parchment
+// constellations drift past as you climb through them; charted ones glow gold and draw their lines in
+function drawStarChartsSky(alt) {
+  const la = Math.log(Math.max(1, alt)), size = Math.min(W, H) * 0.2;
+  STAR_CHARTS.forEach((ch, i) => {
+    const d = la - Math.log(ch.alt); if (d < -0.09 || d > 0.07) return;
+    const y = H * 0.36 + d * H * 9, x = W / 2 + (i % 2 ? 1 : -1) * Math.min(W * 0.2, 240);
+    const a = clamp((0.09 + d) / 0.03, 0, 1) * clamp((0.07 - d) / 0.03, 0, 1);
+    const lit = !!(S.charted && S.charted[ch.id]), R = G.R, ct = R && R.chartT && R.chartT[ch.id] != null ? R.chartT[ch.id] : null;
+    ctx.save(); ctx.globalAlpha = a * (lit ? 1 : 0.8); ctx.translate(x, y);
+    if (lit) { const g = ctx.createRadialGradient(0, 0, 4, 0, 0, size * 1.4); g.addColorStop(0, 'rgba(255,229,138,.22)'); g.addColorStop(1, 'rgba(255,229,138,0)'); ctx.fillStyle = g; circ(ctx, 0, 0, size * 1.4); ctx.fill(); }
+    drawChartShape(ctx, ch, size, ct == null ? 1 : clamp((ct - 0.2) / 2, 0, 1), lit, G.t);
+    if (lit) { ctx.globalAlpha *= ct == null ? 1 : clamp((ct - 2.3) / 0.6, 0, 1); text(ctx, ch.name, 0, size * 1.2, Math.max(14, size * 0.15), '#ffe58a', 'center', INK, 3); }
+    ctx.restore();
+  });
+}
 function drawFrontierSky(alt) {
   const z = G.cam.z, py = G.cam.py * z, la = Math.log10(Math.max(alt, 1));
   const nebK = smooth(invLerp(5.9, 6.0, la)) * (1 - smooth(invLerp(6.42, 6.55, la)));   // 0.8M -> 1M, gone by 3.5M
@@ -7465,7 +7532,7 @@ const UI = (() => {
     let kind, name, sub, warn = false, icon;
     fixDailyRoute();
     if (S.route === 'daily') { const d = todaysDaily(); kind = 'Daily special'; name = d.cargo.charAt(0).toUpperCase() + d.cargo.slice(1); sub = `${fmtAlt(d.target)} · ${TWISTS[d.twist].name}`; icon = 'parcel'; }
-    else if (!r) { kind = 'Free flight'; name = 'Just go high!'; sub = `Best: ${fmtAlt(S.bestAlt)}`; icon = 'gate'; }
+    else if (!r) { const nc = chartsOpen() && nextChart(); kind = nc ? 'Star hunt' : 'Free flight'; name = nc ? nc.name : 'Just go high!'; sub = nc ? `Constellation at ${fmtAlt(nc.alt)}` : `Best: ${fmtAlt(S.bestAlt)}`; icon = 'gate'; }
     else {
       const done = routeDone(r.id);
       kind = done ? 'Regular service' : (r.id === 'r0' ? 'Mission' : 'Next route');
@@ -7477,7 +7544,7 @@ const UI = (() => {
     }
     const ic = routeIconCanvas(icon, 40); ic.className = 'rc-ico'; ic.style.width = '40px'; ic.style.height = '40px';
     c.appendChild(ic);
-    const t = el('div', 'rc-t', `<div class="rc-k">${kind}</div><div class="rc-n">${name}</div><div class="rc-s" style="${warn ? 'color:#d63a3f' : ''}">${sub}</div>`);
+    const t = el('div', 'rc-t', `<div class="rc-k">${kind}</div><div class="rc-n${name.replace(/<span class="rc-pre">.*?<\/span>/, '').length > 14 ? ' long' : ''}">${name}</div><div class="rc-s" style="${warn ? 'color:#d63a3f' : ''}">${sub}</div>`);
     c.appendChild(t);
     c.onclick = () => { sfx.click(); if (routeDone('r0')) openMap(); else toast('Finish the <b>Test Hop</b> first!'); };
   }
@@ -7500,6 +7567,26 @@ const UI = (() => {
   }
 
   // ---------- map
+  function constellationCard() { // the sky atlas past the Edge: found ones in gold, the rest as dashed guesses
+    const n = chartedN(), nc = nextChart(), card = el('div', 'route consts');
+    card.appendChild(el('div', 'c-head', `<div class="r-name">Constellations</div><div class="r-desc">${nc ? `<b>${n} of ${STAR_CHARTS.length}</b> found. Fly a Free Flight past the Edge to find the rest. Next: <b>${nc.name}</b> at ${fmtAlt(nc.alt)}.` : `All ${STAR_CHARTS.length} found! The whole sky atlas is yours.`}</div>`));
+    const grid = el('div', 'c-grid');
+    STAR_CHARTS.forEach(ch => {
+      const lit = !!(S.charted && S.charted[ch.id]), sz = 64, cnv = document.createElement('canvas');
+      cnv.width = cnv.height = sz * 2; const c = cnv.getContext('2d'); c.scale(2, 2);
+      rr(c, 1.5, 1.5, sz - 3, sz - 3, 12); const g = c.createLinearGradient(0, 0, 0, sz); g.addColorStop(0, lit ? '#2a1450' : '#2b2a3a'); g.addColorStop(1, lit ? '#123c4a' : '#3a3850'); c.fillStyle = g; c.fill();
+      c.save(); c.translate(sz / 2, sz / 2); drawChartShape(c, ch, sz * 0.36, 1, lit, 1.3); c.restore();
+      const cell = el('div', 'c-cell' + (lit ? ' lit' : '')); cell.appendChild(cnv);
+      cell.appendChild(el('div', 'c-n', lit ? ch.name : ch === nc ? fmtAlt(ch.alt) : '???'));
+      grid.appendChild(cell);
+    });
+    card.appendChild(grid);
+    if (nc && S.route !== 'free') {
+      const b = el('button', 'btn blue', 'Free Flight'); b.addEventListener('click', () => { sfx.click(); S.route = 'free'; saveGame(); openMap(); renderRouteChip(); renderStatCard(); });
+      const act = el('div', 'r-act'); act.appendChild(b); card.appendChild(act);
+    }
+    return card;
+  }
   function openMap() {
     const list = $('map-list'); list.innerHTML = '';
     $('scr-map').querySelector('h2').textContent = 'Route Map';
@@ -7549,6 +7636,7 @@ const UI = (() => {
       frWrap = el('div', 'skymap'); list.appendChild(frWrap);
       lockedShown = 0;
       FRONT_ROUTES.forEach(routeCard);
+      if (chartsOpen()) list.appendChild(constellationCard());
     }
     if (dailyUnlocked()) {
       const d = todaysDaily(), tw = TWISTS[d.twist], cd = CONDS[d.cond];
@@ -7571,11 +7659,11 @@ const UI = (() => {
       list.appendChild(card);
     }
     if (routeDone('r0')) {
-      const cur = S.route === 'free';
+      const cur = S.route === 'free', nc = chartsOpen() && nextChart();
       const card = el('div', 'route' + (cur ? ' cur' : ''));
       const ic = routeIconCanvas('gate', 64); ic.classList.add('r-ico'); ic.style.width = '64px'; ic.style.height = '64px';
       card.appendChild(ic);
-      card.appendChild(el('div', 'r-main', `<div class="r-name">Free Flight</div><div class="r-desc">No passengers, no destination. Just you, the sky, and your record (${fmtAlt(S.bestAlt)}).</div>`));
+      card.appendChild(el('div', 'r-main', `<div class="r-name">Free Flight</div><div class="r-desc">No passengers, no destination. Just you, the sky, and your record (${fmtAlt(S.bestAlt)}).${nc ? ` Next constellation: <b>${nc.name}</b> at ${fmtAlt(nc.alt)}.` : ''}</div>`));
       const b = el('button', 'btn ' + (cur ? 'go' : 'blue'), cur ? 'Selected' : 'Pick');
       b.addEventListener('click', () => { sfx.click(); S.route = 'free'; saveGame(); openMap(); renderRouteChip(); renderStatCard(); });
       const act = el('div', 'r-act'); act.appendChild(b); card.appendChild(act);
@@ -7599,7 +7687,7 @@ const UI = (() => {
   }
   function startNewLine() {
     for (const p of PAINTS) if (paintUnlocked(p)) S.seen['paintown_' + p.id] = 1;
-    const keep = { lost: S.lost, lostTries: S.lostTries, mail: S.mail, mailGot: S.mailGot, met: S.met, daily: S.daily ? Object.assign({}, S.daily, { target: 0 }) : undefined, ach: S.ach, stats: S.stats, rec: S.rec, log: S.log, settings: S.settings, seen: S.seen, viewed: S.viewed, tabsSeen: S.tabsSeen, paint: S.paint, trail: S.trail, earned: S.earned, flights: S.flights, avg: S.avg, line: (S.line || 1) + 1 };
+    const keep = { lost: S.lost, lostTries: S.lostTries, mail: S.mail, mailGot: S.mailGot, met: S.met, daily: S.daily ? Object.assign({}, S.daily, { target: 0 }) : undefined, ach: S.ach, stats: S.stats, rec: S.rec, log: S.log, settings: S.settings, seen: S.seen, viewed: S.viewed, tabsSeen: S.tabsSeen, paint: S.paint, trail: S.trail, earned: S.earned, flights: S.flights, avg: S.avg, charted: S.charted, line: (S.line || 1) + 1 };
     S = Object.assign(defaultSave(), keep);
     S.seen.endCredits = 0; S.pendingLine = true;
     checkAchievements(); saveGame();
