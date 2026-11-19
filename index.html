@@ -3705,6 +3705,7 @@ function updateFlight(dt) {
   // --- milestones
   const zi = zoneIndex(R.alt);
   if (zi > R.zi) { R.zi = zi; banner(ZONES[zi].name, '#bff8ff', 2.2, 'NOW ENTERING'); sfx.zone(); if (zi === 3 && !S.seen.space) { S.seen.space = 1; S.pendingSpace = true; } }
+  if (R.alt > 990000 && !R.teaSeen) { R.teaSeen = 1; if (R.faces.length) R.bubble = { s: pick(['Is that... a TEAPOT?', 'Who left a teapot up here?', 'Tea break in space!']), t: 0 }; }
   if (R.alt > 1350000 && !R.pipWave) { R.pipWave = 1; banner('Pip\u2019s home planet!', '#c8ffb0', 2.6, 'THE WHOLE FAMILY IS WAVING'); sfx.cheer(); if (!S.seen.pipPlanet) { S.seen.pipPlanet = 1; } }
   if (R.daily && !R.dailyDone && R.alt >= R.daily.target) { R.dailyDone = true; banner('SPECIAL DELIVERED!', '#f15bb5', 2); sfx.cheer(); buzz([30, 40, 30]); confetti(R.x, R.py, 50); fireworks(R.x, R.py + 40, 3); floater(R.x, R.py + 80, `${R.daily.to} got ${R.daily.cargo}!`, '#ffd6e6', 18); }
   if (!R.recordShown && R.alt > S.bestAlt) { R.recordShown = true; banner('NEW RECORD!', '#ffd93d', 1.8); sfx.record(); confetti(R.x, R.py, 30); }
@@ -4613,6 +4614,7 @@ const BODIES = [
   { alt: 110000, kind: 'mars', x: 0.22, size: 0.9 },
   { alt: 240000, kind: 'saturn', x: 0.76, size: 1.1 },
   { alt: 650000, kind: 'gate', x: 0.3, size: 1 },
+  { alt: 1000000, kind: 'teapot', x: 0.24, size: 0.55, fall: true }, // somebody had to check
   { alt: 1500000, kind: 'pip', x: 0.7, size: 1.15 },
 ];
 function drawSunAndPlanets(alt) {
@@ -4704,8 +4706,39 @@ function drawBlimp(x, y, r) {
   ctx.beginPath(); ctx.ellipse(-98, 0, 3, 14 * Math.abs(sp) + 2, 0, 0, TAU); fillStroke(ctx, '#c9ced8', 2.5);
   ctx.restore();
 }
+// a polka-dot teapot drifting through deep space, about 1,000 km up
+function drawTeapot(x, y, r) {
+  const u = r / 100;
+  ctx.save(); ctx.translate(x, y + Math.sin(G.t * 0.7) * 4 * u); ctx.scale(u, u); ctx.rotate(Math.sin(G.t * 0.35) * 0.12);
+  // steam curls from the spout
+  ctx.save(); ctx.globalAlpha *= 0.7; ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 6; ctx.lineCap = 'round';
+  for (let i = 0; i < 3; i++) { const k = (G.t * 0.5 + i / 3) % 1; ctx.globalAlpha = 0.7 * (1 - k); ctx.beginPath(); const bx = 112 + Math.sin(k * 6 + i) * 8, by = -58 - k * 80; ctx.moveTo(bx, by); ctx.bezierCurveTo(bx + 14, by - 12, bx - 14, by - 22, bx, by - 34); ctx.stroke(); }
+  ctx.restore();
+  ink(ctx, 4);
+  // handle: a thick ring drawn as ink then colour
+  ctx.lineWidth = 22; ctx.beginPath(); ctx.arc(-70, -4, 30, Math.PI * 0.5, Math.PI * 1.5); ctx.stroke();
+  ctx.strokeStyle = '#ff8ad0'; ctx.lineWidth = 13; ctx.stroke(); ink(ctx, 4);
+  // spout
+  ctx.beginPath(); ctx.moveTo(52, -14); ctx.quadraticCurveTo(96, -12, 108, -54); ctx.lineTo(122, -50); ctx.quadraticCurveTo(110, -2, 58, 18); ctx.closePath(); fillStroke(ctx, '#ff8ad0', 4);
+  // body with polka dots
+  ctx.beginPath(); ctx.ellipse(0, 0, 74, 56, 0, 0, TAU); fillStroke(ctx, '#ff8ad0', 4);
+  ctx.save(); ctx.beginPath(); ctx.ellipse(0, 0, 72, 54, 0, 0, TAU); ctx.clip(); ctx.fillStyle = '#fff6e5';
+  for (const [dx, dy, dr] of [[-36, -22, 9], [10, -30, 7], [40, -4, 10], [-14, 12, 11], [24, 30, 8], [-50, 22, 7], [56, 26, 6]]) { circ(ctx, dx, dy, dr); ctx.fill(); }
+  ctx.fillStyle = 'rgba(43,34,64,.13)'; ctx.beginPath(); ctx.ellipse(10, 40, 80, 30, 0, 0, TAU); ctx.fill();
+  ctx.restore();
+  ctx.beginPath(); ctx.ellipse(0, 0, 74, 56, 0, 0, TAU); ctx.stroke();
+  // lid and knob
+  ctx.beginPath(); ctx.ellipse(0, -52, 38, 12, 0, 0, TAU); fillStroke(ctx, '#ffd93d', 4);
+  circ(ctx, 0, -68, 10); fillStroke(ctx, '#ffd93d', 4);
+  // foot
+  rr(ctx, -40, 46, 80, 14, 7); fillStroke(ctx, '#ffd93d', 4);
+  // a shine
+  ctx.fillStyle = 'rgba(255,255,255,.7)'; ctx.beginPath(); ctx.ellipse(-40, -26, 9, 18, 0.6, 0, TAU); ctx.fill();
+  ctx.restore();
+}
 function drawPlanet(kind, x, y, r) {
   if (kind === 'castle') { drawSkyCastle(x, y, r); return; }
+  if (kind === 'teapot') { drawTeapot(x, y, r); return; }
   if (kind === 'blimp') { drawBlimp(x, y, r); return; }
   ink(ctx, 4);
   if (kind === 'moon') {
