@@ -221,7 +221,7 @@ button{font-family:var(--font)}
 .route .r-name{font-size:19px;font-weight:900;line-height:1.05}
 .route .r-meta{display:flex;flex-wrap:wrap;gap:6px;margin-top:5px}
 .chip{font-size:12px;font-weight:900;border:3px solid var(--ink);border-radius:999px;padding:1px 8px;background:var(--paper);white-space:nowrap}
-.chip.alt{background:#d8f0ff}.chip.pax{background:#ffe3f1}.chip.pay{background:#fff1b8}.chip.warn{background:#ffd0d0}.chip.ok{background:#d7f7dc}
+.chip.alt{background:#d8f0ff}.chip.pax{background:#ffe3f1}.chip.pay{background:#fff1b8}.chip.warn{background:#ffd0d0}.chip.ok{background:#d7f7dc}.chip.twist{background:#ead9ff}.chip.streak{background:#ffb4a2;font-size:11px;vertical-align:2px}.route.daily{background:linear-gradient(135deg,#fff6e5 60%,#ffe3f1)}.route .twists{margin-top:5px}.route .twists .chip{font-size:11px;margin-right:2px}
 .ach-bar{position:relative;height:16px;margin-top:6px;border:3px solid var(--ink);border-radius:999px;background:#efe6d6;overflow:hidden}
 .ach-bar i{position:absolute;left:0;top:0;bottom:0;background:linear-gradient(90deg,#4fd8ff,#5fd068)}
 .ach-bar span{position:relative;display:block;text-align:center;font-size:10px;font-weight:900;line-height:10px}
@@ -254,6 +254,12 @@ button{font-family:var(--font)}
 .rv-s{color:#e0a800;font-size:15px;letter-spacing:1px}
 .rv-s span{color:var(--ink2);font-size:12px;letter-spacing:0;margin-left:4px}
 #scr-results .panel{overflow-y:auto}
+@media (max-width:560px){
+  .route{display:grid;grid-template-columns:64px minmax(0,1fr);column-gap:12px;row-gap:4px;align-items:start}
+  .route .r-ico{grid-row:1 / span 2;align-self:center}
+  .route .r-act{grid-column:2;justify-self:end}
+  .route .r-act .btn{padding:6px 16px;font-size:16px}
+}
 @media (max-width:600px),(max-height:700px){
   .res-title{font-size:26px;padding-top:10px}
   .res-sub{font-size:13px}
@@ -467,7 +473,7 @@ function defaultSave() {
     seen: {},          // story / disclosure flags
     viewed: {},        // upgrade nodes the player has looked at
     tabsSeen: {},
-    stats: { coins: 0, hits: 0, perfect: 0, rings: 0, smashed: 0, pax: 0, time: 0, jobs: 0, nights: 0, close: 0, pokes: 0, king: 0, whale: 0, kraken: 0 },
+    stats: { coins: 0, hits: 0, perfect: 0, rings: 0, smashed: 0, pax: 0, time: 0, jobs: 0, nights: 0, close: 0, pokes: 0, king: 0, whale: 0, kraken: 0, daily: 0 },
     ach: {},
     cond: 'clear', jobs: [], avg: { coins: 8, rings: 0.6, close: 0.6, alt: 500, v: 110, total: 110, smash: 0 },
     settings: { music: true, sfx: true, shake: true, ghost: true },
@@ -1400,7 +1406,7 @@ function physStep(R, st, dt, ctl) {
   if (R.dropFuel > 0) m += st.dropMass;
   if (R.stage === 2) m -= st.stage1Mass;
   m = Math.max(0.4, m);
-  const g = gravityAt(R.alt), rho = airAt(R.alt), v = R.vy;
+  const g = gravityAt(R.alt) * (st.gMul || 1), rho = airAt(R.alt), v = R.vy;
   const a = (thrust * ctl.tiltCos) / m - g - st.cd * rho * v * Math.abs(v) - st.spaceK * (1 - rho) * v * R.kMul;
   R.vy += a * dt;
   R.alt += R.vy * dt;
@@ -2086,7 +2092,7 @@ function routeIconCanvas(kind, size = 64) {
   const c = cnv.getContext('2d'); c.scale(2, 2);
   c.save(); c.translate(size / 2, size / 2);
   rr(c, -size / 2 + 2, -size / 2 + 2, size - 4, size - 4, 14);
-  const bg = { dummy: '#bfe9ff', cafe: '#bfe9ff', storm: '#8fb8e8', observ: '#5b86d6', diner: '#16285a', hotel: '#1d3f86', moon: '#111a3a', mars: '#3a1420', saturn: '#2a1450', gate: '#123c4a' }[kind];
+  const bg = { dummy: '#bfe9ff', cafe: '#bfe9ff', storm: '#8fb8e8', observ: '#5b86d6', diner: '#16285a', hotel: '#1d3f86', moon: '#111a3a', mars: '#3a1420', saturn: '#2a1450', gate: '#123c4a', parcel: '#ffd6e6' }[kind];
   c.fillStyle = bg; c.fill(); c.lineWidth = 3; c.strokeStyle = INK; c.stroke();
   c.save(); rr(c, -size / 2 + 2, -size / 2 + 2, size - 4, size - 4, 14); c.clip();
   if (kind === 'dummy') { c.translate(0, 2); drawFace(c, 'buckley', 16, 'happy', 0); }
@@ -2099,6 +2105,7 @@ function routeIconCanvas(kind, size = 64) {
   else if (kind === 'observ') { c.translate(0, 4); drawStation(c, 'observ', 0, 0.19); }
   else if (kind === 'diner') { for (let i = 0; i < 10; i++) { c.fillStyle = '#fff'; circ(c, hash(i * 5) * size - size / 2, hash(i * 9) * size - size / 2, 1); c.fill(); } drawStation(c, 'diner', 0, 0.135); }
   else if (kind === 'cafe') { drawStation(c, 'cafe', 0, 0.2); }
+  else if (kind === 'parcel') { c.translate(0, 4); drawParcel(c, size / 52); }
   c.restore();
   c.restore();
   return cnv;
@@ -2145,9 +2152,73 @@ function rollCond() {
 function curCond() { const id = (G.R && G.R.cond) || S.cond || 'clear'; return CONDS[id] || CONDS.clear; }
 function condK(alt) { return 1 - invLerp(3500, 11000, alt); }
 
+// ---------------------------------------------------------------- daily special delivery (same mission for everyone on a given day)
+const DAILY_CARGO = [
+  ['a birthday cake', 'the Mayor'], ['a grand piano', 'Maestro Plink'], ['a very nervous goldfish', 'little Pip'], ['twelve hot pizzas', 'the night shift'],
+  ['a jar of moon jam', 'Granny Fig'], ['a lost teddy bear', 'Rosie'], ['a wedding cake', 'Tom and Tia'], ['fresh croissants', 'the Cloud Café'],
+  ['a shiny trumpet', 'the town band'], ['a sack of fan mail', 'Buckley'], ['spare socks', 'the hotel guests'], ['a giant cheese wheel', 'Professor Gouda'],
+];
+const TWISTS = {
+  glass:   { name: 'Glass cannon', fx: 'Only 2 hearts, but +30% thrust', f: 0.75 },
+  feather: { name: 'Feather day', fx: 'Gravity is 20% weaker', f: 0.92 },
+  magnet:  { name: 'Super magnet', fx: 'Coins fly to you', f: 0.9 },
+  rush:    { name: 'Rush hour', fx: 'Busy skies, double coins', f: 0.78 },
+  turbo:   { name: 'Turbo juice', fx: '+25% thrust, 30% less fuel', f: 0.88 },
+  boss:    { name: 'Boss day', fx: 'A sky boss is waiting up there', f: 0.88 },
+};
+const DAILY_CONDS = ['sunset', 'night', 'tailwind', 'coins', 'rings'];
+const DAILY_FACE = ['kid', 'nana', 'pip', 'chef', 'bowler', 'farmer', 'diva'];
+const dayKey = (d = new Date()) => `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`;
+function strHash(str) { let h = 2166136261; for (let i = 0; i < str.length; i++) { h ^= str.charCodeAt(i); h = Math.imul(h, 16777619); } return h >>> 0; }
+function seededRng(seed) { let a = seed >>> 0; return () => { a = (a + 0x6D2B79F5) >>> 0; let t = a; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; }
+const dailyUnlocked = () => routeDone('r1') || (S.line || 1) > 1;
+function niceAlt(a) { const q = a < 10000 ? 100 : a < 100000 ? 1000 : 10000; return Math.max(q, Math.round(a / q) * q); }
+function applyTwist(st, id) {
+  st = Object.assign({}, st);
+  if (id === 'glass') { st.hp = Math.min(st.hp, 2); st.thrust *= 1.3; }
+  else if (id === 'feather') st.gMul = 0.8;
+  else if (id === 'magnet') st.magnet = Math.max(st.magnet, 120) * 1.8;
+  else if (id === 'rush') { st.hazMul = 1.5; st.coinMul = 2; }
+  else if (id === 'turbo') { st.thrust *= 1.25; st.fuelCap *= 0.7; st.dropFuel *= 0.7; st.stage2 *= 0.7; }
+  return st;
+}
+function todaysDaily() {
+  const day = dayKey();
+  const rnd = seededRng(strHash('skyhop-daily-' + day));
+  const cargo = DAILY_CARGO[Math.floor(rnd() * DAILY_CARGO.length)];
+  const tids = Object.keys(TWISTS); let twist = tids[Math.floor(rnd() * tids.length)];
+  let cond = DAILY_CONDS[Math.floor(rnd() * DAILY_CONDS.length)];
+  if (DEBUG.daily) { twist = DEBUG.daily.twist || twist; cond = DEBUG.daily.cond || cond; }
+  const f = 0.8 + rnd() * 0.12;
+  const prev = S.daily || {};
+  if (prev.day !== day) S.daily = { day, target: 0, done: false, streak: prev.streak || 0, last: prev.last || '' };
+  if (!S.daily.target) {
+    const st = applyTwist(computeStats(), twist);
+    const sim = simulateFlight(st, { launchQ: 1.3, pax: 0 });
+    S.daily.target = niceAlt(Math.max(600, sim.alt * f * TWISTS[twist].f));
+  }
+  return { day, cargo: cargo[0], to: cargo[1], twist, cond, target: S.daily.target, done: !!S.daily.done, streak: S.daily.streak || 0 };
+}
+function dailyStreakAlive() { const d = S.daily; if (!d || !d.last) return 0; const y = dayKey(new Date(Date.now() - 864e5)); return d.last === dayKey() || d.last === y ? d.streak || 0 : 0; }
+function nextCondId() { if (S.route === 'daily' && dailyUnlocked() && S.daily && S.daily.day === dayKey() && !S.daily.done) return todaysDaily().cond; return CONDS[S.cond] ? S.cond : 'clear'; }
+function fixDailyRoute() {
+  if (S.route !== 'daily') return;
+  if (!dailyUnlocked() || todaysDaily().done) { const back = S.routeBeforeDaily && S.routeBeforeDaily !== 'daily' ? S.routeBeforeDaily : null; const nx = nextRoute(); S.route = back || (nx ? nx.id : 'free'); }
+}
+function drawParcel(c, s, t = 0) {
+  c.save(); c.scale(s, s); c.rotate(Math.sin(t * 2) * 0.06); ink(c, 3);
+  rr(c, -16, -12, 32, 26, 4); fillStroke(c, '#d9a066', 3);
+  c.fillStyle = '#f15bb5'; c.fillRect(-3, -12, 6, 26); c.fillRect(-16, -1, 32, 5);
+  c.lineWidth = 3; c.strokeStyle = INK; rr(c, -16, -12, 32, 26, 4); c.stroke();
+  c.beginPath(); c.ellipse(-6, -15, 6, 4, -0.4, 0, TAU); fillStroke(c, '#f15bb5', 2.5);
+  c.beginPath(); c.ellipse(6, -15, 6, 4, 0.4, 0, TAU); fillStroke(c, '#f15bb5', 2.5);
+  circ(c, 0, -13, 3); fillStroke(c, '#ff8ad0', 2);
+  c.restore();
+}
+
 // ---------------------------------------------------------------- flight setup
 function flightRoute() {
-  if (S.route === 'free') return null;
+  if (S.route === 'free' || S.route === 'daily') return null;
   let r = routeById(S.route);
   if (!r || !routeUnlocked(r)) r = nextRoute();
   return r;
@@ -2167,7 +2238,10 @@ function paxForRoute(r, st) {
 function padRestPy(look) { const d = rocketDims(look); return (d.BL / 2 + d.BH + 4) * G.rocketScale; }
 
 function prepareRocket() {
+  fixDailyRoute();
+  const daily = S.route === 'daily' ? todaysDaily() : null;
   G.st = computeStats(); G.look = rocketLook();
+  if (daily) G.st = applyTwist(G.st, daily.twist);
   const route = flightRoute();
   const px = paxForRoute(route, G.st);
   const R = newRocketState(G.st, { pax: px.pax });
@@ -2180,14 +2254,16 @@ function prepareRocket() {
     tumble: 0, chuteY: 0, capsule: null, spaceSeen: false, startPy: 0, coinStreak: 0, coinStreakT: 0, gustVx: 0, shownEngineOut: false,
     topV: 0, starsGot: 0, cleanAlt: 0, jobs: jobsUnlocked() && S.jobs && S.jobs.length ? S.jobs.map(j => Object.assign({}, j, { done: false, p: 0 })) : null, jobsDone: 0,
   });
-  R.cond = CONDS[S.cond] ? S.cond : 'clear';
+  R.cond = daily ? daily.cond : CONDS[S.cond] ? S.cond : 'clear';
+  R.daily = daily; R.dailyDone = false;
   const cd = CONDS[R.cond];
   if (cd.thrustMul) { G.st = Object.assign({}, G.st, { thrust: G.st.thrust * cd.thrustMul }); }
   R.startPy = R.py;
   R.trace = { a: [], x: [] }; R.traceT = 0; R.ghostBeat = false;
   R.boss = null; R.bossN = 0; R.bossOk = { storm: !S.seen.boss_storm || chance(0.4), whale: !S.seen.boss_whale || chance(0.45), kraken: !S.seen.boss_kraken || chance(0.4) };
+  if (daily && daily.twist === 'boss') R.bossOk = { storm: true, whale: true, kraken: true };
   const gh = S.ghosts && S.ghosts[route ? route.id : 'free'];
-  G.ghost = S.settings.ghost && gh && gh.a && gh.a.length > 4 ? gh : null;
+  G.ghost = !daily && S.settings.ghost && gh && gh.a && gh.a.length > 4 ? gh : null;
   G.R = R;
   G.obs = []; G.picks = []; G.parts = []; G.floaters = []; G.banners = []; G.station = null; G.warnings = [];
   G.spawnY = R.py + 260;
@@ -2201,7 +2277,8 @@ function enterLaunch() {
   UI.showScreen('flight');
   Music.play('flight');
   const cd = CONDS[G.R.cond];
-  if (cd && cd.fx) toast(`<b>${cd.name}:</b> ${cd.fx}`, 3000);
+  if (G.R.daily) { const d = G.R.daily, tw = TWISTS[d.twist]; toast(`<b>Special delivery:</b> ${d.cargo} to ${fmtAlt(d.target)}<br><b>${tw.name}:</b> ${tw.fx} · <b>${cd.name}:</b> ${cd.fx}`, 4200); }
+  else if (cd && cd.fx) toast(`<b>${cd.name}:</b> ${cd.fx}`, 3000);
   if (G.R.route && !G.R.paxOk && G.R.route.pax > 0) {
     toast(`Need <b>${G.R.route.pax} seats</b> for ${G.R.route.to}: flying without passengers`);
   }
@@ -2644,7 +2721,7 @@ function spawnChunk(y0, y1) {
   if (y0 < R.startPy + 380) return;
   const ease = (S.flights === 0 ? 0.5 : S.flights < 3 ? 0.75 : 1) * (S.settings.relaxed ? 0.7 : 1);
   for (const type in z.spawn) {
-    let rate = z.spawn[type] * k * ease;
+    let rate = z.spawn[type] * k * ease * (st.hazMul || 1);
     if (type === 'storm') rate *= 1 - 0.3 * st.weather;
     if (R.boss) rate *= 0.35; // keep the set piece readable
     const n = Math.floor(rate) + (Math.random() < rate % 1 ? 1 : 0);
@@ -2652,7 +2729,7 @@ function spawnChunk(y0, y1) {
   }
   // goodies
   const cnd = CONDS[R.cond] || CONDS.clear;
-  if (chance(0.42 * k * 3 * (cnd.coinRate || 1))) spawnCoins(cx + rand(-spread * 0.8, spread * 0.8), rand(y0, y1));
+  if (chance(0.42 * k * 3 * (cnd.coinRate || 1) * (st.coinMul || 1))) spawnCoins(cx + rand(-spread * 0.8, spread * 0.8), rand(y0, y1));
   const canFade = clamp(1 - (R.time - 40) / 40, 0.15, 1);
   if (chance(0.045 * k * 3 * st.canRate * canFade)) G.picks.push({ type: 'fuel', x: cx + rand(-spread * 0.7, spread * 0.7), py: rand(y0, y1), r: 16, seed: Math.random(), vx: 0, vy: 0 });
   if ((S.flights >= 2 || R.alt > 400) && chance(0.07 * k * 3 * (cnd.ringRate || 1))) G.picks.push({ type: 'ring', x: cx + rand(-spread * 0.6, spread * 0.6), py: rand(y0, y1), r: 46, seed: Math.random(), vx: 0, vy: 0, hit: false });
@@ -2734,6 +2811,7 @@ function updateFlight(dt) {
   // --- milestones
   const zi = zoneIndex(R.alt);
   if (zi > R.zi) { R.zi = zi; banner(ZONES[zi].name, '#bff8ff', 2.2, 'NOW ENTERING'); sfx.zone(); if (zi === 3 && !S.seen.space) { S.seen.space = 1; S.pendingSpace = true; } }
+  if (R.daily && !R.dailyDone && R.alt >= R.daily.target) { R.dailyDone = true; banner('SPECIAL DELIVERED!', '#f15bb5', 2); sfx.cheer(); buzz([30, 40, 30]); confetti(R.x, R.py, 50); floater(R.x, R.py + 80, `${R.daily.to} got ${R.daily.cargo}!`, '#ffd6e6', 18); }
   if (!R.recordShown && R.alt > S.bestAlt) { R.recordShown = true; banner('NEW RECORD!', '#ffd93d', 1.8); sfx.record(); confetti(R.x, R.py, 30); }
   if (R.route && !R.docked && R.alt >= R.route.alt) dock();
   // --- exhaust particles
@@ -3099,14 +3177,25 @@ function computeResult() {
   const record = alt > S.bestAlt && S.flights > 0;
   if (record) rows.push(['New record bonus', Math.round(altPay * 0.25)]);
   if (st.gift) rows.push(['Gift shop sales', st.gift]);
+  let dailyPaid = false;
+  if (R.daily && R.dailyDone && S.daily && S.daily.day === R.daily.day && !S.daily.done) {
+    const y = dayKey(new Date(Date.now() - 864e5));
+    const streak = S.daily.last === y ? (S.daily.streak || 0) + 1 : 1;
+    const pay = Math.round((150 + S.avg.total * 1.6) * (1 + 0.1 * Math.min(5, streak - 1)));
+    rows.push([`Special delivery: ${R.daily.cargo}`, pay]);
+    if (streak > 1) rows[rows.length - 1][0] += ` (${streak}-day streak!)`;
+    S.daily.done = true; S.daily.streak = streak; S.daily.last = R.daily.day; S.stats.daily = (S.stats.daily || 0) + 1;
+    dailyPaid = true;
+  }
   const line = S.line || 1;
   if (line > 1) { const base = rows.reduce((a, x) => a + x[1], 0); rows.push([`Line #${line} bonus +${(line - 1) * 50}%`, Math.round(base * 0.5 * (line - 1))]); }
   const jobsPaid = settleJobs(R, rows);
   const total = rows.reduce((s, x) => s + x[1], 0);
-  const core = rows.reduce((s, x) => s + (x[0].startsWith('Job:') || x[0] === 'First delivery bonus!' ? 0 : x[1]), 0);
+  const core = rows.reduce((s, x) => s + (x[0].startsWith('Job:') || x[0] === 'First delivery bonus!' || x[0].startsWith('Special delivery') ? 0 : x[1]), 0);
   S.avg.total = S.avg.total * 0.65 + core * 0.35;
   const badges = [];
   if (R.delivered) badges.push('Delivered!');
+  if (dailyPaid) badges.push('Special delivered!');
   if (record) badges.push('New record!');
   if (R.launchQ > 1.4) badges.push('Perfect launch');
   if (R.hits === 0 && R.time > 6) badges.push('No scratches');
@@ -3115,7 +3204,7 @@ function computeResult() {
   if ((R.nearMiss || 0) >= 3) badges.push(`${R.nearMiss} close calls`);
   if (jobsPaid) badges.push(jobsPaid > 1 ? `${jobsPaid} jobs done` : 'Job done');
   if (R.crashed) badges.push('Kaboom');
-  G.result = { faces: R.faces, rows, total, alt, crashed: R.crashed, delivered: R.delivered, route: r, firstTime, stars, record, badges, shown: false, zone: zoneAt(alt).name, time: R.time };
+  G.result = { faces: R.faces, rows, total, alt, crashed: R.crashed, delivered: R.delivered, route: r, firstTime, stars, record, badges, shown: false, zone: zoneAt(alt).name, time: R.time, daily: R.daily, dailyDone: R.dailyDone, dailyPaid };
   // ---- apply to save immediately (so closing the tab does not lose the flight)
   const prevFlights = S.flights;
   S.money += total; S.earned += total; S.flights++;
@@ -3134,6 +3223,7 @@ function computeResult() {
   }
   if (R.cond === 'night') S.stats.nights++;
   S.cond = rollCond();
+  fixDailyRoute();
   if (prevFlights === 0) S.pendingFirst = true;
   if (R.crashed && !S.seen.crash) S.pendingCrash = true;
   checkAchievements();
@@ -3179,6 +3269,7 @@ const ACH = [
   { id: 'whale', name: 'Whale Rider', desc: 'Catch a boost from Big Blue’s spout', test: () => S.stats.whale >= 1, reward: 2500 },
   { id: 'kraken', name: 'Eight-Arm Escape', desc: 'Slip past every arm of the Space Kraken', test: () => S.stats.kraken >= 1, reward: 20000 },
   { id: 'guide', prog: () => [GUIDE.filter(guideSeen).length, GUIDE.length], name: 'Sky Spotter', desc: 'Fill every page of the Sky Guide', test: () => GUIDE.every(guideSeen), reward: 50000 },
+  { id: 'daily', name: 'Special Courier', desc: 'Complete a Daily Special delivery', test: () => (S.stats.daily || 0) >= 1, reward: 3000 },
   { id: 'line2', name: 'Franchise', desc: 'Open a second Skyhop line after the finale', test: () => (S.line || 1) >= 2, reward: 5000 },
   { id: 'tickle', secret: true, name: 'Tickle Tank', desc: 'Poke your rocket 25 times in the workshop', test: () => (S.stats.pokes || 0) >= 25, reward: 250 },
   { id: 'fork', name: 'Decisions!', desc: 'Pick your first fork upgrade', test: () => UPGRADES.some(u => u.fork && lvl(u.id) > 0), reward: 500 },
@@ -3300,7 +3391,7 @@ function render() {
   if (G.cam.flash > 0) { ctx.globalAlpha = clamp(G.cam.flash * 2, 0, 0.8); ctx.fillStyle = G.cam.flashCol; ctx.fillRect(0, 0, W, H); ctx.globalAlpha = 1; }
 }
 function drawForecastSign(x, y) {
-  const id = CONDS[S.cond] ? S.cond : 'clear', c = CONDS[id];
+  const id = nextCondId(), c = CONDS[id];
   ctx.save(); ctx.translate(x, y); ink(ctx, 3);
   ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(0, -64); ctx.lineWidth = 5; ctx.stroke(); ctx.lineWidth = 3;
   ctx.rotate(Math.sin(G.t * 1.3) * 0.02);
@@ -3699,7 +3790,7 @@ function pokeHangar(sx, sy) {
     return true;
   }
   if (S.flights >= 4 && wx > 100 && wx < 152 && wpy > 0 && wpy < 100) {
-    const cd = CONDS[S.cond] || CONDS.clear; toast(`<b>Next flight:</b> ${cd.name}${cd.fx ? ': ' + cd.fx : ''}`); sfx.click(); return true;
+    const cd = CONDS[nextCondId()] || CONDS.clear; toast(`<b>Next flight:</b> ${cd.name}${cd.fx ? ': ' + cd.fx : ''}`); sfx.click(); return true;
   }
   return false;
 }
@@ -3717,6 +3808,23 @@ function drawStationAndRecord() {
       const vw = W / G.cam.z;
       ctx.save(); ctx.setLineDash([16, 12]); ctx.lineWidth = 4; ctx.strokeStyle = 'rgba(255,217,61,.9)'; ctx.beginPath(); ctx.moveTo(G.cam.x - vw, -py); ctx.lineTo(G.cam.x + vw, -py); ctx.stroke(); ctx.restore();
       text(ctx, 'BEST ' + fmtAlt(S.bestAlt), G.cam.x - vw / 2 + 90, -py - 16, 16, '#ffd93d');
+    }
+  }
+  // daily special: a customer balloon waits at the target height
+  if (R.daily && !R.dailyDone && R.alt < R.daily.target) {
+    const py = R.py + (R.daily.target - R.alt) * sc;
+    if (py - R.py < vh) {
+      const vw = W / G.cam.z;
+      ctx.save(); ctx.setLineDash([12, 10]); ctx.lineWidth = 5; ctx.strokeStyle = 'rgba(241,91,181,.9)'; ctx.beginPath(); ctx.moveTo(G.cam.x - vw, -py); ctx.lineTo(G.cam.x + vw, -py); ctx.stroke(); ctx.restore();
+      const bx = G.cam.x + Math.min(vw * 0.24, 240), by = -py - 70 + Math.sin(G.t * 1.6) * 6;
+      ctx.save(); ctx.translate(bx, by); ink(ctx, 3);
+      ctx.beginPath(); ctx.moveTo(-14, 26); ctx.lineTo(-9, 52); ctx.moveTo(14, 26); ctx.lineTo(9, 52); ctx.stroke();
+      ctx.beginPath(); ctx.ellipse(0, 0, 30, 34, 0, 0, TAU); fillStroke(ctx, '#ff8ad0', 3);
+      ctx.beginPath(); ctx.ellipse(0, 0, 12, 34, 0, 0, TAU); ctx.fillStyle = '#ffd6e6'; ctx.fill(); ctx.stroke();
+      rr(ctx, -12, 50, 24, 16, 4); fillStroke(ctx, '#c47a44', 3);
+      ctx.translate(0, 46); drawFace(ctx, DAILY_FACE[strHash(R.daily.to) % DAILY_FACE.length], 9, 'joy', G.t);
+      ctx.restore();
+      text(ctx, fmtAlt(R.daily.target), G.cam.x - vw / 2 + 90, -py - 16, 16, '#ffd6e6');
     }
   }
   // destination station
@@ -3827,7 +3935,7 @@ function recordTrace(R, dt) {
   }
 }
 function saveGhost(R) {
-  if (!R.trace || R.trace.a.length < 10) return;
+  if (!R.trace || R.trace.a.length < 10 || R.daily) return;
   S.ghosts = S.ghosts || {};
   const key = R.route ? R.route.id : 'free';
   const old = S.ghosts[key];
@@ -4031,7 +4139,7 @@ function drawProgressTrack() {
   const x = W - (small ? 22 : 34), y0 = H * (small ? 0.78 : 0.82), y1 = small ? 110 : 90;
   const r = R.route;
   const start = G.st.startAlt;
-  let goal = r ? r.alt : Math.max(S.bestAlt * 1.2, ZONES[Math.min(ZONES.length - 1, R.zi + 1)].alt);
+  let goal = r ? r.alt : R.daily ? R.daily.target : Math.max(S.bestAlt * 1.2, ZONES[Math.min(ZONES.length - 1, R.zi + 1)].alt);
   if (R.docked) goal = Math.max(goal, S.bestAlt, R.alt * 1.3);
   const maxA = Math.max(goal * 1.08, R.alt * 1.02, S.bestAlt * 1.02);
   const toY = a => y0 - (y0 - y1) * clamp(Math.sqrt(Math.max(0, a - start) / Math.max(1, maxA - start)), 0, 1);
@@ -4042,6 +4150,7 @@ function drawProgressTrack() {
   for (const zz of ZONES) { if (zz.alt <= start || zz.alt > maxA) continue; const yy = toY(zz.alt); ctx.strokeStyle = 'rgba(255,255,255,.6)'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(x - 10, yy); ctx.lineTo(x + 10, yy); ctx.stroke(); }
   if (S.bestAlt > start) { const yy = toY(S.bestAlt); ink(ctx, 2.5); ctx.beginPath(); ctx.moveTo(x - 4, yy); ctx.lineTo(x - 20, yy); ctx.stroke(); ctx.beginPath(); ctx.moveTo(x - 20, yy); ctx.lineTo(x - 20, yy - 14); ctx.lineTo(x - 32, yy - 10); ctx.lineTo(x - 20, yy - 6); fillStroke(ctx, '#ffd93d', 2.5); }
   if (r) { const yy = toY(r.alt); ctx.save(); ctx.translate(x, yy); ink(ctx, 3); circ(ctx, 0, 0, 11); fillStroke(ctx, R.docked ? '#5fd068' : '#ffffff', 3); text(ctx, R.docked ? '✓' : '★', 0, 1, 12, INK, 'center', null); ctx.restore(); if (!small) text(ctx, fmtAlt(r.alt), x - 18, yy, 12, '#fff', 'right'); }
+  if (R.daily) { const yy = toY(R.daily.target); ctx.save(); ctx.translate(x, yy); ink(ctx, 3); circ(ctx, 0, 0, 13); fillStroke(ctx, R.dailyDone ? '#5fd068' : '#ffd6e6', 3); if (R.dailyDone) text(ctx, '✓', 0, 1, 12, INK, 'center', null); else drawParcel(ctx, 0.4); ctx.restore(); if (!small) text(ctx, fmtAlt(R.daily.target), x - 18, yy, 12, '#fff', 'right'); }
   const gp = G.ghost && G.mode === 'flight' ? ghostAt(G.ghost, R.time) : null;
   if (gp && gp.fade > 0.05) { const yy = toY(gp.alt); ctx.save(); ctx.globalAlpha = 0.85 * gp.fade; ctx.translate(x - 22, yy); drawGhostIcon(ctx, small ? 8 : 9, G.t); ctx.restore(); }
   if (R.apogee > 0 && G.st.control && !R.ended) { const yy = toY(R.apogee); ctx.save(); ctx.globalAlpha = 0.7 + Math.sin(G.t * 6) * 0.3; ink(ctx, 2.5); ctx.beginPath(); ctx.moveTo(x + 8, yy); ctx.lineTo(x + 18, yy - 6); ctx.lineTo(x + 18, yy + 6); ctx.closePath(); fillStroke(ctx, '#f15bb5', 2.5); ctx.restore(); }
@@ -4251,7 +4360,7 @@ const UI = (() => {
   function renderHeadBtns() {
     const h = $('head-btns'); h.innerHTML = '';
     const mapB = iconBtn('btn-map', 'map', 'Route map', () => openMap());
-    if (routeDone('r0') && ROUTES.some(r => routeUnlocked(r) && !routeDone(r.id) && !S.seen['map_' + r.id])) mapB.appendChild(el('span', 'badge-dot', '!'));
+    if ((routeDone('r0') && ROUTES.some(r => routeUnlocked(r) && !routeDone(r.id) && !S.seen['map_' + r.id])) || (dailyUnlocked() && !S.seen['daily_' + dayKey()])) mapB.appendChild(el('span', 'badge-dot', '!'));
     const ach = iconBtn('btn-ach', 'trophy', 'Achievements & Sky Guide', () => openAch());
     if (guideNewCount()) ach.appendChild(el('span', 'badge-dot', String(guideNewCount())));
     const paint = iconBtn('btn-paint', 'brush', 'Paint shop', () => openPaint());
@@ -4398,7 +4507,9 @@ const UI = (() => {
     const st = computeStats();
     const r = flightRoute();
     let kind, name, sub, warn = false, icon;
-    if (!r) { kind = 'Free flight'; name = 'Just go high!'; sub = `Best: ${fmtAlt(S.bestAlt)}`; icon = 'gate'; }
+    fixDailyRoute();
+    if (S.route === 'daily') { const d = todaysDaily(); kind = 'Daily special'; name = d.cargo.charAt(0).toUpperCase() + d.cargo.slice(1); sub = `${fmtAlt(d.target)} · ${TWISTS[d.twist].name}`; icon = 'parcel'; }
+    else if (!r) { kind = 'Free flight'; name = 'Just go high!'; sub = `Best: ${fmtAlt(S.bestAlt)}`; icon = 'gate'; }
     else {
       const done = routeDone(r.id);
       kind = done ? 'Regular service' : (r.id === 'r0' ? 'Mission' : 'Next route');
@@ -4425,7 +4536,8 @@ const UI = (() => {
       ['Seats', st.seats || '—'],
       ['Est. height', '~' + fmtAlt(sim.alt)],
     ];
-    if (S.flights >= 4 && CONDS[S.cond] && S.cond !== 'clear') rows.push(['Forecast', `<span title="${CONDS[S.cond].fx}">${CONDS[S.cond].name}</span>`]);
+    const nc = nextCondId();
+    if (S.flights >= 4 && nc !== 'clear') rows.push(['Forecast', `<span title="${CONDS[nc].fx}">${CONDS[nc].name}</span>`]);
     $('statcard').innerHTML = `<h4>Your rocket</h4>${rows.map(r => `<div class="row"><span>${r[0]}</span><span>${r[1]}</span></div>`).join('')}<div class="row best"><span>Best flight</span><span>${fmtAlt(S.bestAlt)}</span></div><div class="row"><span>Flights</span><span>${S.flights}</span></div>`
       + (jobsUnlocked() && S.jobs && S.jobs.length ? `<div class="jobs"><h4>Job board</h4>${S.jobs.map(j => `<div class="job"><span>${jobText(j, true)}</span><span class="jp">${fmtMoney(j.pay)}</span></div>`).join('')}</div>` : '');
     const jb = $('statcard').querySelector('.jobs'); if (jb) jb.onclick = () => { sfx.click(); openJobs(); };
@@ -4441,7 +4553,7 @@ const UI = (() => {
       const unlocked = routeUnlocked(r), done = routeDone(r.id);
       if (!unlocked) lockedShown++;
       const mystery = !unlocked && lockedShown > 1;
-      const cur = S.route === r.id || (S.route !== 'free' && flightRoute() === r);
+      const cur = S.route === r.id || (S.route !== 'free' && S.route !== 'daily' && flightRoute() === r);
       const card = el('div', 'route' + (cur ? ' cur' : '') + (!unlocked ? ' locked' : ''));
       card.appendChild(el('div', 'route-link'));
       const ic = mystery ? el('div', 'r-ico', ICONS.lock) : routeIconCanvas(r.icon, 64);
@@ -4455,7 +4567,7 @@ const UI = (() => {
       const meta = el('div', 'r-meta');
       if (!mystery) {
         meta.innerHTML = `<span class="chip alt">${fmtAlt(r.alt)}</span>` +
-          (r.pax ? `<span class="chip pax ${!px.ok ? 'warn' : ''}">${done ? `up to ${r.pax * 2}` : r.pax} passenger${r.pax > 1 ? 's' : ''}${!px.ok ? ` · need ${r.pax} seats` : ''}</span>` : '<span class="chip pax">Buckley</span>') +
+          (r.pax ? `<span class="chip pax ${!px.ok ? 'warn' : ''}">${done ? `up to ${r.pax * 2}` : r.pax} passenger${r.pax > 1 || done ? 's' : ''}${!px.ok ? ` · need ${r.pax} seats` : ''}</span>` : '<span class="chip pax">Buckley</span>') +
           (done ? `<span class="chip ok">Done · ${fmtMoney(r.fare)}/seat</span>` : `<span class="chip pay">${fmtMoney(r.reward)} bonus</span>`);
         main.appendChild(meta);
         main.appendChild(el('div', 'r-desc', unlocked ? r.desc : 'Deliver the previous route to unlock.'));
@@ -4471,6 +4583,26 @@ const UI = (() => {
       if (unlocked && !done) S.seen['map_' + r.id] = 1;
       list.appendChild(card);
     });
+    if (dailyUnlocked()) {
+      const d = todaysDaily(), tw = TWISTS[d.twist], cd = CONDS[d.cond];
+      const cur = S.route === 'daily' && !d.done;
+      S.seen['daily_' + d.day] = 1;
+      const card = el('div', 'route daily' + (cur ? ' cur' : ''));
+      const ic = routeIconCanvas('parcel', 64); ic.classList.add('r-ico'); ic.style.width = '64px'; ic.style.height = '64px';
+      card.appendChild(ic);
+      const streak = dailyStreakAlive();
+      const main = el('div', 'r-main', `<div class="r-name">Daily Special${streak ? ` <span class="chip streak">${streak}-day streak</span>` : ''}</div>`);
+      const meta = el('div', 'r-meta');
+      meta.innerHTML = `<span class="chip alt">${fmtAlt(d.target)}</span>` + (d.done ? '<span class="chip ok">Delivered today</span>' : '<span class="chip pay">Big bonus</span>');
+      main.appendChild(meta);
+      main.appendChild(el('div', 'r-desc', d.done ? `${d.to} loved it. A new special arrives tomorrow!` : `Take <b>${d.cargo}</b> to ${d.to}, who waits in a balloon.<div class="twists"><span class="chip twist">${tw.name}</span> ${tw.fx}</div><div class="twists"><span class="chip">${cd.name}</span> ${cd.fx}</div>`));
+      card.appendChild(main);
+      const b = el('button', 'btn ' + (cur ? 'go' : 'blue'), d.done ? 'Done' : cur ? 'Selected' : 'Pick');
+      if (d.done) b.disabled = true;
+      else b.addEventListener('click', () => { sfx.click(); if (S.route !== 'daily') S.routeBeforeDaily = S.route; S.route = 'daily'; saveGame(); openMap(); renderRouteChip(); renderStatCard(); });
+      const act = el('div', 'r-act'); act.appendChild(b); card.appendChild(act);
+      list.appendChild(card);
+    }
     if (routeDone('r0')) {
       const cur = S.route === 'free';
       const card = el('div', 'route' + (cur ? ' cur' : ''));
@@ -4680,7 +4812,7 @@ const UI = (() => {
     reset.addEventListener('click', () => confirmBox('Start over?', 'This wipes your rocket, money and routes. No undo!', () => { resetSave(); location.reload(); }));
     col.appendChild(reset);
     const st = S.stats;
-    col.appendChild(el('div', 'small-note', `<b>Your stats</b><br>${S.flights} flights · best ${fmtAlt(S.bestAlt)} · ${fmtMoney(S.earned)} earned<br>${fmtInt(st.coins)} coins · ${st.rings} rings · ${st.perfect} perfect launches · ${st.pax} passengers · ${Math.round(st.time / 60)} min flying`));
+    col.appendChild(el('div', 'small-note', `<b>Your stats</b><br>${S.flights} flights · best ${fmtAlt(S.bestAlt)} · ${fmtMoney(S.earned)} earned<br>${fmtInt(st.coins)} coins · ${st.rings} rings · ${st.perfect} perfect launches · ${st.pax} passengers · ${Math.round(st.time / 60)} min flying${st.daily ? ` · ${st.daily} daily special${st.daily > 1 ? 's' : ''}` : ''}${st.king + st.whale + st.kraken ? ` · ${st.king + st.whale + st.kraken} boss wins` : ''}`));
     col.appendChild(el('div', 'small-note', 'Skyhop Express · every picture, sound and tune is generated by code.<br>Steer: ← → / A D or tap sides · Boost: Space · Pause: P'));
     overlay('scr-settings', true);
   }
@@ -4704,7 +4836,7 @@ const UI = (() => {
   // ---------- results
   function showResults(res) {
     overlay('scr-results', true); G.resultAt = performance.now();
-    $('res-title').textContent = res.delivered ? (res.firstTime ? 'Delivered!' : 'Trip complete!') : res.crashed ? 'Kaboom!' : 'Flight Report';
+    $('res-title').textContent = res.dailyPaid ? 'Special delivered!' : res.delivered ? (res.firstTime ? 'Delivered!' : 'Trip complete!') : res.crashed ? 'Kaboom!' : 'Flight Report';
     $('res-sub').textContent = `${fmtAlt(res.alt)} · ${res.zone}${res.route && res.delivered ? ' · ' + '★'.repeat(res.stars) : ''}`;
     const bd = $('res-badges'); bd.innerHTML = '';
     res.badges.forEach((b, i) => { const x = el('span', 'res-badge', b); x.style.animationDelay = (0.2 + i * 0.12) + 's'; bd.appendChild(x); });
@@ -4736,7 +4868,8 @@ const UI = (() => {
     const gEl = $('res-goal'); gEl.innerHTML = '';
     const nr = nextRoute();
     let label = '', k = 0;
-    if (res.route && !res.delivered && !routeDone(res.route.id)) { label = `<b>${res.route.to}</b>: ${fmtAlt(res.alt)} of ${fmtAlt(res.route.alt)}`; k = res.alt / res.route.alt; }
+    if (res.daily && !res.dailyDone) { label = `<b>Daily special</b>: ${fmtAlt(res.alt)} of ${fmtAlt(res.daily.target)}`; k = res.alt / res.daily.target; }
+    else if (res.route && !res.delivered && !routeDone(res.route.id)) { label = `<b>${res.route.to}</b>: ${fmtAlt(res.alt)} of ${fmtAlt(res.route.alt)}`; k = res.alt / res.route.alt; }
     else if (nr) { label = `Next up: <b>${nr.to}</b> at ${fmtAlt(nr.alt)}${nr.pax ? ` · ${nr.pax} seat${nr.pax > 1 ? 's' : ''}` : ''}`; k = S.bestAlt / nr.alt; }
     else { label = `Record: <b>${fmtAlt(S.bestAlt)}</b>`; k = res.alt / Math.max(1, S.bestAlt); }
     gEl.innerHTML = `${label}<div class="goalbar"><i></i></div>`;
@@ -4971,6 +5104,7 @@ window.__skyhop = {
   done(id) { S.routes[id] = { done: true, stars: 3, runs: 1 }; const nx = nextRoute(); S.route = nx ? nx.id : 'free'; },
   start: startGame, launch(v = 0.8) { $('scr-results').classList.add('hidden'); if (G.mode !== 'launch') enterLaunch(); G.launch.v = v; doLaunch(); },
   hangar: () => goHangar(true), reset() { resetSave(); },
+  daily() { return todaysDaily(); },
   teleport(alt) { const R = G.R; if (!R) return; R.alt = alt; R.maxAlt = Math.max(R.maxAlt, alt); },
   save: saveGame, music: Music, audio: AudioSys, sfxTest() { const errs = []; for (const k in AudioSys.sfx) { try { AudioSys.sfx[k](); } catch (e) { errs.push(k + ':' + e.message); } } return errs; },
   candidates() { return UPGRADES.filter(u => upState(u) === 'open').map(u => ({ id: u.id, cost: upCost(u) })); },
