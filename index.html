@@ -790,6 +790,7 @@ const Music = (() => {
       const g = ac.createGain();
       let dur = 0.05;
       if (kind === 'hat') { f.type = 'highpass'; f.frequency.value = 7000; dur = 0.035; g.gain.setValueAtTime(0.16 * vol, t); }
+      else if (kind === 'jingle') { f.type = 'highpass'; f.frequency.value = 7500; dur = 0.1; g.gain.setValueAtTime(0.12 * vol, t); voice('sine', 2600 + Math.random() * 1600, t, 0.07, 0.025 * vol); }
       else if (kind === 'shaker') { f.type = 'bandpass'; f.frequency.value = 6000; f.Q.value = 1.5; dur = 0.06; g.gain.setValueAtTime(0.12 * vol, t); }
       else if (kind === 'snare') { f.type = 'bandpass'; f.frequency.value = 1800; f.Q.value = 0.7; dur = 0.16; g.gain.setValueAtTime(0.4 * vol, t);
         const o = ac.createOscillator(); o.type = 'triangle'; o.frequency.setValueAtTime(220, t); o.frequency.exponentialRampToValueAtTime(120, t + 0.08);
@@ -820,7 +821,7 @@ const Music = (() => {
         if (s === 8) voice('triangle', N(root + 7), t, sd * 4, 0.26, { lp: 900 });
         if (s === 14) voice('triangle', N(root + 12), t, sd * 2, 0.18, { lp: 900 });
         if (s % 4 === 2) ch.forEach((c, k) => voice('square', N(root + 24 + c), t + k * 0.008, sd * 1.4, 0.035, { lp: 1800 }));
-        if (s % 2 === 0) drum('shaker', t, s % 4 === 2 ? 1 : 0.55);
+        if (s % 2 === 0) drum(season() === 'winter' ? 'jingle' : 'shaker', t, s % 4 === 2 ? 1 : 0.55);
         if (s === 0 || s === 10) drum('kick', t, 0.45);
         if (s === 4 || s === 12) drum('clap', t, 0.35);
         const phrase = Math.floor(i / 64) % 2;
@@ -860,7 +861,7 @@ const Music = (() => {
           ch.forEach((c, k) => { voice('sawtooth', N(root + 12 + c), t, sd * 16.5, 0.018, { att: 0.9, lp: 900, det: -6 + k * 3 }); voice('triangle', N(root + 12 + c), t, sd * 16.5, 0.03, { att: 0.7 }); });
         }
         if (s % 3 === 0) { const n = root + 24 + ch[(s / 3 + barI) % ch.length] + (s > 8 ? 12 : 0); voice('sine', N(n), t, sd * 6, 0.07, { att: 0.01 }); voice('sine', N(n) * 3.01, t, sd * 2, 0.012); }
-        if (s === 8) drum('shaker', t, 0.4);
+        if (s === 8) drum(season() === 'winter' ? 'jingle' : 'shaker', t, 0.4);
       },
     },
     // breezy bossa for later hangar visits (Fmaj7–Gm7–Am7–Bbmaj7)
@@ -874,7 +875,7 @@ const Music = (() => {
         if (s === 6 || s === 8) voice('triangle', N(root - 5), t, sd * 2, 0.26, { lp: 800 });
         if (s === 14) voice('triangle', N(root - 12), t, sd * 2, 0.22, { lp: 800 });
         if (s === 2 || s === 5 || s === 9 || s === 12) ch.forEach((c, k) => voice('square', N(root + 12 + c), t + k * 0.01, sd * 1.2, 0.028, { lp: 1500 }));
-        if (s % 2 === 0) drum('shaker', t, s % 4 === 0 ? 0.5 : 0.9);
+        if (s % 2 === 0) drum(season() === 'winter' ? 'jingle' : 'shaker', t, s % 4 === 0 ? 0.5 : 0.9);
         if (s === 3 || s === 6 || s === 10 || s === 13) drum('hat', t, 0.5);
         if (s === 0) drum('kick', t, 0.35);
         const phrase = Math.floor(i / 64) % 2, mi = i % 64;
@@ -923,7 +924,7 @@ const Music = (() => {
         if (s === 0 || s === 8) voice('triangle', N(root), t, sd * 7, 0.3, { lp: 800 });
         if (s % 2 === 0) voice('triangle', N(root + 24 + ch[(s / 2) % 4]), t, sd * 2, 0.06);
         if (s % 4 === 0) { const n = this.tune[(Math.floor(i / 4)) % 16]; voice('square', N(n), t, sd * 3, 0.035, { lp: 2600 }); voice('sine', N(n + 12), t, sd * 2, 0.025); }
-        if (s === 4 || s === 12) drum('shaker', t, 0.7);
+        if (s === 4 || s === 12) drum(season() === 'winter' ? 'jingle' : 'shaker', t, 0.7);
         if (s === 0) drum('kick', t, 0.35);
       },
     },
@@ -6231,7 +6232,7 @@ requestAnimationFrame(frame);
 
 // debug / test hooks
 window.__skyhop = {
-  G, DEBUG, RIVAL, get S() { return S; }, computeStats, simulateFlight, UPGRADES, ROUTES, UP, art: { drawStation, routeIconCanvas, drawFace, makePostcard, guideIcon, GUIDE },
+  G, DEBUG, RIVAL, SKY_EVENTS, BOSSES, get S() { return S; }, computeStats, simulateFlight, UPGRADES, ROUTES, UP, art: { drawStation, routeIconCanvas, drawFace, makePostcard, guideIcon, GUIDE },
   set bot(v) { DEBUG.bot = v; }, set timeScale(v) { DEBUG.timeScale = v; }, set season(v) { DEBUG.season = v; },
   setMoney(v) { S.money = v; if (UI.current === 'hangar') UI.refresh(); },
   setLevel(id, l) { S.up[id] = l; G.look = rocketLook(); G.st = computeStats(); if (UI.current === 'hangar') UI.refresh(); },
