@@ -97,9 +97,9 @@ button{font-family:var(--font)}
 #tree-inner{position:relative;margin:0 auto}
 #tree-lines{position:absolute;inset:0;width:100%;height:100%;overflow:visible;pointer-events:none}
 .node{position:absolute;width:76px;display:flex;flex-direction:column;align-items:center;cursor:pointer;transform:translate(-50%,-50%)}
-.node .nbox{width:66px;height:66px;border:4px solid var(--ink);border-radius:18px;background:#fff;box-shadow:0 4px 0 var(--ink);display:flex;align-items:center;justify-content:center;
+.node .nbox{width:66px;height:66px;border:4px solid var(--ink);border-radius:18px;background:#fff;box-shadow:0 4px 0 var(--ink);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;
   position:relative;transition:transform .1s}
-.node .nbox svg{width:46px;height:46px}
+.node .nbox svg{width:38px;height:38px;flex:0 0 auto}
 .node:hover .nbox{transform:translateY(-2px)}
 .node.sel .nbox{outline:4px solid var(--blue);outline-offset:3px}
 .node.can .nbox{background:#fffbe0;animation:canGlow 1.6s ease-in-out infinite}
@@ -109,15 +109,23 @@ button{font-family:var(--font)}
 .node.locked .nbox svg{opacity:.35;filter:grayscale(1)}
 .node.forkout .nbox{background:#e6e0d6}
 .node.forkout .nbox svg{opacity:.4;filter:grayscale(1)}
-.node .nlabel{margin-top:6px;font-weight:800;font-size:12px;text-align:center;line-height:1.05;background:rgba(255,250,240,.9);padding:1px 4px;border-radius:6px;max-width:92px}
-.pips{display:flex;gap:2px;margin-top:3px}
-.pip{width:7px;height:7px;border-radius:2px;border:1.5px solid var(--ink);background:#fff}
+.node .nlabel{margin-top:10px;font-weight:800;font-size:12px;text-align:center;line-height:1.05;background:rgba(255,250,240,.9);padding:1px 4px;border-radius:6px;max-width:92px}
+/* level meter tucked inside the bottom of each upgrade button */
+.pips{display:flex;gap:1.5px;width:46px;height:11px;padding:1.5px;border:2px solid var(--ink);border-radius:999px;background:#ece3d2;box-sizing:border-box;overflow:hidden;flex:0 0 auto}
+.pip{flex:1 1 0;min-width:0;border-radius:2px}
+.pip:first-child{border-radius:999px 2px 2px 999px}.pip:last-child{border-radius:2px 999px 999px 2px}
 .pip.on{background:var(--green)}
+.pips.bar .pip{flex:none;border-radius:999px}
+.node.max .pip.on{background:#ffb000}
+.node.locked .pips{visibility:hidden}
+.node.forkout .pips{opacity:.45}
 .node .lock{position:absolute;right:-8px;bottom:-8px;width:24px;height:24px}
 .node .newb{position:absolute;top:-10px;left:-10px;background:var(--red);color:#fff;font-size:10px;font-weight:900;border:3px solid var(--ink);border-radius:8px;padding:0 4px;transform:rotate(-10deg)}
 #tree.compact .node .nbox{width:54px;height:54px;border-radius:15px}
-#tree.compact .node .nbox svg{width:36px;height:36px}
-#tree.compact .node .nlabel{font-size:11px;margin-top:4px}
+#tree.compact .node .nbox svg{width:30px;height:30px}
+#tree.compact .node .nbox{gap:2px}
+#tree.compact .pips{width:38px;height:10px}
+#tree.compact .node .nlabel{font-size:11px;margin-top:9px}
 .orb{position:absolute;transform:translate(-50%,-50%);background:var(--ink);color:var(--yellow);font-weight:900;font-size:13px;border-radius:999px;padding:2px 8px;pointer-events:none}
 #detail{padding:10px 14px;display:flex;gap:12px;align-items:flex-start;min-height:118px;flex:0 0 auto}
 #detail .dicon{flex:0 0 auto;width:74px;height:74px;border:4px solid var(--ink);border-radius:18px;background:#fff;display:flex;align-items:center;justify-content:center}
@@ -2924,6 +2932,7 @@ function updateSkyEvent(R, dt, viewTop) {
   R.event = { id, t: 0, dur: d.dur, acc: 0, dir: chance(0.5) ? 1 : -1 };
   R.evCount = (R.evCount || 0) + 1; R.evT = 0;
   banner(d.name, d.col, 2.2, d.sub);
+  if (id === 'rainbow' && R.pax && !R.wish) R.wishT = Math.min(R.wishT || 0, 0.8); // someone will want to go through it
   if (id === 'rainbow') { const r = Math.min(vw * 0.3, 240); G.picks.push({ type: 'rainbow', x: clamp(R.x + R.event.dir * rand(0.1, 0.3) * vw, G.cam.x - vw / 2 + r * 0.6, G.cam.x + vw / 2 - r * 0.6), py: viewTop + 120, r, age: 0, hit: false, done: false, below: null }); }
   if (id === 'rainbow') sfx.rainbow(false); else if (id === 'goldrush') sfx.bigcoin(); else if (id === 'ringroad') sfx.ring(3); else sfx.thunder();
 }
@@ -3576,6 +3585,7 @@ const WISHES = [
   { id: 'close', s: 'Fly close to something! Photo time!', dur: 14, can: R => R.alt < 60000, v: R => R.nearMiss || 0, ok: (R, w) => (R.nearMiss || 0) > w.v },
   { id: 'boost', s: 'Hit the BOOST! I want to feel it!', dur: 8, can: R => G.st.ab && R.abCd <= 0 && R.fuel > 0, v: () => 0, ok: R => R.abT > 0 },
   { id: 'star', s: 'Catch that lucky star!', dur: 12, can: R => G.picks.some(p => p.type === 'star' && p.py > R.py + 150), v: R => R.starsGot, ok: (R, w) => R.starsGot > w.v },
+  { id: 'rainbow', s: 'A rainbow! Fly through it, pretty please!', dur: 12, can: R => G.picks.some(p => p.type === 'rainbow' && !p.done && p.py + p.r > R.py + 120), v: R => R.rainbows || 0, ok: (R, w) => (R.rainbows || 0) > w.v },
   { id: 'smash', s: 'Smash something! For science!', dur: 14, can: () => G.st.ram > 0, v: R => R.smashed, ok: (R, w) => R.smashed > w.v },
 ];
 const wishesOn = () => routeDone('r1') || (S.line || 1) > 1;
@@ -3592,7 +3602,7 @@ function updateWish(R, dt) {
     R.wishT -= dt; if (R.wishT > 0) return;
     const pool = WISHES.filter(d => d.id !== R.lastWish && (!d.can || d.can(R)));
     if (!pool.length) { R.wishT = 2; return; }
-    const d = pick(pool);
+    const rb = pool.find(q => q.id === 'rainbow'), d = rb && chance(0.75) ? rb : pick(pool);
     R.wish = { d, t: 0, v: d.v(R), who: Math.floor(Math.random() * R.faces.length) };
     R.wishN++; R.lastWish = d.id; sfx.ask();
     if (!S.seen.wishTip) { S.seen.wishTip = 1; toast('Passengers make <b>wishes</b>! Grant them for happier riders and bonus coins.', 4200); }
@@ -5640,11 +5650,12 @@ const UI = (() => {
       const box = el('div', 'nbox', ICONS[u.icon]);
       if (s === 'locked') box.insertAdjacentHTML('beforeend', `<span class="lock">${ICONS.lock}</span>`);
       if (!S.viewed[u.id] && s !== 'locked') box.appendChild(el('span', 'newb', 'NEW'));
+      // level meter inside the button: one segment per level, or a smooth bar for long upgrades
+      const pips = el('div', 'pips' + (u.max > 6 ? ' bar' : ''));
+      if (u.max > 6) { const f = el('span', 'pip on'); f.style.width = (L / u.max * 100) + '%'; pips.appendChild(f); }
+      else for (let i = 0; i < u.max; i++) pips.appendChild(el('span', 'pip' + (i < L ? ' on' : '')));
+      box.appendChild(pips);
       n.appendChild(box);
-      const pips = el('div', 'pips');
-      const pm = Math.min(u.max, 12);
-      for (let i = 0; i < pm; i++) pips.appendChild(el('span', 'pip' + (i < L ? ' on' : '')));
-      n.appendChild(pips);
       n.appendChild(el('div', 'nlabel', u.name));
       n.addEventListener('click', () => { sfx.tab(); sel = u.id; S.viewed[u.id] = 1; saveGame(); renderTree(); renderDetail(); });
       nodesEl.appendChild(n);
