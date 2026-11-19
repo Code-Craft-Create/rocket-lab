@@ -2551,7 +2551,7 @@ const G = {
   R: null, st: null, look: null,
   obs: [], picks: [], parts: [], floaters: [], banners: [],
   spawnY: 0, launch: null, result: null, station: null, hangarPop: 0,
-  poke: { rocket: 0, ada: 0, adaLine: '', crowd: 0, shed: 0, rocketLine: '', rocketLineT: 0, deco: 0 },
+  poke: { rocket: 0, ada: 0, adaLine: '', crowd: 0, shed: 0, rocketLine: '', rocketLineT: 0, deco: 0, baronT: 0, baronLine: '' },
   input: { keys: {}, pointers: new Map(), steer: 0, boostPressed: false },
   rocketScale: 1.1, warnings: [],
 };
@@ -4351,6 +4351,22 @@ const SEASON_POKE = {
   winter: ['Brrr!', '#cfeaff'], spooky: ['BOO!', '#ff9f43'], autumn: ['Crunch!', '#ffb36b'], spring: ['Achoo!', '#ff9fd0'], summer: ['Bzzz!', '#ffd93d'],
 };
 // the little seasonal friend between Ada and the tower: snowman, pumpkins, tulips or sunflowers
+// Baron Vroom hovers over the yard in his gold balloon while a challenge is open (tap him)
+const BARON_TAUNTS = ['My rocket has TWO cup holders!', 'Vroom Rockets: first, best, LOUDEST!', 'Is that a rocket or a teapot?', 'I polish my fins every morning. Twice!', 'Ha! You call that a launch pad?'];
+function drawBaronBalloon() {
+  const P = G.poke, bpy = 196 + Math.sin(G.t * 1.2 + 1) * 8, bx = 228 + Math.sin(G.t * 0.5) * 8, hop = P.baronT > 0 ? Math.abs(Math.sin(P.baronT * 9)) * 6 : 0;
+  ctx.save(); ctx.translate(bx, -bpy); ctx.rotate(Math.sin(G.t * 0.9) * 0.05); ctx.scale(0.62, 0.62); ink(ctx, 3);
+  ctx.beginPath(); ctx.moveTo(-16, 26); ctx.lineTo(-11, 52); ctx.moveTo(16, 26); ctx.lineTo(11, 52); ctx.stroke();
+  ctx.beginPath(); ctx.ellipse(0, 0, 34, 38, 0, 0, TAU); fillStroke(ctx, '#ffd93d', 3);
+  ctx.save(); ctx.beginPath(); ctx.ellipse(0, 0, 34, 38, 0, 0, TAU); ctx.clip(); ctx.fillStyle = '#3a3554'; for (const sx of [-26, 18]) ctx.fillRect(sx, -40, 8, 80); ctx.restore();
+  ctx.beginPath(); ctx.ellipse(0, 0, 34, 38, 0, 0, TAU); ctx.stroke();
+  text(ctx, 'V', 0, 2, 30, '#3a3554', 'center', '#fff6e5', 4);
+  ctx.save(); ctx.translate(0, 44 - hop); drawFace(ctx, 'baron', 12, P.baronT > 0 ? 'joy' : 'happy', G.t); ctx.restore();
+  rr(ctx, -16, 50, 32, 20, 5); fillStroke(ctx, '#8b5a3c', 3);
+  ctx.beginPath(); ctx.moveTo(14, 54); ctx.lineTo(26 + Math.sin(G.t * 7) * 3, 38 - hop); ctx.lineWidth = 4; ctx.stroke(); // shaking a fist
+  ctx.restore();
+  if (P.baronT > 0) speechBubble(ctx, P.baronLine, bx - 60, -bpy - 34, clamp(P.baronT * 3, 0, 1) * clamp((2.8 - P.baronT) * 6, 0, 1), 150, true);
+}
 function drawSeasonDeco(x) {
   const sn = season(), P = G.poke, pk = P.deco > 0 ? P.deco / 1.6 : 0, t = G.t;
   ink(ctx, 2.5);
@@ -4564,6 +4580,7 @@ function drawGround() {
     if (!S.seen['daily_' + dayKey()]) { ctx.save(); ctx.globalAlpha = 0.6 + Math.sin(G.t * 5) * 0.4; text(ctx, 'NEW!', bx, -bpy - 34, 13, '#ff5a8a', 'center', INK, 3); ctx.restore(); }
   }
   if (G.mode === 'hangar') drawBannerPlane();
+  if (G.mode === 'hangar' && rivalLive() && !mountain) drawBaronBalloon();
   // ---- launch pad
   rr(ctx, -80, -4, 160, 22, 5); fillStroke(ctx, '#c9ced8');
   ctx.save(); rr(ctx, -80, -4, 160, 22, 5); ctx.clip(); ctx.fillStyle = '#ffd93d'; for (let i = -10; i < 10; i++) { ctx.beginPath(); ctx.moveTo(i * 22, 18); ctx.lineTo(i * 22 + 11, 18); ctx.lineTo(i * 22 + 22, -4); ctx.lineTo(i * 22 + 11, -4); ctx.fill(); } ctx.restore();
@@ -4650,6 +4667,12 @@ function pokeHangar(sx, sy) {
     if (S.stats.pokes === 25) { checkAchievements(); if (S.pendingAch && S.pendingAch.length) { for (const id of S.pendingAch) { const a = ACH.find(x => x.id === id); toast(`Achievement: <b>${a.name}</b> +${fmtMoney(a.reward)}`); } sfx.ach(); S.pendingAch = []; UI.refresh(); } saveGame(); }
     return true;
   }
+  if (town && rivalLive() && Math.abs(wx - 228) < 28 && wpy > 150 && wpy < 225) {
+    const rv = rivalLive(), opts = BARON_TAUNTS.concat([`Beat ${fmtAlt(rv.alt)} first, then we talk!`]);
+    let line = pick(opts); if (line === P.baronLine) line = pick(opts);
+    P.baronLine = line; P.baronT = 2.8; for (let i = 0; i < 6; i++) setTimeout(() => sfx.talk(0.75), i * 70);
+    return true;
+  }
   if (hangarDailyOn() && Math.abs(wx + 128) < 26 && wpy > 155 && wpy < 235) { sfx.boing(); UI.openMap(); return true; }
   if (mailboxOn() && Math.abs(wx - mailboxX() + 2) < 31 && wpy > 0 && wpy < (mailCount() ? 108 : 92)) {
     if (mailCount()) UI.openLetter(); else { P.mail = 0.5; sfx.creak(); toast('No new mail. Deliver more passengers and fans will write!'); }
@@ -4692,7 +4715,7 @@ function pokeHangar(sx, sy) {
   }
   return false;
 }
-function updatePokes(dt) { const P = G.poke; for (const k of ['rocket', 'ada', 'crowd', 'shed', 'rocketLineT', 'mail', 'guestT', 'deco']) if (P[k] > 0) P[k] = Math.max(0, P[k] - dt); }
+function updatePokes(dt) { const P = G.poke; for (const k of ['rocket', 'ada', 'crowd', 'shed', 'rocketLineT', 'mail', 'guestT', 'deco', 'baronT']) if (P[k] > 0) P[k] = Math.max(0, P[k] - dt); }
 function wrapText(str, maxW) { const words = str.split(' '); const out = []; let line = ''; for (const w of words) { const t = line ? line + ' ' + w : w; if (ctx.measureText(t).width > maxW && line) { out.push(line); line = w; } else line = t; } if (line) out.push(line); return out; }
 function drawStationAndRecord() {
   const R = G.R;
