@@ -232,6 +232,7 @@ button{font-family:var(--font)}
 .route .stars{font-size:18px;letter-spacing:1px;color:#c9bca3;-webkit-text-stroke:1px var(--ink)}
 .route .stars .on{color:var(--yellow)}
 .route .r-act{flex:0 0 auto}
+.skymap{margin:0 0 14px;line-height:0}.skymap canvas{display:block;max-width:100%;border-radius:14px;box-shadow:0 4px 0 var(--ink)}
 .route-link{position:absolute;left:44px;width:6px;height:18px;background:repeating-linear-gradient(var(--ink) 0 4px,transparent 4px 8px);top:-18px}
 .route:first-child .route-link{display:none}
 
@@ -2137,6 +2138,53 @@ function drawStation(c, kind, t, s = 1) {
 }
 
 // tiny route icons for the map (drawn to small canvases)
+// A little panorama of the whole line: ground on the left, the Starlight Gate on the right (log scale)
+function skyMapCanvas(wCss, hCss) {
+  const cnv = document.createElement('canvas'); cnv.width = wCss * 2; cnv.height = hCss * 2;
+  cnv.style.width = wCss + 'px'; cnv.style.height = hCss + 'px';
+  const c = cnv.getContext('2d'); c.scale(2, 2);
+  const pad = wCss < 420 ? 16 : 30, N = ROUTES.length, alts = [250].concat(ROUTES.map(r => r.alt));
+  const xi = i => pad + (wCss - pad * 2) * (i / N);          // i = 0 is the shed, i = k is route k-1
+  const X = alt => { alt = Math.max(250, alt); for (let i = 0; i < N; i++) if (alt <= alts[i + 1]) return lerp(xi(i), xi(i + 1), (Math.log10(alt) - Math.log10(alts[i])) / (Math.log10(alts[i + 1]) - Math.log10(alts[i]))); return xi(N) + 8; };
+  const altAtX = x => { const f = clamp((x - pad) / (wCss - pad * 2) * N, 0, N - 0.001), i = Math.floor(f); return Math.pow(10, lerp(Math.log10(alts[i]), Math.log10(alts[i + 1]), f - i)); };
+  const Y = x => hCss * 0.56 + Math.sin(x / wCss * TAU * 1.5) * hCss * 0.16;
+  c.save(); rr(c, 0, 0, wCss, hCss, 14); c.clip();
+  const hg = c.createLinearGradient(0, 0, wCss, 0);
+  for (let k = 0; k <= 20; k++) { const x = wCss * k / 20, [top, bot] = skyColorsBase(altAtX(x)); hg.addColorStop(k / 20, rgbStr(mixRGB(top, bot, 0.45))); }
+  c.fillStyle = hg; c.fillRect(0, 0, wCss, hCss);
+  const vg = c.createLinearGradient(0, 0, 0, hCss); vg.addColorStop(0, 'rgba(0,0,30,.18)'); vg.addColorStop(1, 'rgba(255,255,255,.12)'); c.fillStyle = vg; c.fillRect(0, 0, wCss, hCss);
+  for (let i = 0; i < 70; i++) { const x = wCss * (0.45 + hash(i * 7) * 0.55); c.globalAlpha = clamp((x / wCss - 0.42) * 3, 0, 1) * (0.4 + hash(i) * 0.6); c.fillStyle = '#fff'; c.beginPath(); c.arc(x, hash(i * 13) * hCss, 0.6 + hash(i * 3) * 1.1, 0, TAU); c.fill(); }
+  c.globalAlpha = 1;
+  // ground and the shed on the far left
+  c.fillStyle = '#6cc35a'; c.beginPath(); c.moveTo(0, hCss); c.lineTo(0, hCss * 0.78); c.quadraticCurveTo(pad * 1.4, hCss * 0.7, pad * 2.4, hCss); c.fill();
+  c.fillStyle = '#d9534f'; c.fillRect(6, hCss * 0.66, 14, 12); c.beginPath(); c.moveTo(4, hCss * 0.66); c.lineTo(13, hCss * 0.58); c.lineTo(22, hCss * 0.66); c.fill();
+  // dotted path
+  c.setLineDash([3, 5]); c.lineWidth = 2.5; c.strokeStyle = 'rgba(255,255,255,.75)'; c.beginPath();
+  for (let x = pad - 8; x <= wCss - pad + 6; x += 4) { if (x === pad - 8) c.moveTo(x, Y(x)); else c.lineTo(x, Y(x)); } c.stroke(); c.setLineDash([]);
+  // travelled part
+  const bx = X(Math.max(S.bestAlt, 300));
+  c.lineWidth = 3.5; c.strokeStyle = '#ffd93d'; c.beginPath(); for (let x = pad - 8; x <= bx; x += 3) { if (x === pad - 8) c.moveTo(x, Y(x)); else c.lineTo(x, Y(x)); } c.stroke();
+  // stations
+  let lockedShown = 0;
+  const icon = clamp((wCss - pad * 2) / N * 0.92, 20, 36), cr = Math.max(4.5, icon * 0.19);
+  ROUTES.forEach((r, ri) => {
+    const unlocked = routeUnlocked(r), done = routeDone(r.id);
+    if (!unlocked) lockedShown++;
+    const x = xi(ri + 1), y = Y(x);
+    c.save(); c.translate(x, y);
+    const cur = S.route === r.id || (S.route !== 'free' && S.route !== 'daily' && flightRoute() === r);
+    if (cur) { c.beginPath(); c.arc(0, 0, icon * 0.68, 0, TAU); c.fillStyle = 'rgba(255,217,61,.55)'; c.fill(); }
+    if (unlocked) { const ic = routeIconCanvas(r.icon, icon); c.drawImage(ic, -icon / 2, -icon / 2, icon, icon); if (done) { const q = icon * 0.4; c.beginPath(); c.arc(q, -q, cr, 0, TAU); fillStroke(c, '#5fd068', 2); c.strokeStyle = '#fff'; c.lineWidth = 1.8; c.beginPath(); c.moveTo(q - cr * 0.45, -q); c.lineTo(q - cr * 0.08, -q + cr * 0.4); c.lineTo(q + cr * 0.5, -q - cr * 0.38); c.stroke(); } }
+    else { c.beginPath(); c.arc(0, 0, icon * 0.36, 0, TAU); fillStroke(c, lockedShown > 1 ? 'rgba(200,190,170,.85)' : '#fff6e5', 2.5); text(c, '?', 0, 1, icon * 0.4, INK, 'center', null); }
+    c.restore();
+  });
+  // your best: a tiny rocket on the path
+  if (S.bestAlt > 0) { c.save(); c.translate(bx, Y(bx) - 2); c.rotate(Math.PI / 2 + Math.atan2(Y(bx + 2) - Y(bx - 2), 4) - Math.PI / 2); c.rotate(Math.PI / 2); c.scale(0.16, 0.16); drawRocket(c, G.look || rocketLook(), { t: 1, throttle: 1, flame: true }); c.restore();
+    text(c, 'Best ' + fmtAlt(S.bestAlt), clamp(bx, 50, wCss - 50), hCss - 12, 11, '#fff', 'center', INK, 3); }
+  c.restore();
+  c.lineWidth = 3; c.strokeStyle = INK; rr(c, 1.5, 1.5, wCss - 3, hCss - 3, 13); c.stroke();
+  return cnv;
+}
 function routeIconCanvas(kind, size = 64) {
   const cnv = document.createElement('canvas'); cnv.width = size * 2; cnv.height = size * 2;
   const c = cnv.getContext('2d'); c.scale(2, 2);
@@ -4720,6 +4768,7 @@ const UI = (() => {
   function openMap() {
     const list = $('map-list'); list.innerHTML = '';
     $('scr-map').querySelector('h2').textContent = 'Route Map';
+    const skyWrap = routeDone('r0') ? el('div', 'skymap') : null; if (skyWrap) list.appendChild(skyWrap);
     const st = computeStats();
     let lockedShown = 0;
     ROUTES.forEach((r, i) => {
@@ -4798,6 +4847,7 @@ const UI = (() => {
       list.appendChild(card);
     }
     overlay('scr-map', true);
+    if (skyWrap) skyWrap.appendChild(skyMapCanvas(Math.max(240, Math.min(680, list.clientWidth || 340)), 118));
     renderHeadBtns();
     saveGame();
   }
