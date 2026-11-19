@@ -1314,6 +1314,22 @@ function drawLostPick(c, p, t) {
   // a little "!" tag so it reads as special
   c.save(); c.translate(26, -34); c.rotate(0.15); rr(c, -9, -12, 18, 22, 6); ink(c, 3); fillStroke(c, '#ffd93d', 3); text(c, '!', 0, -1, 16, INK, 'center', null); c.restore();
 }
+const FAN_LINES = {
+  plum: 'Splendid launch! I shall cut a ribbon for it.', volt: 'Feel that static? That’s excitement!', nimbus: 'Forecast: 100% chance of awesome.',
+  orion: 'Did you see the comet? I saw the comet.', luna: 'Writing this launch down. Page 213!', romeo: 'Juno and I want to fly again. Honeymoon part two!',
+  juno: 'Got any more of those mints?', bell: 'Carry your bags, Captain?', flo: 'Pancakes for the pilot, on the house!', mike: 'Ten-four, rocket buddy!',
+  kid2: 'More fins! I keep telling you, MORE FINS!', kid: 'When I grow up I’m flying to the Moon. Again!', bowler: 'Nice rocket. Very round. Ten pins out of ten.',
+  nana: 'Wrap up warm up there, dear.', pip: 'Hello, friend! Hello, sky!', chef: 'Pizza smells better at 100 km. Science!', chef2: 'My pizza beats Rosa’s. Don’t tell her.',
+  farmer: 'Potatoes and pizza: a match made in space.', bot: 'BEEP. HAPPY BEEP.', gran2: 'Not bad! Ada’s landings still need work, mind.', diva: 'Darling, you’re a star!',
+  robo: 'You look shiny already. Polish anyway?', twin1: 'I’m Zip! I cheered first!', twin2: 'I’m Zap! I cheered LOUDER!', prof: 'Rings are just space jewellery, really.',
+  cat: 'Mrrrp.', tourist: 'Say cheese! *click*',
+};
+const GUEST_SLOTS = [1, 3, 5, 7, 8];
+// your favourite passengers come back to watch launches from the front row
+function crowdGuests() {
+  if (!S.met) return [];
+  return Object.keys(S.met).filter(id => FAN_LINES[id] && CHARS[id]).sort((a, b) => (S.met[b] - S.met[a]) || (a < b ? -1 : 1)).slice(0, 5);
+}
 const mailCount = () => (S.mail || []).length;
 const mailboxOn = () => !!(S.mailGot && Object.keys(S.mailGot).length);
 const mailboxX = () => ((G.st || computeStats()).startAlt > 0 ? 212 : -252);
@@ -4164,17 +4180,26 @@ function drawGround() {
         ctx.beginPath(); ctx.moveTo(px - 8, py); ctx.lineTo(px + 8, py); ctx.lineTo(px + sw, py + 16); ctx.closePath(); fillStroke(ctx, cols[k % cols.length], 2);
       }
     }
+    const guests = crowdGuests();
     for (let i = crowdN - 1; i >= 0; i--) { // back rows first
       const row = Math.floor(i / 9), c = i % 9;
       const hype = G.mode === 'flight' || G.mode === 'launch' || G.poke.crowd > 0;
       const cx = 170 + c * 22 + (c % 2) * 6 + (row % 2) * 11, bob = Math.abs(Math.sin(G.t * (hype ? 9 : 3) + i * 1.7)) * (hype ? 8 + (G.poke.crowd > 0 ? 6 : 0) : 2) + row * 12;
       const col = ['#ff5a5f', '#4d96ff', '#ffd93d', '#5fd068', '#9b5de5', '#ff9f43'][(i + row) % 6];
+      const gi = row === 0 ? GUEST_SLOTS.indexOf(c) : -1, gid = gi >= 0 ? guests[gi] : null;
+      if (gid) {
+        const talk = G.poke.guestT > 0 && G.poke.guest === gid;
+        rr(ctx, cx - 9, -26 - bob, 18, 22, 6); fillStroke(ctx, CHARS[gid].col || col, 2.5);
+        ctx.save(); ctx.translate(cx, -36 - bob - (talk ? Math.abs(Math.sin(G.t * 10)) * 3 : 0)); drawFace(ctx, gid, 9.5, talk ? 'joy' : 'happy', G.t); ctx.restore();
+        continue;
+      }
       rr(ctx, cx - 8, -26 - bob, 16, 22, 6); fillStroke(ctx, col, 2.5);
       circ(ctx, cx, -34 - bob, 8); fillStroke(ctx, ['#ffd9b3', '#c68b59', '#8d5a3b', '#f5c9a5'][(i + row) % 4], 2.5);
       if (i % 3 === 0 && row === 0) { ctx.beginPath(); ctx.moveTo(cx + 6, -30 - bob); ctx.lineTo(cx + 14, -54 - bob); ctx.stroke(); ctx.beginPath(); ctx.moveTo(cx + 14, -54 - bob); ctx.lineTo(cx + 30, -50 - bob); ctx.lineTo(cx + 14, -44 - bob); fillStroke(ctx, col, 2.5); }
       if (row > 0 && c % 4 === 1) { ctx.beginPath(); ctx.moveTo(cx - 7, -28 - bob); ctx.lineTo(cx - 13, -44 - bob - Math.abs(Math.sin(G.t * 4 + i)) * 4); ctx.stroke(); } // waving arm
     }
     if (G.mode === 'hangar' && mailboxOn()) drawMailbox();
+    if (G.mode === 'hangar' && G.poke.guestT > 0 && G.poke.guest) speechBubble(ctx, FAN_LINES[G.poke.guest], Math.min(G.poke.guestX, 300), -72, clamp(G.poke.guestT * 3, 0, 1) * clamp((2.8 - G.poke.guestT) * 6, 0, 1), 150, true);
     // Grandma Ada with her cane
     ctx.save(); ctx.translate(-190, -4 - (G.poke.ada > 2.6 ? Math.sin((3 - G.poke.ada) / 0.4 * Math.PI) * 10 : 0));
     rr(ctx, -10, -30, 20, 28, 8); fillStroke(ctx, '#ff5a5f', 2.5);
@@ -4306,6 +4331,15 @@ function pokeHangar(sx, sy) {
     return true;
   }
   if (wx > 155 && wx < 395 && wpy > 0 && wpy < 90) {
+    const guests = crowdGuests();
+    for (let k = 0; k < guests.length; k++) {
+      const c = GUEST_SLOTS[k], cx = 170 + c * 22 + (c % 2) * 6;
+      if (Math.abs(wx - cx) < 12 && wpy < 62) {
+        P.guest = guests[k]; P.guestT = 2.8; P.guestX = cx;
+        for (let n = 0; n < 5; n++) setTimeout(() => sfx.talk(0.9 + (guests[k].length % 4) * 0.12), n * 75);
+        return true;
+      }
+    }
     if (P.crowd <= 0.4) { sfx.cheer(); confetti(270, 70, 26); }
     P.crowd = 1.8; return true;
   }
@@ -4318,7 +4352,7 @@ function pokeHangar(sx, sy) {
   }
   return false;
 }
-function updatePokes(dt) { const P = G.poke; for (const k of ['rocket', 'ada', 'crowd', 'shed', 'rocketLineT', 'mail']) if (P[k] > 0) P[k] = Math.max(0, P[k] - dt); }
+function updatePokes(dt) { const P = G.poke; for (const k of ['rocket', 'ada', 'crowd', 'shed', 'rocketLineT', 'mail', 'guestT']) if (P[k] > 0) P[k] = Math.max(0, P[k] - dt); }
 function wrapText(str, maxW) { const words = str.split(' '); const out = []; let line = ''; for (const w of words) { const t = line ? line + ' ' + w : w; if (ctx.measureText(t).width > maxW && line) { out.push(line); line = w; } else line = t; } if (line) out.push(line); return out; }
 function drawStationAndRecord() {
   const R = G.R;
