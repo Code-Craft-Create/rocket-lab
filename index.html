@@ -4097,6 +4097,7 @@ function render() {
   // ---- screen space
   ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
   drawCloudLayer(alt, 1.25, 0.35, 2);
+  if (UI.current === 'title' && H >= 520) drawTitleRocket();
   if (G.mode === 'hangar') drawSeasonFall(1); else if ((G.mode === 'launch' || G.mode === 'flight') && alt < 2600) drawSeasonFall(clamp(1 - alt / 2600, 0, 1));
   drawWishBubble();
   if (G.mode === 'flight' || G.mode === 'ending') drawHUD();
@@ -4373,6 +4374,22 @@ function drawBaronBalloon() {
 const NAME_A = ['Speedy', 'Mighty', 'Sparkly', 'Brave', 'Zippy', 'Rusty', 'Cosmic', 'Jolly', 'Turbo', 'Fluffy', 'Plucky', 'Dizzy'];
 const NAME_B = ['Pickle', 'Teapot', 'Comet', 'Biscuit', 'Noodle', 'Pigeon', 'Muffin', 'Waffle', 'Kettle', 'Sprout', 'Dumpling', 'Badger'];
 const randomRocketName = () => `The ${pick(NAME_A)} ${pick(NAME_B)}`;
+// title screen: a little rocket loops a figure eight under the logo, puffing smoke
+const titleTrail = [];
+function drawTitleRocket() {
+  const t = G.t * 0.8, cx = W / 2, cy = H * 0.47, ax = Math.min(W * 0.34, 250), ay = Math.min(H * 0.1, 80);
+  const x = cx + ax * Math.sin(t), y = cy + ay * Math.sin(2 * t), dx = ax * Math.cos(t), dy = 2 * ay * Math.cos(2 * t);
+  titleTrail.push([x, y, G.t]);
+  while (titleTrail.length && G.t - titleTrail[0][2] > 1.6) titleTrail.shift();
+  if (titleTrail.length > 120) titleTrail.splice(0, titleTrail.length - 120);
+  ctx.save();
+  for (let i = 0; i < titleTrail.length; i += 3) { const [px, py, pt] = titleTrail[i], a = 1 - (G.t - pt) / 1.6; ctx.globalAlpha = a * 0.75; ink(ctx, 2); circ(ctx, px, py, 3 + (1 - a) * 9); fillStroke(ctx, '#ffffff', 2); }
+  ctx.globalAlpha = 1;
+  ctx.translate(x, y); ctx.rotate(Math.atan2(dy, dx) + Math.PI / 2);
+  const s = clamp(Math.min(W, H) / 900, 0.22, 0.34); ctx.scale(s, s);
+  drawRocket(ctx, G.look || rocketLook(), { t: G.t, throttle: 0.9, faces: [], boostersOn: false, dropsOn: false });
+  ctx.restore();
+}
 function drawSeasonDeco(x) {
   const sn = season(), P = G.poke, pk = P.deco > 0 ? P.deco / 1.6 : 0, t = G.t;
   ink(ctx, 2.5);
