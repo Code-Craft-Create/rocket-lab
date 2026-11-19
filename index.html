@@ -38,7 +38,8 @@ button{font-family:var(--font)}
 .btn:disabled{filter:grayscale(.85) opacity(.65);cursor:not-allowed;transform:none;box-shadow:0 5px 0 var(--ink)}
 .btn.small{font-size:15px;padding:6px 12px;border-radius:13px;flex:0 0 auto}
 .btn.off{filter:grayscale(.85) opacity(.6)}
-.seg{display:flex;gap:8px;justify-content:center;margin:0 0 12px}
+.seg{display:flex;gap:8px;justify-content:center;margin:0 0 12px;flex-wrap:wrap}
+@media (max-width:480px){.seg{gap:5px}.seg .btn.small{padding:5px 9px;font-size:13px}}
 .route .r-ico canvas{width:64px;height:64px;display:block}
 .icon-btn{width:46px;height:46px;border:4px solid var(--ink);border-radius:14px;background:var(--paper);box-shadow:0 4px 0 var(--ink);
   cursor:pointer;display:inline-flex;align-items:center;justify-content:center;padding:0;transition:transform .07s,box-shadow .07s}
@@ -1061,6 +1062,41 @@ const CHARS = {
   tourist: { name: 'Tourist', skin: '#ffd9b3', hair: '#6b3e26', style: 'short', col: '#4d96ff' },
 };
 const TOURISTS = ['tourist', 'kid', 'nimbus', 'romeo', 'juno', 'nana', 'farmer', 'kid2', 'bowler', 'twin1', 'cat', 'pip'];
+// ---- Guestbook: everyone you've flown, with a little bio
+const GUESTS = {
+  buckley: 'Crash-test dummy. Never complains. Never says anything, really.',
+  plum: 'Mayor of Pebbleton. Wants a latte with a view and a ribbon to cut at every stop.',
+  volt: 'Runs the lightning lab at Thunderhead Station. Hair has been standing up for years.',
+  nimbus: 'Weather scientist. Carries the umbrella, the clipboard and most of the blame.',
+  orion: 'Astronomer at the Stargazer Observatory. Would not miss a comet for anything.',
+  luna: 'Prof. Orion\'s assistant. Writes everything down, including your landings.',
+  romeo: 'Honeymooner. Booked the Skyhook Hotel\'s heart-shaped window suite.',
+  juno: 'Honeymooner. Mostly here for the tiny complimentary mints.',
+  bell: 'Bellhop at the Skyhook Hotel. Tips accepted in coins, cookies or compliments.',
+  flo: 'Runs the Satellite Diner. Her pancakes never quite land on the plate.',
+  mike: 'Trucker and diner regular. Would fly a thousand kilometres for those pancakes.',
+  kid2: 'Ten years old. Has strong opinions about every rocket ever built.',
+  kid: 'Wants to be the first kid on the Moon. Moonbase Lulu is named after her. She insists.',
+  bowler: 'Bowling champion. Hopes low gravity will finally fix his curveball.',
+  nana: 'Knits in zero-G. The scarves end up everywhere.',
+  pip: 'A small green visitor who just wants to get home. Very polite.',
+  chef: 'Bringing fresh pizza to Mars. The cheese floats a little.',
+  chef2: 'Rosa\'s rival. Opening the second pizzeria on Mars, right next door.',
+  farmer: 'Grows potatoes on Mars. Homesick for a proper pizza.',
+  bot: 'A Mars rover on holiday. Beeps happily at every bump.',
+  gran2: 'Ada\'s old flight instructor. Still grades her landings out loud.',
+  diva: 'Pop star. Booking a Saturn ring spa day before the big tour.',
+  robo: 'Runs the Saturn Ring Spa. Polishes everything, including you.',
+  twin1: 'Twin. Faster than Zap. Will tell you so.',
+  twin2: 'Twin. Louder than Zip. Will tell you so, louder.',
+  prof: 'Studies Saturn\'s rings, mostly from the hot tub.',
+  cat: 'A cat. Bought a ticket somehow. Nobody asks questions.',
+  ada: 'Built the shed, the rocket and the dream. Came along for the last trip.',
+  tourist: 'Takes photos of everything, including the safety card.',
+};
+function guestHint(id) { const r = ROUTES.find(x => x.who.includes(id)); if (r) return `Rides to ${r.to}.`; return TOURISTS.includes(id) ? 'Books seats on your regular routes.' : 'Somewhere out there...'; }
+const guestsMet = () => Object.keys(GUESTS).filter(id => S.met && S.met[id]).length;
+const guestNewCount = () => Object.keys(GUESTS).filter(id => S.met && S.met[id] && !S.seen['guest_' + id]).length;
 
 // story lines keyed by trigger
 const STORY = {
@@ -3318,6 +3354,7 @@ function computeResult() {
   S.money += total; S.earned += total; S.flights++;
   saveGhost(R);
   S.stats.time += R.time; S.stats.pax += R.delivered ? R.pax : 0;
+  if (R.delivered && R.faces) { S.met = S.met || {}; for (const f of R.faces) if (GUESTS[f]) S.met[f] = (S.met[f] || 0) + 1; }
   if (alt > S.bestAlt) S.bestAlt = alt;
   if (r && R.delivered) {
     const rec = S.routes[r.id] || { done: false, stars: 0, runs: 0 };
@@ -3378,6 +3415,7 @@ const ACH = [
   { id: 'kraken', name: 'Eight-Arm Escape', desc: 'Slip past every arm of the Space Kraken', test: () => S.stats.kraken >= 1, reward: 20000 },
   { id: 'guide', prog: () => [GUIDE.filter(guideSeen).length, GUIDE.length], name: 'Sky Spotter', desc: 'Fill every page of the Sky Guide', test: () => GUIDE.every(guideSeen), reward: 50000 },
   { id: 'wish10', prog: () => [S.stats.wishes || 0, 10], name: 'Fairy Rocketmother', desc: 'Grant 10 passenger wishes', test: () => (S.stats.wishes || 0) >= 10, reward: 2500 },
+  { id: 'guests20', prog: () => [guestsMet(), 20], name: 'Famous Friends', desc: 'Fly 20 different passengers (see the Guestbook)', test: () => guestsMet() >= 20, reward: 15000 },
   { id: 'daily', name: 'Special Courier', desc: 'Complete a Daily Special delivery', test: () => (S.stats.daily || 0) >= 1, reward: 3000 },
   { id: 'line2', name: 'Franchise', desc: 'Open a second Skyhop line after the finale', test: () => (S.line || 1) >= 2, reward: 5000 },
   { id: 'tickle', secret: true, name: 'Tickle Tank', desc: 'Poke your rocket 25 times in the workshop', test: () => (S.stats.pokes || 0) >= 25, reward: 250 },
@@ -4484,7 +4522,7 @@ const UI = (() => {
     const mapB = iconBtn('btn-map', 'map', 'Route map', () => openMap());
     if ((routeDone('r0') && ROUTES.some(r => routeUnlocked(r) && !routeDone(r.id) && !S.seen['map_' + r.id])) || (dailyUnlocked() && !S.seen['daily_' + dayKey()])) mapB.appendChild(el('span', 'badge-dot', '!'));
     const ach = iconBtn('btn-ach', 'trophy', 'Achievements & Sky Guide', () => openAch());
-    if (guideNewCount()) ach.appendChild(el('span', 'badge-dot', String(guideNewCount())));
+    if (guideNewCount() + guestNewCount()) ach.appendChild(el('span', 'badge-dot', String(guideNewCount() + guestNewCount())));
     const paint = iconBtn('btn-paint', 'brush', 'Paint shop', () => openPaint());
     if (PAINTS.some(p => paintUnlocked(p) && !S.seen['paint_' + p.id] && p.id !== 'classic') || TRAILS.some(t => t.id !== 'smoke' && trailUnlocked(t) && !S.seen['trail_' + t.id])) paint.appendChild(el('span', 'badge-dot', '!'));
     if (routeDone('r1') || (S.line || 1) > 1 || TRAILS.some(t => t.id !== 'smoke' && trailUnlocked(t))) h.append(paint);
@@ -4752,7 +4790,7 @@ const UI = (() => {
   }
   function startNewLine() {
     for (const p of PAINTS) if (paintUnlocked(p)) S.seen['paintown_' + p.id] = 1;
-    const keep = { ach: S.ach, stats: S.stats, settings: S.settings, seen: S.seen, viewed: S.viewed, tabsSeen: S.tabsSeen, paint: S.paint, trail: S.trail, earned: S.earned, flights: S.flights, avg: S.avg, line: (S.line || 1) + 1 };
+    const keep = { met: S.met, ach: S.ach, stats: S.stats, settings: S.settings, seen: S.seen, viewed: S.viewed, tabsSeen: S.tabsSeen, paint: S.paint, trail: S.trail, earned: S.earned, flights: S.flights, avg: S.avg, line: (S.line || 1) + 1 };
     S = Object.assign(defaultSave(), keep);
     S.seen.endCredits = 0; S.pendingLine = true;
     checkAchievements(); saveGame();
@@ -4766,7 +4804,8 @@ const UI = (() => {
     const row = el('div', 'seg');
     const mk = (label, on, fn) => { const b = el('button', 'btn small ' + (on ? 'go' : 'off'), label); b.addEventListener('click', () => { sfx.tab(); fn(); }); row.appendChild(b); };
     const nn = guideNewCount();
-    mk('Trophies', active === 'ach', openAch); mk('Sky Guide' + (nn && active !== 'guide' ? ` (${nn} new)` : ''), active === 'guide', openGuide);
+    mk('Trophies', active === 'ach', openAch); mk('Sky Guide' + (nn && active !== 'guide' ? ` (${nn})` : ''), active === 'guide', openGuide);
+    if (guestsMet()) { const gn = guestNewCount(); mk('Guests' + (gn && active !== 'guests' ? ` (${gn})` : ''), active === 'guests', openGuests); }
     return row;
   }
   function openGuide() {
@@ -4786,6 +4825,34 @@ const UI = (() => {
     list.prepend(el('div', 'small-note', seen >= GUIDE.length ? `All ${GUIDE.length} spotted. What a book!` : `${seen} / ${GUIDE.length} spotted. Fly higher to fill the book!`));
     list.prepend(bookTabs('guide'));
     for (const g of GUIDE) if (guideSeen(g)) S.seen[guideKey(g)] = 1;
+    saveGame(); renderHeadBtns();
+    $('map-list').parentElement.scrollTop = 0;
+    overlay('scr-map', true);
+  }
+  function openGuests() {
+    const list = $('map-list'); list.innerHTML = '';
+    const ids = Object.keys(GUESTS);
+    for (const id of ids) {
+      const n = (S.met && S.met[id]) || 0, got = n > 0;
+      const card = el('div', 'route' + (got ? '' : ' locked'));
+      const cnv = document.createElement('canvas'); cnv.width = 128; cnv.height = 128;
+      const c = cnv.getContext('2d'); c.scale(2, 2); c.translate(32, 32);
+      rr(c, -30, -30, 60, 60, 14); c.fillStyle = got ? '#bfe9ff' : '#cfc6b4'; c.fill(); c.lineWidth = 3; c.strokeStyle = INK; c.stroke();
+      const fc = document.createElement('canvas'); fc.width = 128; fc.height = 128; const f = fc.getContext('2d'); f.scale(2, 2); f.translate(32, 36); drawFace(f, id, 19, 'happy', 0);
+      if (!got) { f.setTransform(1, 0, 0, 1, 0, 0); f.globalCompositeOperation = 'source-in'; f.fillStyle = '#9a8f7c'; f.fillRect(0, 0, 128, 128); }
+      c.save(); rr(c, -30, -30, 60, 60, 14); c.clip(); c.drawImage(fc, -32, -32, 64, 64); c.restore();
+      if (!got) { c.font = `900 22px ${FONT}`; c.fillStyle = '#fff6e5'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText('?', 0, 4); }
+      const ico = el('div', 'r-ico'); ico.appendChild(cnv); cnv.style.width = '64px'; cnv.style.height = '64px'; card.appendChild(ico);
+      const fresh = got && !S.seen['guest_' + id];
+      const chips = got ? `<span class="chip pax">${n} trip${n > 1 ? 's' : ''}</span>${fresh ? '<span class="chip ok">New!</span>' : ''}` : '';
+      card.appendChild(el('div', 'r-main', `<div class="r-name">${got ? CHARS[id].name : '???'}</div><div class="r-desc">${got ? GUESTS[id] : guestHint(id)}</div><div class="r-meta">${chips}</div>`));
+      list.appendChild(card);
+    }
+    $('scr-map').querySelector('h2').textContent = 'Guestbook';
+    const met = guestsMet();
+    list.prepend(el('div', 'small-note', met >= ids.length ? `All ${ids.length} guests flown. Everyone in the sky knows Skyhop Express!` : `${met} / ${ids.length} guests flown. Deliver more routes to meet everyone.`));
+    list.prepend(bookTabs('guests'));
+    for (const id of ids) if (S.met && S.met[id]) S.seen['guest_' + id] = 1;
     saveGame(); renderHeadBtns();
     $('map-list').parentElement.scrollTop = 0;
     overlay('scr-map', true);
@@ -5206,6 +5273,7 @@ function botSteer() {
 
 // ================================================================ BOOT
 loadSave();
+if (!S.met) { S.met = {}; for (const r of ROUTES) if (routeDone(r.id)) for (const f of (r.pax ? r.who.slice(0, r.pax) : ['buckley'])) S.met[f] = 1; }
 resize();
 G.st = computeStats(); G.look = rocketLook();
 G.cam.py = padRestPy(G.look); G.cam.anchor = 0.72; G.cam.z = worldZoom();
