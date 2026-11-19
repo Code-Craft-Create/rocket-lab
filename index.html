@@ -2206,6 +2206,7 @@ function todaysDaily() {
   return { day, cargo: cargo[0], to: cargo[1], twist, cond, target: S.daily.target, done: !!S.daily.done, streak: S.daily.streak || 0 };
 }
 function dailyStreakAlive() { const d = S.daily; if (!d || !d.last) return 0; const y = dayKey(new Date(Date.now() - 864e5)); return d.last === dayKey() || d.last === y ? d.streak || 0 : 0; }
+function hangarDailyOn() { return dailyUnlocked() && !(S.daily && S.daily.day === dayKey() && S.daily.done); }
 function nextCondId() { if (S.route === 'daily' && dailyUnlocked() && S.daily && S.daily.day === dayKey() && !S.daily.done) return todaysDaily().cond; return CONDS[S.cond] ? S.cond : 'clear'; }
 function fixDailyRoute() {
   if (S.route !== 'daily') return;
@@ -3802,6 +3803,17 @@ function drawGround() {
   }
   // ---- forecast sign
   if (G.mode === 'hangar' && S.flights >= 4) drawForecastSign(126, 0);
+  // ---- today's Daily Special customer waits in a balloon above the yard (tap it)
+  if (G.mode === 'hangar' && hangarDailyOn()) {
+    const bpy = 205 + Math.sin(G.t * 1.4) * 7, bx = -128 + Math.sin(G.t * 0.6) * 6;
+    ctx.save(); ctx.translate(bx, -bpy); ctx.rotate(Math.sin(G.t * 1.1) * 0.05); ctx.scale(0.62, 0.62); ink(ctx, 3);
+    ctx.beginPath(); ctx.moveTo(-14, 26); ctx.lineTo(-7, 50); ctx.moveTo(14, 26); ctx.lineTo(7, 50); ctx.stroke();
+    ctx.beginPath(); ctx.ellipse(0, 0, 30, 34, 0, 0, TAU); fillStroke(ctx, '#ff8ad0', 3);
+    ctx.beginPath(); ctx.ellipse(0, 0, 12, 34, 0, 0, TAU); ctx.fillStyle = '#ffd6e6'; ctx.fill(); ctx.stroke();
+    ctx.translate(0, 64); drawParcel(ctx, 0.75, G.t);
+    ctx.restore();
+    if (!S.seen['daily_' + dayKey()]) { ctx.save(); ctx.globalAlpha = 0.6 + Math.sin(G.t * 5) * 0.4; text(ctx, 'NEW!', bx, -bpy - 34, 13, '#ff5a8a', 'center', INK, 3); ctx.restore(); }
+  }
   // ---- launch pad
   rr(ctx, -80, -4, 160, 22, 5); fillStroke(ctx, '#c9ced8');
   ctx.save(); rr(ctx, -80, -4, 160, 22, 5); ctx.clip(); ctx.fillStyle = '#ffd93d'; for (let i = -10; i < 10; i++) { ctx.beginPath(); ctx.moveTo(i * 22, 18); ctx.lineTo(i * 22 + 11, 18); ctx.lineTo(i * 22 + 22, -4); ctx.lineTo(i * 22 + 11, -4); ctx.fill(); } ctx.restore();
@@ -3883,6 +3895,7 @@ function pokeHangar(sx, sy) {
     if (S.stats.pokes === 25) { checkAchievements(); if (S.pendingAch && S.pendingAch.length) { for (const id of S.pendingAch) { const a = ACH.find(x => x.id === id); toast(`Achievement: <b>${a.name}</b> +${fmtMoney(a.reward)}`); } sfx.ach(); S.pendingAch = []; UI.refresh(); } saveGame(); }
     return true;
   }
+  if (hangarDailyOn() && Math.abs(wx + 128) < 26 && wpy > 155 && wpy < 235) { sfx.boing(); UI.openMap(); return true; }
   if (!town) return false;
   if (wx > -214 && wx < -166 && wpy > 0 && wpy < 66) {
     let line = pick(ADA_QUIPS); if (line === P.adaLine) line = pick(ADA_QUIPS);
