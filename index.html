@@ -822,6 +822,21 @@ const Music = (() => {
         if (sec >= 2 && s % 4 === 0) { const n = root + 24 + this.lead[(i / 4 + barI) % 16]; voice('square', N(n), t, sd * 3.5, 0.03, { lp: 2600, att: 0.02 }); voice('sine', N(n + 12), t, sd * 2, 0.02); }
       },
     },
+    // tense boss gallop in E minor (i–i–VI–VII)
+    boss: {
+      bpm: 152, swing: 0,
+      prog: [[40, [0, 3, 7]], [40, [0, 3, 7]], [36, [0, 4, 7]], [38, [0, 4, 7]]],
+      step(i, t, sd) {
+        const barI = Math.floor(i / 16) % 4, s = i % 16, [root, ch] = this.prog[barI];
+        if (s % 4 !== 1) voice('sawtooth', N(root + (s % 8 === 6 ? 12 : 0)), t, sd * 0.9, 0.14, { lp: 760, q: 5 });
+        if (s % 4 === 0) drum('kick', t, 0.9);
+        if (s === 4 || s === 12) drum('snare', t, 0.9);
+        if (s % 2 === 1) drum('hat', t, 0.7);
+        if (barI === 3 && (s === 13 || s === 14 || s === 15)) drum('snare', t, 0.55);
+        if (s === 0 || s === 3 || s === 6) ch.forEach((c, k) => voice('square', N(root + 24 + c), t + k * 0.005, sd * 1.2, 0.03, { lp: 2600 }));
+        if (s % 8 === 0) { const n = root + 36 + (barI % 2 ? 3 : 7); voice('square', N(n), t, sd * 3.5, 0.04, { lp: 3200 }); voice('square', N(n - 1), t + sd * 4, sd * 2, 0.03, { lp: 3200 }); }
+      },
+    },
     // gentle title
     title: {
       bpm: 92, swing: 0.1,
@@ -2352,7 +2367,7 @@ function updateBoss(R, dt) {
     if (!b.paid && b.strikes.every(k => k.st === 'gone')) {
       b.paid = true;
       if (!b.hit) {
-        const v = coinValue(R.alt) * 15; R.coinCash += v; R.coins += 15; S.stats.coins += 15; S.stats.king++;
+        const v = coinValue(R.alt) * 12; R.coinCash += v; R.coins += 12; S.stats.coins += 12; S.stats.king++;
         banner('STORM KING DODGED!', '#fff36b', 2.2, '+' + fmtMoney(v)); sfx.bigcoin(); confetti(R.x, R.py + 80, 40);
       }
     }
@@ -2366,7 +2381,7 @@ function updateBoss(R, dt) {
     b.hole = [hx, hy];
     if (b.spout && !b.boosted && Math.abs(rx - hx) < 40 * u && ry < hy + 10 * u && ry > hy - 230 * u) {
       b.boosted = true; S.stats.whale++;
-      const boost = Math.max(80, Math.abs(R.vy) * 0.25);
+      const boost = Math.max(60, Math.abs(R.vy) * 0.18);
       R.vy += boost; R.comfort = Math.min(1, R.comfort + 0.25); R.mood = 'joy'; R.moodT = 2.5;
       sfx.ring(4); sfx.whale(); G.cam.shake = Math.max(G.cam.shake, 5);
       floater(R.x, R.py + 40, 'WHALE BOOST!', '#9fdcff', 24);
@@ -2403,7 +2418,7 @@ function updateBoss(R, dt) {
     if (!b.paid && b.strikes.every(k => k.st === 'gone')) {
       b.paid = true;
       if (!b.hit) {
-        const v = coinValue(R.alt) * 20; R.coinCash += v; R.coins += 20; S.stats.coins += 20; S.stats.kraken++;
+        const v = coinValue(R.alt) * 12; R.coinCash += v; R.coins += 12; S.stats.coins += 12; S.stats.kraken++;
         banner('KRAKEN ESCAPED!', '#f15bb5', 2.2, '+' + fmtMoney(v)); sfx.bigcoin(); confetti(R.x, R.py + 80, 40);
       }
     }
@@ -4786,7 +4801,12 @@ function update(dt) {
   else updateIdleCamera(dt);
   updateParticles(sdt);
   // music by altitude
-  if ((G.mode === 'flight' || G.mode === 'ending') && G.R) { if (G.R.alt > 12000 && Music.current === 'flight') Music.play('space'); else if (G.R.alt > 110000 && Music.current === 'space') Music.play('deep'); }
+  if ((G.mode === 'flight' || G.mode === 'ending') && G.R) { // flight -> space -> deep as you climb (never back down), boss gallop during a fight
+    const R = G.R; R.musTier = Math.max(R.musTier || 0, R.alt > 110000 ? 2 : R.alt > 12000 ? 1 : 0);
+    const fight = R.boss && R.boss.id !== 'whale' && G.mode === 'flight' && !R.boss.paid;
+    const want = fight ? 'boss' : ['flight', 'space', 'deep'][R.musTier];
+    if (Music.current !== want && ['flight', 'space', 'deep', 'boss'].includes(Music.current)) Music.play(want);
+  }
   saveTimer += dt;
 }
 function frame() {
