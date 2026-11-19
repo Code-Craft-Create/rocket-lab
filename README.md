@@ -10,13 +10,17 @@ Open `index.html` in any modern browser, or enable GitHub Pages for this repo (S
 
 **Controls**
 
-| Action | Keyboard | Touch / mouse |
-| --- | --- | --- |
-| Launch (hit the green zone!) | Space | Tap |
-| Steer | ← → or A D | Hold left / right half of the screen (or turn on **Tilt to steer** in Settings) |
-| Afterburner (once unlocked) | Space | BOOST button |
-| Dash (once unlocked) | Double-tap ← or → | Double-tap the left or right half |
-| Pause | P / Esc | ⏸ button |
+| Action | Keyboard | Touch / mouse | Controller |
+| --- | --- | --- | --- |
+| Launch (hit the green zone!) | Space | Tap | A |
+| Steer | ← → or A D | Hold left / right half of the screen (or turn on **Tilt to steer** in Settings) | Left stick or d-pad |
+| Afterburner (once unlocked) | Space | BOOST button | A |
+| Dash (once unlocked) | Double-tap ← or → | Double-tap the left or right half | LB / RB, or flick the stick twice |
+| Pause | P / Esc | ⏸ button | Start |
+| Workshop: pick an upgrade | Arrow keys | Tap it | D-pad or stick |
+| Workshop: buy it | B | Buy button | X |
+| Workshop: switch tabs | Q / E | Tap a tab | LB / RB |
+| Close a panel / back to the workshop | Esc | ✕ button | B |
 
 ## Features
 
