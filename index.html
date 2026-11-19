@@ -227,15 +227,28 @@ button{font-family:var(--font)}
   #detail .dicon{width:44px;height:44px}
   #detail .dicon svg{width:32px;height:32px}
   #detail h3{font-size:15px}
-  #detail p{-webkit-line-clamp:1}
+  #detail p{display:none}
+  #detail{min-height:56px}
   .side-foot{padding:6px 8px 8px;gap:8px}
-  #route-chip .rc-ico{width:30px;height:30px}
-  #route-chip .rc-s{display:none}
-  .btn.big{font-size:19px;padding:8px 14px}
+  #route-chip{padding:3px 8px}
+  #route-chip .rc-ico{width:26px;height:26px}
+  #route-chip .rc-k,#route-chip .rc-s{display:none}
+  .btn.big{font-size:18px;padding:6px 14px}
   body.in-hangar #toasts{left:calc((100vw - min(440px,54vw) - 16px)/2)}
   .toast{font-size:12px;padding:5px 10px;max-width:42vw}
   body.in-flight #toasts{top:auto;bottom:10px}
   body.in-flight .toast{font-size:12px;padding:4px 10px;max-width:44vw;border-width:2px}
+}
+/* small phones on their side (568 px wide): wider panel so every header button fits */
+@media (max-height:520px) and (max-width:640px){
+  #scr-hangar .side{width:62vw}
+  html body.in-hangar #toasts{left:calc(19vw - 8px);width:calc(38vw - 16px)}
+  body.in-hangar .toast{max-width:100%}
+  .money{font-size:15px;padding:2px 8px 2px 3px}
+  .money .coin{width:18px;height:18px}
+  .head-btns{gap:4px}
+  .head-btns .icon-btn{width:30px;height:30px}
+  .head-btns .icon-btn svg{width:17px;height:17px}
 }
 
 /* ---------- Generic overlay ---------- */
