@@ -332,6 +332,9 @@ body.in-hangar #toasts{left:calc((100vw - min(580px,54vw) - 16px)/2)}
 #lt-ok{align-self:center}
 .lt-foot{display:flex;flex-direction:column;align-items:center;flex:none}
 @media (max-height:520px){.lt-body{font-size:15px;line-height:1.35}#scr-letter .panel{padding:12px 16px;max-width:600px}.lt-head{margin-bottom:4px}.lt-head canvas{width:48px;height:48px}.lt-foot{flex-direction:row;justify-content:center;gap:12px;margin-top:8px}.lt-gift{margin:0}}
+#scr-code .panel{max-width:440px}
+#cd-box{width:100%;height:120px;font:600 12px/1.35 ui-monospace,Menlo,Consolas,monospace;border:3px solid var(--ink);border-radius:12px;padding:8px 10px;resize:none;background:#fff;color:var(--ink);word-break:break-all}
+.code-row{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
 #scr-pause .panel,#scr-settings .panel,#scr-confirm .panel{max-width:380px;align-items:stretch}
 .menu-col{display:flex;flex-direction:column;gap:12px;padding:6px 18px 20px}
 .toggle-row{display:flex;justify-content:space-between;align-items:center;font-weight:800;font-size:18px;background:#fff;border:4px solid var(--ink);border-radius:14px;padding:8px 12px}
@@ -422,6 +425,16 @@ body.in-hangar #toasts{left:calc((100vw - min(580px,54vw) - 16px)/2)}
     <div class="panel">
       <div class="ov-head"><h2>Settings</h2><button class="icon-btn" id="set-close"></button></div>
       <div class="menu-col" id="settings-col"></div>
+    </div>
+  </div>
+
+  <!-- Save code (move progress between devices) -->
+  <div id="scr-code" class="screen overlay hidden">
+    <div class="panel">
+      <div class="ov-head"><h2 id="cd-title">Save code</h2><button class="icon-btn" id="cd-close"></button></div>
+      <div class="menu-col"><div class="small-note" id="cd-text"></div><textarea id="cd-box" spellcheck="false" autocomplete="off"></textarea>
+        <div class="code-row"><button class="btn go" id="cd-act">Copy</button></div>
+      </div>
     </div>
   </div>
 
@@ -533,7 +546,15 @@ function loadSave() {
   } catch (e) { S = defaultSave(); }
 }
 let saveTimer = 0;
-function saveGame() { try { localStorage.setItem(SAVE_KEY, JSON.stringify(S)); } catch (e) { /* storage unavailable */ } }
+let saveLock = false; // set while a loaded save code reloads the page, so the old save can't overwrite it
+function saveGame() { if (saveLock) return; try { localStorage.setItem(SAVE_KEY, JSON.stringify(S)); } catch (e) { /* storage unavailable */ } }
+// save codes: copy your progress to another device (ghost replays are left out to keep the code short)
+function exportSave() { const o = Object.assign({}, S); delete o.ghosts; return 'SKYHOP1.' + btoa(unescape(encodeURIComponent(JSON.stringify(o)))); }
+function importSave(str) {
+  str = (str || '').replace(/\s+/g, '');
+  if (!str.startsWith('SKYHOP1.')) return null;
+  try { const d = JSON.parse(decodeURIComponent(escape(atob(str.slice(8))))); return d && typeof d === 'object' && typeof d.flights === 'number' && d.up && d.routes ? d : null; } catch (e) { return null; }
+}
 function resetSave() { S = defaultSave(); saveGame(); }
 
 // ================================================================ AUDIO
@@ -1200,7 +1221,7 @@ const lostKnown = it => !!(S.met && S.met[it.owner]);
 const lostFound = () => LOST.filter(it => S.lost && S.lost[it.id]).length;
 const lostNewCount = () => LOST.filter(it => lostKnown(it) && !S.seen['lost_' + it.id]).length;
 function trySpawnLost(est, cx, spread, y0, y1) {
-  const R = G.R; if (R.lostSpawned || R.boss) return;
+  const R = G.R; if (R.lostSpawned || R.boss || S.flights < 6) return;
   for (const it of LOST) {
     if (!lostKnown(it) || (S.lost && S.lost[it.id]) || est < it.min || est > it.max) continue;
     R.lostRolled = R.lostRolled || {};
@@ -5372,6 +5393,10 @@ const UI = (() => {
     row('Ghost of your best run', 'ghost');
     row('Relaxed mode<small>+2 hearts, fewer hazards</small>', 'relaxed', () => { G.st = computeStats(); refresh(); });
     if (tiltSupported()) row('Tilt to steer<small>tip your phone left and right</small>', 'tilt', (v, sw) => { if (!v) return; enableTilt().then(ok => { if (!ok) { S.settings.tilt = false; sw.classList.remove('on'); saveGame(); toast('Tilt needs motion access: allow it in your browser'); } else toast('Tilt on! Hold your phone the way you like at launch.'); }); });
+    const mv = el('div', 'code-row');
+    const bOut = el('button', 'btn small', 'Copy save code'), bIn = el('button', 'btn small', 'Load save code');
+    bOut.addEventListener('click', () => { sfx.click(); openCode('out'); }); bIn.addEventListener('click', () => { sfx.click(); openCode('in'); });
+    mv.append(bOut, bIn); col.appendChild(el('div', 'small-note', 'Move your progress to another device:')); col.appendChild(mv);
     const reset = el('button', 'btn red', 'Reset progress');
     reset.addEventListener('click', () => confirmBox('Start over?', 'This wipes your rocket, money and routes. No undo!', () => { resetSave(); location.reload(); }));
     col.appendChild(reset);
@@ -5379,6 +5404,31 @@ const UI = (() => {
     col.appendChild(el('div', 'small-note', `<b>Your stats</b><br>${S.flights} flights · best ${fmtAlt(S.bestAlt)} · ${fmtMoney(S.earned)} earned<br>${fmtInt(st.coins)} coins · ${st.rings} rings · ${st.perfect} perfect launches · ${st.pax} passengers · ${Math.round(st.time / 60)} min flying${st.daily ? ` · ${st.daily} daily special${st.daily > 1 ? 's' : ''}` : ''}${st.king + st.whale + st.kraken ? ` · ${st.king + st.whale + st.kraken} boss wins` : ''}${st.letters ? ` · ${st.letters} fan letter${st.letters > 1 ? 's' : ''}` : ''}`));
     col.appendChild(el('div', 'small-note', 'Skyhop Express · every picture, sound and tune is generated by code.<br>Steer: ← → / A D, tap sides' + (tiltSupported() ? ' or tilt' : '') + ' · Boost: Space · Pause: P'));
     overlay('scr-settings', true);
+  }
+  function openCode(mode) {
+    const box = $('cd-box'), act = $('cd-act');
+    if (mode === 'out') {
+      $('cd-title').textContent = 'Your save code';
+      $('cd-text').textContent = 'Copy this code, then paste it into Skyhop Express on your other device (Settings, Load save code).';
+      box.value = exportSave(); box.readOnly = true; act.textContent = 'Copy';
+      act.onclick = () => {
+        box.focus(); box.select();
+        const done = () => { toast('Save code copied!'); sfx.good(); };
+        const fallback = () => { try { if (document.execCommand('copy')) { done(); return; } } catch (e) { /* ignore */ } toast('Select the code and copy it by hand.'); };
+        if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(box.value).then(done, fallback); else fallback();
+      };
+    } else {
+      $('cd-title').textContent = 'Load a save code';
+      $('cd-text').textContent = 'Paste a save code from another device. It replaces your progress here!';
+      box.value = ''; box.readOnly = false; act.textContent = 'Load';
+      act.onclick = () => {
+        const d = importSave(box.value);
+        if (!d) { sfx.deny(); toast('Hmm, that code doesn’t look right.'); return; }
+        confirmBox('Load this save?', `${d.flights} flights, best ${fmtAlt(d.bestAlt || 0)}. Your progress on this device will be replaced.`, () => { saveLock = true; try { localStorage.setItem(SAVE_KEY, JSON.stringify(d)); } catch (e) { /* ignore */ } location.reload(); });
+      };
+    }
+    overlay('scr-code', true);
+    if (mode === 'in') setTimeout(() => box.focus(), 50);
   }
   function confirmBox(title, textS, yes) {
     $('cf-title').textContent = title; $('cf-text').textContent = textS;
@@ -5506,6 +5556,7 @@ const UI = (() => {
   $('map-close').innerHTML = ICONS.close; $('set-close').innerHTML = ICONS.close; $('btn-pause').innerHTML = ICONS.pause;
   $('map-close').addEventListener('click', () => { sfx.click(); overlay('scr-map', false); $('scr-map').querySelector('h2').textContent = 'Route Map'; refresh(); });
   $('set-close').addEventListener('click', () => { sfx.click(); overlay('scr-settings', false); });
+  $('cd-close').innerHTML = ICONS.close; $('cd-close').addEventListener('click', () => { sfx.click(); overlay('scr-code', false); });
   $('btn-pause').addEventListener('click', e => { e.stopPropagation(); setPaused(true); });
   $('btn-launch').addEventListener('click', () => { AudioSys.init(); sfx.click(); enterLaunch(); });
   soundBtns($('title-tools'));
@@ -5545,6 +5596,7 @@ $('btn-start').addEventListener('click', e => { e.stopPropagation(); if (S.setti
 
 const BLOCK_KEYS = new Set(['Space', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight']);
 window.addEventListener('keydown', e => {
+  if (e.target && (e.target.tagName === 'TEXTAREA' || e.target.tagName === 'INPUT')) return;
   if (e.repeat && (e.code === 'Space')) { e.preventDefault(); return; }
   G.input.keys[e.code] = true;
   const inGame = G.mode === 'flight' || G.mode === 'launch';
@@ -5561,7 +5613,7 @@ window.addEventListener('keydown', e => {
     const vis = id => !$(id).classList.contains('hidden');
     if (vis('scr-letter')) { e.preventDefault(); $('lt-ok').click(); return; }
     if (vis('scr-results')) { e.preventDefault(); if (performance.now() - (G.resultAt || 0) > 900) $(e.code === 'Enter' ? 'res-hangar' : 'res-again').click(); return; }
-    if (G.mode === 'hangar' && UI.current === 'hangar' && !vis('scr-map') && !vis('scr-settings') && !vis('scr-confirm') && !vis('scr-pause')) { e.preventDefault(); $('btn-launch').click(); return; }
+    if (G.mode === 'hangar' && UI.current === 'hangar' && !vis('scr-map') && !vis('scr-settings') && !vis('scr-confirm') && !vis('scr-pause') && !vis('scr-code')) { e.preventDefault(); $('btn-launch').click(); return; }
   }
   if (e.code === 'KeyM') { S.settings.music = !S.settings.music; AudioSys.setMusic(S.settings.music); saveGame(); }
 });
