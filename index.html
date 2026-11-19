@@ -717,6 +717,7 @@ const AudioSys = (() => {
     jelly() { tone({ type: 'sine', f: 400, f2: 900, dur: 0.25, vol: 0.12 }); },
     warp() { tone({ type: 'sine', f: 200, f2: 1600, dur: 0.8, vol: 0.12 }); noise({ dur: 0.8, vol: 0.15, filter: 'bandpass', f: 300, f2: 5000, q: 4 }); },
     ach() { [0, 4, 7, 12, 16].forEach((s, i) => tone({ type: 'triangle', f: N(79 + s), dur: 0.3, vol: 0.12, delay: i * 0.05 })); },
+    pop2() { if (!gate('pop2', 90)) return; noise({ dur: 0.35, vol: 0.16, filter: 'lowpass', f: 900, f2: 200 }); tone({ type: 'sine', f: 180, f2: 60, dur: 0.25, vol: 0.12 }); noise({ dur: 0.6, vol: 0.05, filter: 'highpass', f: 4000, delay: 0.08 }); },
     mail() { [0, 0.16].forEach(d => { tone({ type: 'sine', f: 2093, dur: 0.5, vol: 0.07, delay: d }); tone({ type: 'sine', f: 2960, dur: 0.35, vol: 0.035, delay: d }); }); },
     paper() { noise({ dur: 0.25, vol: 0.12, filter: 'bandpass', f: 2500, f2: 5000, q: 0.8 }); noise({ dur: 0.2, vol: 0.08, filter: 'bandpass', f: 1800, f2: 3500, q: 0.8, delay: 0.18 }); },
     boing() { tone({ type: 'sine', f: 200, f2: 620, dur: 0.16, vol: 0.2 }); tone({ type: 'sine', f: 620, f2: 260, dur: 0.3, vol: 0.13, delay: 0.14 }); },
@@ -2694,6 +2695,18 @@ function puff(x, py, n, col, spd = 120, size = [6, 14], life = [0.5, 1]) {
 function sparks(x, py, n, cols = ['#ffd93d', '#ff9f43', '#fff'], spd = 300) {
   for (let i = 0; i < n; i++) { const a = rand(0, TAU), s = rand(0.3, 1) * spd; G.parts.push({ k: 'spark', x, py, vx: Math.cos(a) * s, vy: Math.sin(a) * s, r: rand(2, 4), life: rand(0.3, 0.7), t: 0, col: pick(cols) }); }
 }
+// fireworks: shells rise, then burst into glowing sparks (deliveries)
+function fireworks(x, py, n = 4, spread = 0) {
+  spread = spread || Math.min(240, (W / G.cam.z) * 0.32);
+  const cols = [['#ff5a5f', '#ffd93d'], ['#ffd93d', '#ff9f43'], ['#4fd8ff', '#ffffff'], ['#5fd068', '#ffd93d'], ['#f15bb5', '#ffffff'], ['#9b5de5', '#4fd8ff']];
+  for (let i = 0; i < n; i++) G.parts.push({ k: 'shell', ride: 1, x: x + (i % 2 ? 1 : -1) * rand(spread * 0.3, spread), py: py + rand(-60, 20), vx: rand(-30, 30), vy: rand(300, 380), r: 4, life: 0.4 + i * 0.17 + rand(0, 0.1), t: 0, col: '#fff6e5', pal: pick(cols) });
+}
+function burst(p) {
+  const n = 28, s0 = rand(380, 460);
+  for (let i = 0; i < n; i++) { const a = i / n * TAU + rand(-0.08, 0.08), s = s0 * rand(0.75, 1); G.parts.push({ k: 'fw', ride: 1, x: p.x, py: p.py, vx: Math.cos(a) * s + p.vx * 0.3, vy: Math.sin(a) * s + p.vy * 0.2, r: rand(4.5, 6.5), life: rand(0.9, 1.3), t: 0, col: p.pal[i % 2] }); }
+  G.parts.push({ k: 'glow', ride: 1, x: p.x, py: p.py, vx: 0, vy: 0, r: 70, life: 0.35, t: 0, col: p.pal[1] });
+  sfx.pop2 ? sfx.pop2() : sfx.zap();
+}
 function confetti(x, py, n = 60) {
   const cols = ['#ff5a5f', '#ffd93d', '#5fd068', '#4d96ff', '#f15bb5', '#9b5de5'];
   for (let i = 0; i < n; i++) G.parts.push({ k: 'conf', x: x + rand(-20, 20), py, vx: rand(-260, 260), vy: rand(100, 420), r: rand(4, 7), life: rand(1.5, 2.6), t: 0, col: pick(cols), rot: rand(0, TAU), vr: rand(-10, 10) });
@@ -3200,7 +3213,7 @@ function updateFlight(dt) {
   const zi = zoneIndex(R.alt);
   if (zi > R.zi) { R.zi = zi; banner(ZONES[zi].name, '#bff8ff', 2.2, 'NOW ENTERING'); sfx.zone(); if (zi === 3 && !S.seen.space) { S.seen.space = 1; S.pendingSpace = true; } }
   if (R.alt > 1350000 && !R.pipWave) { R.pipWave = 1; banner('Pip\u2019s home planet!', '#c8ffb0', 2.6, 'THE WHOLE FAMILY IS WAVING'); sfx.cheer(); if (!S.seen.pipPlanet) { S.seen.pipPlanet = 1; } }
-  if (R.daily && !R.dailyDone && R.alt >= R.daily.target) { R.dailyDone = true; banner('SPECIAL DELIVERED!', '#f15bb5', 2); sfx.cheer(); buzz([30, 40, 30]); confetti(R.x, R.py, 50); floater(R.x, R.py + 80, `${R.daily.to} got ${R.daily.cargo}!`, '#ffd6e6', 18); }
+  if (R.daily && !R.dailyDone && R.alt >= R.daily.target) { R.dailyDone = true; banner('SPECIAL DELIVERED!', '#f15bb5', 2); sfx.cheer(); buzz([30, 40, 30]); confetti(R.x, R.py, 50); fireworks(R.x, R.py + 40, 3); floater(R.x, R.py + 80, `${R.daily.to} got ${R.daily.cargo}!`, '#ffd6e6', 18); }
   if (!R.recordShown && R.alt > S.bestAlt) { R.recordShown = true; banner('NEW RECORD!', '#ffd93d', 1.8); sfx.record(); confetti(R.x, R.py, 30); }
   if (R.route && !R.docked && R.alt >= R.route.alt) dock();
   // --- exhaust particles
@@ -3541,7 +3554,7 @@ function dock() {
   R.delivered = true;
   sfx.deliver(); buzz([30, 50, 30]);
   banner('DELIVERED!', '#5fd068', 2.6, r.to.toUpperCase());
-  confetti(R.x, R.py, 90);
+  confetti(R.x, R.py, 90); fireworks(R.x, R.py + 40, 5);
   G.slow = 0.35; G.slowT = 1.1;
   R.mood = 'joy'; R.moodT = 3;
   for (let i = 0; i < R.faces.length; i++) floater(R.x + (i - R.faces.length / 2) * 26, R.py + 40 + i * 6, '♥', '#ff5a8a', 22);
@@ -4448,6 +4461,8 @@ function drawParticle(p) {
   else if (p.k === 'glow') { ctx.globalAlpha = (1 - k) * 0.8; ctx.fillStyle = p.col; circ(ctx, p.x, -p.py, p.r * (1 - k * 0.5)); ctx.fill(); }
   else if (p.k === 'puff') { ctx.globalAlpha = (1 - k); ink(ctx, 2); circ(ctx, p.x, -p.py, p.r * (1 + k)); fillStroke(ctx, p.col, 2); }
   else if (p.k === 'spark') { ctx.globalAlpha = 1 - k; ctx.fillStyle = p.col; circ(ctx, p.x, -p.py, p.r * (1 - k * 0.5)); ctx.fill(); }
+  else if (p.k === 'fw') { ctx.globalAlpha = k > 0.6 ? (1 - k) / 0.4 * (Math.sin(p.t * 40) > -0.3 ? 1 : 0.3) : 1; ctx.lineCap = 'round'; ctx.beginPath(); ctx.moveTo(p.x - p.vx * 0.05, -(p.py - p.vy * 0.05)); ctx.lineTo(p.x, -p.py); ctx.strokeStyle = INK; ctx.lineWidth = p.r + 3; ctx.stroke(); ctx.strokeStyle = p.col; ctx.lineWidth = p.r; ctx.stroke(); ctx.fillStyle = '#fff'; circ(ctx, p.x, -p.py, p.r * 0.55); ctx.fill(); }
+  else if (p.k === 'shell') { ctx.globalAlpha = 1; ctx.strokeStyle = 'rgba(255,246,229,.7)'; ctx.lineWidth = 3; ctx.lineCap = 'round'; ctx.beginPath(); ctx.moveTo(p.x - p.vx * 0.08, -(p.py - p.vy * 0.08)); ctx.lineTo(p.x, -p.py); ctx.stroke(); ctx.fillStyle = '#fff'; circ(ctx, p.x, -p.py, 3.5); ctx.fill(); }
   else if (p.k === 'line') { ctx.globalAlpha = (1 - k) * 0.8; ctx.strokeStyle = p.col; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(p.x, -p.py); ctx.lineTo(p.x, -p.py + p.r); ctx.stroke(); }
   else if (p.k === 'conf') { ctx.globalAlpha = 1 - clamp((k - 0.7) / 0.3, 0, 1); ctx.translate(p.x, -p.py); ctx.rotate(p.rot); ctx.fillStyle = p.col; ctx.fillRect(-p.r, -p.r * 0.5, p.r * 2, p.r); ctx.strokeStyle = INK; ctx.lineWidth = 1.5; ctx.strokeRect(-p.r, -p.r * 0.5, p.r * 2, p.r); }
   else if (p.k === 'heart') { ctx.globalAlpha = 1 - k; ctx.translate(p.x, -p.py); ctx.rotate(p.rot); const r = p.r * (1 + k * 0.4); ink(ctx, 2); ctx.beginPath(); ctx.moveTo(0, r * 0.9); ctx.bezierCurveTo(-r * 1.6, -r * 0.2, -r * 0.6, -r * 1.4, 0, -r * 0.5); ctx.bezierCurveTo(r * 0.6, -r * 1.4, r * 1.6, -r * 0.2, 0, r * 0.9); fillStroke(ctx, p.col, 2); }
@@ -4465,12 +4480,16 @@ function drawParticle(p) {
   ctx.restore();
 }
 function updateParticles(dt) {
+  const rideV = G.R && !G.R.crashed ? pxv(G.R.vy) : 0;
   for (const p of G.parts) {
     p.t += dt; p.x += p.vx * dt; p.py += p.vy * dt;
+    if (p.ride) p.py += rideV * dt;
     if (p.k === 'smoke' || p.k === 'puff') { p.vx *= 0.96; p.vy *= 0.96; p.vy += 8 * dt; }
     else if (p.k === 'conf' || p.k === 'feather') { p.vy -= 380 * dt; p.vx *= 0.98; if (p.vy < -120) p.vy = -120; p.rot += p.vr * dt; }
     else if (p.k === 'debris') { p.vy -= 420 * dt; p.rot += p.vr * dt; }
     else if (p.k === 'spark') { p.vx *= 0.93; p.vy *= 0.93; }
+    else if (p.k === 'fw') { p.vx *= 0.955; p.vy *= 0.955; p.vy -= 70 * dt; }
+    else if (p.k === 'shell') { p.vy -= 260 * dt; if (p.t + dt >= p.life && !p.popped) { p.popped = 1; burst(p); } }
     else if (p.k === 'heart' || p.k === 'star4' || p.k === 'bubble') { p.vx *= 0.95; p.vy *= 0.95; p.vy += 30 * dt; }
   }
   G.parts = G.parts.filter(p => p.t < p.life);
