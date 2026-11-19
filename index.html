@@ -302,7 +302,9 @@ body.in-hangar #toasts{left:calc((100vw - min(580px,54vw) - 16px)/2)}
 #scr-pause .panel,#scr-settings .panel,#scr-confirm .panel{max-width:380px;align-items:stretch}
 .menu-col{display:flex;flex-direction:column;gap:12px;padding:6px 18px 20px}
 .toggle-row{display:flex;justify-content:space-between;align-items:center;font-weight:800;font-size:18px;background:#fff;border:4px solid var(--ink);border-radius:14px;padding:8px 12px}
-.switch{width:58px;height:32px;border-radius:999px;border:4px solid var(--ink);background:#d9d0c0;position:relative;cursor:pointer;transition:background .15s}
+.toggle-row small{display:block;font-size:13px;font-weight:700;color:var(--ink2)}
+.toggle-row span{flex:1 1 auto;min-width:0;padding-right:10px}
+.switch{flex:0 0 auto;width:58px;height:32px;border-radius:999px;border:4px solid var(--ink);background:#d9d0c0;position:relative;cursor:pointer;transition:background .15s}
 .switch::after{content:"";position:absolute;left:2px;top:2px;width:20px;height:20px;border-radius:50%;background:#fff;border:3px solid var(--ink);transition:left .15s}
 .switch.on{background:var(--green)}
 .switch.on::after{left:26px}
@@ -1326,7 +1328,7 @@ function computeStats() {
   st.stage2 = L('stage2') ? st.fuelCap * STAT.stage2Pct(L('stage2')) : 0;
   st.stage1Mass = 0.35;
   st.spaceK = 0.07 * STAT.warpDrag(L('warp'));
-  st.hp = STAT.hp(L('hull'));
+  st.hp = STAT.hp(L('hull')) + (S.settings.relaxed ? 2 : 0);
   st.cd = 0.0011 * STAT.drag(L('nose'));
   st.repair = L('repair') ? STAT.repair(L('repair')) : 0;
   st.shield = L('shield') ? STAT.shieldCd(L('shield')) : 0;
@@ -2326,7 +2328,7 @@ function updateBoss(R, dt) {
       const dir = chance(0.5) ? 1 : -1;
       R.boss = { id, t: 0, dir, hit: false, strikes: [], seed: Math.random(), sx: W / 2, sy: -200 * u, done: false, boosted: false };
       if (id === 'storm') {
-        const n = G.st.weather ? 3 : 4, at = [1.5, 2.6, 3.6, 4.5];
+        const n = S.settings.relaxed ? 2 : G.st.weather ? 3 : 4, at = [1.5, 2.6, 3.6, 4.5];
         for (let i = 0; i < n; i++) R.boss.strikes.push({ at: at[i], x: 0, st: 'wait', bt: 0, pts: null });
         sfx.thunder(); G.cam.flash = 0.25; G.cam.flashCol = '#d8d0ff';
         if (R.faces.length) R.bubble = { s: 'Uh oh...', t: 0 };
@@ -2399,7 +2401,7 @@ function updateBoss(R, dt) {
     for (const k of b.strikes) {
       if (k.st === 'wait' && b.t >= k.at) {
         side = -side; b.lastSide = side;
-        k.st = 'come'; k.gw = 100 * u + half * 2; k.y = -40 * u;
+        k.st = 'come'; k.gw = (S.settings.relaxed ? 150 : 100) * u + half * 2; k.y = -40 * u;
         k.gx = clamp(rx + side * rand(0.12, 0.24) * Math.min(W, 900), k.gw / 2 + 20, W - k.gw / 2 - 20);
         k.v = (ry + 40 * u) / travel; sfx.whoosh();
       }
@@ -2611,7 +2613,7 @@ function spawnChunk(y0, y1) {
   const spread = Math.min(vw, 1100) * 0.55;
   const cx = G.cam.x;
   if (y0 < R.startPy + 380) return;
-  const ease = S.flights === 0 ? 0.5 : S.flights < 3 ? 0.75 : 1;
+  const ease = (S.flights === 0 ? 0.5 : S.flights < 3 ? 0.75 : 1) * (S.settings.relaxed ? 0.7 : 1);
   for (const type in z.spawn) {
     let rate = z.spawn[type] * k * ease;
     if (type === 'storm') rate *= 1 - 0.3 * st.weather;
@@ -4574,6 +4576,7 @@ const UI = (() => {
     row('Sound effects', 'sfx', v => AudioSys.setSfx(v));
     row('Screen shake & buzz', 'shake');
     row('Ghost of your best run', 'ghost');
+    row('Relaxed mode<small>+2 hearts, fewer hazards</small>', 'relaxed', () => { G.st = computeStats(); refresh(); });
     const reset = el('button', 'btn red', 'Reset progress');
     reset.addEventListener('click', () => confirmBox('Start over?', 'This wipes your rocket, money and routes. No undo!', () => { resetSave(); location.reload(); }));
     col.appendChild(reset);
