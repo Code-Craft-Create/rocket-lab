@@ -60,7 +60,9 @@ button{font-family:var(--font)}
 #title-bottom{position:absolute;bottom:max(8vh,30px);left:0;right:0;display:flex;flex-direction:column;align-items:center;gap:14px;pointer-events:none}
 #title-bottom > *{pointer-events:auto}
 #btn-start{animation:pulse 1.4s ease-in-out infinite}
-.title-foot{font-weight:800;color:var(--ink);background:rgba(255,246,229,.85);padding:6px 14px;border-radius:12px;font-size:14px;border:3px solid var(--ink)}
+.title-foot{font-weight:800;color:var(--ink);background:rgba(255,246,229,.85);padding:6px 14px;border-radius:12px;font-size:14px;border:3px solid var(--ink);max-width:calc(100vw - 32px);text-align:center;box-sizing:border-box}
+.title-daily{font-weight:800;color:var(--ink);background:#ffe3f1;padding:5px 12px;border-radius:999px;font-size:13px;border:3px solid var(--ink);max-width:calc(100vw - 32px);text-align:center;box-sizing:border-box;margin-top:22px;transform:rotate(2deg);box-shadow:0 4px 0 var(--ink)}
+@media (max-width:600px){#scr-title{padding-top:max(7vh,30px,74px)}#title-tools{top:10px;right:10px}#title-tools .icon-btn{transform:scale(.85);transform-origin:top right}}
 #title-tools{position:absolute;top:14px;right:14px;display:flex;gap:10px}
 @keyframes logoBob{0%,100%{transform:rotate(-4deg) translateY(0)}50%{transform:rotate(-2deg) translateY(-8px)}}
 @keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.07)}}
@@ -5241,9 +5243,10 @@ function frame() {
   let dt = Math.min(0.05, now - lastT); lastT = now;
   if (G.paused) dt = 0;
   const n = DEBUG.timeScale > 1 ? Math.round(DEBUG.timeScale) : 1;
+  const t0 = performance.now();
   for (let i = 0; i < n; i++) { G.t += dt; update(dt); }
   render();
-  DEBUG.frames++;
+  DEBUG.frames++; DEBUG.ms = (DEBUG.ms || 0) * 0.95 + (performance.now() - t0) * 0.05; DEBUG.maxMs = Math.max(DEBUG.maxMs || 0, performance.now() - t0);
   requestAnimationFrame(frame);
 }
 
@@ -5283,6 +5286,7 @@ if (S.seen.intro) {
   $('btn-start').textContent = 'Continue';
   const nr = nextRoute(), nDone = ROUTES.filter(r => routeDone(r.id)).length;
   $('title-foot').innerHTML = `Welcome back! ${S.flights} flights · best <b>${fmtAlt(S.bestAlt)}</b> · ${nDone}/${ROUTES.length} routes${nr ? ` · next: <b>${nr.to}</b>` : ' · Endless mode'}`;
+  if (dailyUnlocked()) { const d = todaysDaily(); const pill = document.createElement('div'); pill.className = 'title-daily'; pill.innerHTML = d.done ? `Today's special delivered! Come back tomorrow.` : `Today's special: <b>${d.cargo}</b> for ${d.to} · ${fmtAlt(d.target)}${dailyStreakAlive() ? ` · ${dailyStreakAlive()}-day streak` : ''}`; document.querySelector('#scr-title .tagline').after(pill); }
 }
 Music.play('title');
 requestAnimationFrame(frame);
