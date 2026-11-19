@@ -2843,7 +2843,7 @@ function enterLaunch() {
   if (G.R.daily) { const d = G.R.daily, tw = TWISTS[d.twist]; toast(`<b>Special delivery:</b> ${d.cargo} to ${fmtAlt(d.target)}<br><b>${tw.name}:</b> ${tw.fx} · <b>${cd.name}:</b> ${cd.fx}`, 4200); }
   else if (cd && cd.fx) toast(`<b>${cd.name}:</b> ${cd.fx}`, 3000);
   if (G.R.route && !G.R.paxOk && G.R.route.pax > 0) {
-    toast(`Need <b>${G.R.route.pax} seats</b> for ${G.R.route.to}: flying without passengers`);
+    toast(`${G.R.route.to} needs <b>${G.R.route.pax} seats</b>. Add <b>Passenger Seats</b> in the Cabin tab!`);
   }
 }
 function launchZones() {
@@ -2882,7 +2882,11 @@ function doLaunch() {
 // ---------------------------------------------------------------- feedback helpers
 function buzz(p) { if (!S.settings.shake || !navigator.vibrate) return; try { navigator.vibrate(p); } catch (e) { /* not supported */ } }
 function banner(textStr, col = '#ffd93d', dur = 1.6, sub = '') { G.banners.push({ text: textStr, col, t: 0, dur, sub }); if (G.banners.length > 3) G.banners.shift(); }
-function floater(x, py, s, col = '#fff', size = 20) { G.floaters.push({ x, py, s, col, size, t: 0 }); }
+function floater(x, py, s, col = '#fff', size = 20) {
+  // a new note landing on a fresh one moves up a line instead of printing over it
+  for (let i = 0; i < 4 && G.floaters.some(f => f.t < 0.7 && Math.abs(f.x - x) < 120 && Math.abs((f.py + f.t * 40) - py) < size + 4); i++) py += size + 6;
+  G.floaters.push({ x, py, s, col, size, t: 0 });
+}
 function puff(x, py, n, col, spd = 120, size = [6, 14], life = [0.5, 1]) {
   for (let i = 0; i < n; i++) { const a = rand(0, TAU), s = rand(0.3, 1) * spd; G.parts.push({ k: 'puff', x, py, vx: Math.cos(a) * s, vy: Math.sin(a) * s, r: rand(size[0], size[1]), life: rand(life[0], life[1]), t: 0, col }); }
 }
@@ -5246,6 +5250,8 @@ function pokeHangar(sx, sy) {
 }
 function updatePokes(dt) { const P = G.poke; for (const k of ['rocket', 'ada', 'crowd', 'shed', 'rocketLineT', 'mail', 'guestT', 'deco', 'baronT']) if (P[k] > 0) P[k] = Math.max(0, P[k] - dt); }
 function wrapText(str, maxW) { const words = str.split(' '); const out = []; let line = ''; for (const w of words) { const t = line ? line + ' ' + w : w; if (ctx.measureText(t).width > maxW && line) { out.push(line); line = w; } else line = t; } if (line) out.push(line); return out; }
+// world markers (record line, rival tag) fade while they slide behind the top HUD, so they never run through the numbers
+function hudFade(wy) { const m = ctx.getTransform(), sy = (m.d * wy + m.f) / DPR, band = (G.hudB || 130) + 6; return 0.12 + 0.88 * clamp((sy - band) / 50, 0, 1); }
 function drawStationAndRecord() {
   const R = G.R;
   if (!R || !(G.mode === 'flight' || G.mode === 'ending' || G.mode === 'launch')) return;
@@ -5256,8 +5262,8 @@ function drawStationAndRecord() {
     const py = R.py + (S.bestAlt - R.alt) * sc;
     if (py - R.py < vh) {
       const vw = W / G.cam.z;
-      ctx.save(); ctx.setLineDash([16, 12]); ctx.lineWidth = 4; ctx.strokeStyle = 'rgba(255,217,61,.9)'; ctx.beginPath(); ctx.moveTo(G.cam.x - vw, -py); ctx.lineTo(G.cam.x + vw, -py); ctx.stroke(); ctx.restore();
-      text(ctx, 'BEST ' + fmtAlt(S.bestAlt), G.cam.x - vw / 2 + 90, -py - 16, 16, '#ffd93d');
+      ctx.save(); ctx.globalAlpha = hudFade(-py - 26); ctx.setLineDash([16, 12]); ctx.lineWidth = 4; ctx.strokeStyle = 'rgba(255,217,61,.9)'; ctx.beginPath(); ctx.moveTo(G.cam.x - vw, -py); ctx.lineTo(G.cam.x + vw, -py); ctx.stroke(); ctx.setLineDash([]);
+      text(ctx, 'BEST ' + fmtAlt(S.bestAlt), G.cam.x - vw / 2 + 90, -py - 16, 16, '#ffd93d'); ctx.restore();
     }
   }
   // daily special: a customer balloon waits at the target height
@@ -5265,7 +5271,7 @@ function drawStationAndRecord() {
     const py = R.py + (R.daily.target - R.alt) * sc;
     if (py - R.py < vh) {
       const vw = W / G.cam.z;
-      ctx.save(); ctx.setLineDash([12, 10]); ctx.lineWidth = 5; ctx.strokeStyle = 'rgba(241,91,181,.9)'; ctx.beginPath(); ctx.moveTo(G.cam.x - vw, -py); ctx.lineTo(G.cam.x + vw, -py); ctx.stroke(); ctx.restore();
+      ctx.save(); ctx.globalAlpha = hudFade(-py); ctx.setLineDash([12, 10]); ctx.lineWidth = 5; ctx.strokeStyle = 'rgba(241,91,181,.9)'; ctx.beginPath(); ctx.moveTo(G.cam.x - vw, -py); ctx.lineTo(G.cam.x + vw, -py); ctx.stroke(); ctx.restore();
       const bx = G.cam.x + Math.min(vw * 0.24, 240), by = -py - 70 + Math.sin(G.t * 1.6) * 6;
       ctx.save(); ctx.translate(bx, by); ink(ctx, 3);
       ctx.beginPath(); ctx.moveTo(-14, 26); ctx.lineTo(-9, 52); ctx.moveTo(14, 26); ctx.lineTo(9, 52); ctx.stroke();
@@ -5463,7 +5469,7 @@ function drawRivalRocket() {
   drawRocket(ctx, look, { t: G.t, throttle: gp.up ? 0.85 : 0, faces: ['baron'], mood: R.rivalBeat ? 'scared' : 'joy', stage: 1, boostersOn: false, dropsOn: false });
   ctx.restore();
   const d = rocketDims(look), tagY = -gpy - (d.BL + d.NH + d.BH) * rs - 14;
-  ctx.save(); ctx.globalAlpha = gp.fade;
+  ctx.save(); ctx.globalAlpha = gp.fade * hudFade(tagY);
   ctx.scale(1 / z, 1 / z);
   text(ctx, 'BARON VROOM', rx * z, tagY * z, 12, '#ffd93d', 'center', INK, 3);
   if (rv.sayT > 0 && rv.say) speechBubble(ctx, rv.say, rx * z, tagY * z - 20, clamp(rv.sayT * 3, 0, 1), 120, true);
@@ -6164,7 +6170,7 @@ const UI = (() => {
       kind = done ? 'Regular service' : (r.id === 'r0' ? 'Mission' : 'Next route');
       name = '<span class="rc-pre">Pebbleton → </span>' + r.to;
       const px = paxForRoute(r, st);
-      if (r.pax > 0 && !px.ok) { warn = true; sub = `Needs ${r.pax} seats (you have ${st.seats})`; }
+      if (r.pax > 0 && !px.ok) { warn = true; sub = `Needs ${r.pax} seats`; } // short enough for the phone chip; the launch note says where to get them
       else sub = `${fmtAlt(r.alt)} · ${r.pax ? px.pax + ' pax' : 'Buckley'} · ${done ? fmtMoney(r.fare * px.pax) + ' fares' : fmtMoney(r.reward) + ' bonus'}`;
       icon = r.icon;
     }
@@ -7101,7 +7107,7 @@ window.__skyhop = {
   done(id) { S.routes[id] = { done: true, stars: 3, runs: 1 }; const nx = nextRoute(); S.route = nx ? nx.id : 'free'; },
   start: startGame, launch(v = 0.8) { $('scr-results').classList.add('hidden'); if (G.mode !== 'launch') enterLaunch(); G.launch.v = v; doLaunch(); },
   hangar: () => goHangar(true), flush: () => UI.flushPending(), reset() { resetSave(); }, LOST, drawLostItem, mail: () => UI.openLetter(),
-  daily() { return todaysDaily(); }, toast,
+  daily() { return todaysDaily(); }, toast, floater,
   skyEvent(id) { DEBUG.forceEvent = id; },
   teleport(alt) { const R = G.R; if (!R) return; R.alt = alt; R.maxAlt = Math.max(R.maxAlt, alt); },
   save: saveGame, music: Music, audio: AudioSys, sfxTest() { const errs = []; for (const k in AudioSys.sfx) { try { AudioSys.sfx[k](); } catch (e) { errs.push(k + ':' + e.message); } } return errs; },
