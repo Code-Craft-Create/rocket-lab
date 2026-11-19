@@ -3560,7 +3560,7 @@ function updateBoss(R, dt) {
       } else if (id === 'gobble') {
         const n = S.settings.relaxed ? 2 : 3;
         for (let i = 0; i < n; i++) R.boss.strikes.push({ at: 1.0 + i * GOB.gap, st: 'wait', x: 0, bt: 0 });
-        Object.assign(R.boss, { parts: [], pull: 0, ph: 0 });
+        Object.assign(R.boss, { parts: [], pull: 0, ph: 0, cx: G.cam.x });
         sfx.slurp(); sfx.jelly();
         if (R.faces.length) R.bubble = { s: 'Is that cloud... licking its lips?', t: 0 };
       } else if (id === 'bandit') {
@@ -3704,16 +3704,24 @@ function updateBoss(R, dt) {
     // (a stripe shows where the goo will land and it stops drifting), then SPITS a beam straight down
     const last = b.strikes[b.strikes.length - 1].at + GOB.slurp + GOB.warn;
     const enter = smooth(clamp(b.t / 1.0, 0, 1)), leave = smooth(clamp((b.t - last - 0.7) / 1.0, 0, 1));
+    // it lives in the world (drifting after the camera), and stops dead while it puffs, so the stripe and the goo stay
+    // where they were aimed: steering away really gets you out, even though the camera follows the rocket
     const hold = b.strikes.some(k => k.st === 'warn' || k.st === 'spit');
-    if (!hold) b.ph += dt * 0.75;
+    const sway = Math.sin(b.ph + b.seed * 6) * Math.min(W * 0.26, 240 * u);
+    if (!hold) { // drift after the camera, and never let a fleeing rocket leave it off screen
+      b.ph += dt * 0.75; b.cx += (G.cam.x - b.cx) * Math.min(1, dt * 2.2);
+      const lim = Math.max(0, (W * 0.38 - Math.abs(sway)) / u + 40), want = clamp(b.cx, G.cam.x - lim, G.cam.x + lim);
+      b.cx += (want - b.cx) * Math.min(1, dt * 8);
+    }
     b.sy = lerp(-170 * u, gobbleY(u), enter) - leave * (H * 0.5);
-    b.sx = W / 2 + Math.sin(b.ph + b.seed * 6) * Math.min(W * 0.26, 240 * u);
+    const edge = Math.min(W * 0.3, 95 * gobbleS(u) + (W < 600 ? 26 : 0)); b.sx = clamp(W / 2 + (b.cx - G.cam.x) * u + sway, edge, W - edge); // stays in view
     const mx = b.sx, my = b.sy + 34 * gobbleS(u), hw = (S.settings.relaxed ? 38 : 46) * u, half = 12 * G.rocketScale * u;
     b.mouth = [mx, my]; b.hw = hw;
     let pull = 0;
     for (const k of b.strikes) {
+      if (k.wx != null) k.x = W / 2 + (k.wx - G.cam.x) * u;
       if (k.st === 'wait' && b.t >= k.at) { k.st = 'slurp'; sfx.slurp(); if (R.faces.length && chance(0.5)) R.bubble = { s: pick(['It’s pulling us in!', 'Steer! STEER!', 'Not the mouth!']), t: 0 }; }
-      if (k.st === 'slurp') { pull = Math.max(pull, smooth(clamp((b.t - k.at) / 0.3, 0, 1))); if (b.t >= k.at + GOB.slurp) { k.st = 'warn'; k.x = mx; sfx.beep(false); } }
+      if (k.st === 'slurp') { pull = Math.max(pull, smooth(clamp((b.t - k.at) / 0.3, 0, 1))); if (b.t >= k.at + GOB.slurp) { k.st = 'warn'; k.x = mx; k.wx = G.cam.x + (mx - W / 2) / u; sfx.beep(false); } }
       if (k.st === 'warn') { pull = Math.max(pull, 0.55); if (b.t >= k.at + GOB.slurp + GOB.warn) {
         k.st = 'spit'; k.bt = 0.45; sfx.splat(); G.cam.shake = Math.max(G.cam.shake, 6); G.cam.flash = 0.12; G.cam.flashCol = '#ffd6f5';
         if (Math.abs(rx - k.x) < hw + half && !R.crashed) {
@@ -4135,19 +4143,21 @@ function drawBoss() {
     // stripe where the goo will land, then the goo beam
     for (const k of b.strikes) {
       if (k.st === 'warn') {
-        const p = clamp((b.t - (k.at + GOB.slurp)) / GOB.warn, 0, 1), hw = b.hw;
+        // a funnel from the mouth down to where the goo will land (straight down, unless the camera has moved on)
+        const p = clamp((b.t - (k.at + GOB.slurp)) / GOB.warn, 0, 1), hw = b.hw, [mx0, my0] = b.mouth || [k.x, b.sy];
+        const y1 = Math.min(H, my0 + 90 * u), xAt = y => y <= y1 ? lerp(mx0, k.x, (y - my0) / Math.max(1, y1 - my0)) : k.x;
         ctx.save(); ctx.globalAlpha = 0.16 + 0.24 * p + (Math.sin(G.t * 30) > 0 ? 0.1 : 0);
-        ctx.fillStyle = '#d08cff'; ctx.fillRect(k.x - hw, b.sy, hw * 2, H - b.sy);
+        ctx.fillStyle = '#d08cff'; ctx.beginPath(); ctx.moveTo(mx0 - hw * 0.6, my0); ctx.lineTo(mx0 + hw * 0.6, my0); ctx.lineTo(k.x + hw, y1); ctx.lineTo(k.x + hw, H); ctx.lineTo(k.x - hw, H); ctx.lineTo(k.x - hw, y1); ctx.closePath(); ctx.fill();
         ctx.globalAlpha = 0.9; ctx.setLineDash([12, 10]); ctx.lineWidth = 3; ctx.strokeStyle = '#f0d4ff';
-        ctx.beginPath(); ctx.moveTo(k.x - hw, b.sy + 60 * u); ctx.lineTo(k.x - hw, H); ctx.moveTo(k.x + hw, b.sy + 60 * u); ctx.lineTo(k.x + hw, H); ctx.stroke();
+        ctx.beginPath(); for (const sd of [-1, 1]) { ctx.moveTo(xAt(y1) + sd * hw, y1); ctx.lineTo(k.x + sd * hw, H); } ctx.stroke();
         ctx.restore();
       }
       if (k.st === 'spit') {
-        const a = clamp(k.bt / 0.2, 0, 1), hw = b.hw * (1 + (0.45 - k.bt) * 0.6), y0 = b.mouth ? b.mouth[1] : b.sy;
+        const a = clamp(k.bt / 0.2, 0, 1), hw = b.hw * (1 + (0.45 - k.bt) * 0.6), [x0, y0] = b.mouth || [k.x, b.sy];
         ctx.save(); ctx.globalAlpha = a;
         const g = ctx.createLinearGradient(k.x - hw, 0, k.x + hw, 0); g.addColorStop(0, 'rgba(208,140,255,0)'); g.addColorStop(0.2, '#d08cff'); g.addColorStop(0.5, '#ffe6fa'); g.addColorStop(0.8, '#d08cff'); g.addColorStop(1, 'rgba(208,140,255,0)');
-        ctx.fillStyle = g; ctx.beginPath(); ctx.moveTo(k.x - hw * 0.4, y0); ctx.lineTo(k.x + hw * 0.4, y0); ctx.lineTo(k.x + hw, H); ctx.lineTo(k.x - hw, H); ctx.closePath(); ctx.fill();
-        for (let i = 0; i < 10; i++) { const yy = y0 + ((G.t * 900 * u + i * 97) % Math.max(1, H - y0)), xx = k.x + Math.sin(i * 2.3 + G.t * 8) * hw * 0.55; ctx.fillStyle = i % 2 ? '#ffffff' : '#ffd93d'; text(ctx, '✦', xx, yy, 14 * Math.max(0.8, u), ctx.fillStyle, 'center', null); }
+        ctx.fillStyle = g; ctx.beginPath(); ctx.moveTo(x0 - hw * 0.4, y0); ctx.lineTo(x0 + hw * 0.4, y0); ctx.lineTo(k.x + hw, H); ctx.lineTo(k.x - hw, H); ctx.closePath(); ctx.fill();
+        for (let i = 0; i < 10; i++) { const yy = y0 + ((G.t * 900 * u + i * 97) % Math.max(1, H - y0)), xx = lerp(x0, k.x, (yy - y0) / Math.max(1, H - y0)) + Math.sin(i * 2.3 + G.t * 8) * hw * 0.55; ctx.fillStyle = i % 2 ? '#ffffff' : '#ffd93d'; text(ctx, '✦', xx, yy, 14 * Math.max(0.8, u), ctx.fillStyle, 'center', null); }
         ctx.restore();
       }
     }
