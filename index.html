@@ -339,7 +339,7 @@ button{font-family:var(--font)}
 /* ---------- Toasts ---------- */
 body.in-hangar #toasts{left:calc((100vw - min(580px,54vw) - 16px)/2)}
 @media (max-width:820px) and (min-height:521px){body.in-hangar #toasts{left:50%}}
-@media (max-width:600px){body.in-flight #toasts{top:126px}body.in-flight .toast{font-size:12px;padding:5px 10px;max-width:78vw;border-width:2px}}
+@media (max-width:600px){body.in-flight #toasts{top:var(--toast-top,126px)}body.in-flight .toast{font-size:12px;padding:5px 10px;max-width:78vw;border-width:2px}}
 #toasts{position:absolute;top:12px;left:50%;transform:translateX(-50%);width:min(94vw,640px);display:flex;flex-direction:column;align-items:center;gap:8px;z-index:6;pointer-events:none}
 .toast{background:var(--ink);color:var(--cream);font-weight:800;font-size:15px;padding:8px 16px;border-radius:22px;text-align:center;justify-content:center;border:3px solid var(--cream);box-shadow:0 4px 0 rgba(0,0,0,.25);
   animation:toastIn .35s cubic-bezier(.2,1.6,.4,1),toastOut .4s 3.2s forwards;display:block;white-space:normal;max-width:min(92vw,560px);line-height:1.25}
@@ -5258,11 +5258,18 @@ function drawHUD() {
   text(ctx, fmtAlt(R.alt), pad, pad + (small ? 18 : 24), small ? 30 : 40, '#ffffff', 'left');
   text(ctx, `${fmtSpeed(R.vy)}${R.warp > 1.05 ? `  ·  WARP ×${R.warp.toFixed(1)}` : ''}`, pad + 2, pad + (small ? 44 : 58), small ? 13 : 16, '#bff8ff', 'left');
   // hearts
-  const hy = pad + (small ? 66 : 86);
-  for (let i = 0; i < st.hp; i++) drawHeart(pad + 12 + i * (small ? 20 : 24), hy, small ? 8 : 10, i < R.hp);
-  if (st.shield) { const sx2 = pad + 12 + st.hp * (small ? 20 : 24) + 6; ctx.save(); ctx.globalAlpha = R.shieldOn ? 1 : 0.35; ink(ctx, 3); circ(ctx, sx2, hy, small ? 9 : 11); fillStroke(ctx, 'rgba(127,200,255,.8)', 3); ctx.restore(); if (!R.shieldOn) { ctx.save(); ctx.strokeStyle = '#fff'; ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(sx2, hy, small ? 13 : 15, -Math.PI / 2, -Math.PI / 2 + TAU * (R.shieldT / st.shield)); ctx.stroke(); ctx.restore(); } }
+  const hy = pad + (small ? 66 : 86), hs = small ? 20 : 24, rowH = small ? 19 : 23;
+  // hearts wrap into rows so they never run into the passenger faces in the middle of the top bar
+  const cxH = W < 380 ? W / 2 + 22 : W / 2, nF = R.faces.length && !R.delivered ? Math.min(R.faces.length, 8) : 0, fsF = small ? 9 : 11;
+  const midL = nF ? cxH - Math.max((nF - 1) * fsF * 1.2 + fsF + 3, R.route && R.route.pax > 0 ? (small ? 45 : 60) : 0) - 10 : W;
+  const slots = st.hp + (st.shield ? 1 : 0), perRow = Math.max(4, Math.min(slots, Math.floor((midL - pad - 4) / hs)));
+  const hRows = Math.ceil(slots / perRow), hx = i => pad + 12 + (i % perRow) * hs, hyy = i => hy + Math.floor(i / perRow) * rowH;
+  for (let i = 0; i < st.hp; i++) drawHeart(hx(i), hyy(i), small ? 8 : 10, i < R.hp);
+  if (st.shield) { const sx2 = hx(st.hp) + 2, hy = hyy(st.hp); ctx.save(); ctx.globalAlpha = R.shieldOn ? 1 : 0.35; ink(ctx, 3); circ(ctx, sx2, hy, small ? 9 : 11); fillStroke(ctx, 'rgba(127,200,255,.8)', 3); ctx.restore(); if (!R.shieldOn) { ctx.save(); ctx.strokeStyle = '#fff'; ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(sx2, hy, small ? 13 : 15, -Math.PI / 2, -Math.PI / 2 + TAU * (R.shieldT / st.shield)); ctx.stroke(); ctx.restore(); } }
   // fuel gauge
-  const fx = pad + 2, fy = hy + 22, fw = small ? 130 : 170, fh = small ? 16 : 20;
+  const fx = pad + 2, fy = hy + 22 + (hRows - 1) * rowH, fw = small ? 130 : 170, fh = small ? 16 : 20;
+  const hudB = Math.round(fy + fh + 12);
+  if (G.hudB !== hudB) { G.hudB = hudB; document.documentElement.style.setProperty('--toast-top', Math.max(126, hudB) + 'px'); }
   rr(ctx, fx, fy, fw, fh, fh / 2); ink(ctx, 3); fillStroke(ctx, 'rgba(43,34,64,.55)', 3);
   const cap = st.fuelCap + st.dropFuel;
   const mainK = clamp(R.fuel / (R.stage === 2 ? Math.max(st.stage2, 1) : st.fuelCap), 0, 1);
@@ -5281,7 +5288,10 @@ function drawHUD() {
   if (R.lucky > 0) { // rainbow luck: x2 pill under the coin, flashing as it runs out
     ctx.font = `900 ${small ? 20 : 26}px ${FONT}`;
     const mr = cx - 22 + ctx.measureText(fmtMoney(R.coinCash)).width, over = mr + 40 > W - (small ? 64 : 84);
-    const k = R.lucky / (R.luckyMax || 8), lx = over ? mr - 17 : mr + 24, ly = over ? pad + (small ? 40 : 48) : pad + 21;
+    // no room after the money (narrow phones): sit at the end of the speed line instead
+    ctx.font = `900 ${small ? 13 : 16}px ${FONT}`;
+    const spW = ctx.measureText(`${fmtSpeed(R.vy)}${R.warp > 1.05 ? `  ·  WARP ×${R.warp.toFixed(1)}` : ''}`).width;
+    const k = R.lucky / (R.luckyMax || 8), lx = over ? pad + 2 + spW + 26 : mr + 24, ly = over ? pad + (small ? 44 : 58) : pad + 21;
     ctx.save(); if (R.lucky < 2 && Math.sin(G.t * 16) < 0) ctx.globalAlpha = 0.45;
     const g = ctx.createLinearGradient(lx - 16, 0, lx + 16, 0); RAINBOW.forEach((cc, i) => g.addColorStop(i / (RAINBOW.length - 1), cc));
     rr(ctx, lx - 17, ly - 8, 34, 16, 8); ink(ctx, 2.5); ctx.fillStyle = g; ctx.fill(); ctx.stroke();
@@ -5306,7 +5316,7 @@ function drawHUD() {
   // radar warnings
   for (const w of G.warnings) {
     const [sx] = w2s(w.x, 0);
-    const x = clamp(sx, 30, W - 60), y = small ? 150 : 178;
+    const x = clamp(sx, 30, W - 60), y = small ? Math.max(150, (G.hudB || 0) + 26) : 178; // below the hearts and fuel gauge
     ctx.save(); ctx.globalAlpha = 0.4 + w.k * 0.6;
     ctx.translate(x, y + Math.sin(G.t * 14) * 3);
     ink(ctx, 3); ctx.beginPath(); ctx.moveTo(0, -16); ctx.lineTo(15, 12); ctx.lineTo(-15, 12); ctx.closePath(); fillStroke(ctx, w.big ? '#ff5a5f' : '#ffd93d', 3);
@@ -5413,7 +5423,7 @@ function drawLaunchGauge() {
   ctx.restore();
 }
 function drawBanners() {
-  let yAcc = Math.max(H * 0.3, W < 600 ? 208 : 0); // phones: start below the in-flight toasts
+  let yAcc = Math.max(H * 0.3, W < 600 ? Math.max(126, G.hudB || 0) + 82 : 0); // phones: start below the in-flight toasts
   G.banners.forEach((b, i) => {
     const k = b.t / b.dur;
     void i;
