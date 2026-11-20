@@ -126,6 +126,7 @@ button{font-family:var(--font)}
 .node.sel .newb{display:none} /* the detail panel already shows it; keeps the selection ring clean */
 .node.forkout .pips{opacity:.45}
 .node .lock{position:absolute;right:-8px;bottom:-8px;width:24px;height:24px}
+.node .eqb{position:absolute;top:-11px;right:-14px;background:var(--green);color:#fff;font-size:9px;font-weight:900;border:3px solid var(--ink);border-radius:8px;padding:0 4px;transform:rotate(8deg);letter-spacing:.3px}
 .node .newb{position:absolute;top:-10px;left:-10px;background:var(--red);color:#fff;font-size:10px;font-weight:900;border:3px solid var(--ink);border-radius:8px;padding:0 4px;transform:rotate(-10deg)}
 #tree.compact .node .nbox{width:54px;height:54px;border-radius:15px}
 #tree.compact .node .nbox svg{width:30px;height:30px}
@@ -1001,11 +1002,20 @@ const AudioSys = (() => {
     fire() { if (!gate('fire', 160)) return; noise({ dur: 0.35, vol: 0.22, filter: 'lowpass', f: 1400, f2: 300, q: 0.8 }); noise({ dur: 0.12, vol: 0.1, filter: 'bandpass', f: 2500, q: 2 }); },
     warp() { tone({ type: 'sine', f: 200, f2: 1600, dur: 0.8, vol: 0.12 }); noise({ dur: 0.8, vol: 0.15, filter: 'bandpass', f: 300, f2: 5000, q: 4 }); },
     ach() { [0, 4, 7, 12, 16].forEach((s, i) => tone({ type: 'triangle', f: N(79 + s), dur: 0.3, vol: 0.12, delay: i * 0.05 })); },
-    pew() { if (!gate('pew', 75)) return; noise({ dur: 0.07, vol: 0.05, filter: 'bandpass', f: 5200, f2: 2200, q: 2.5 }); tone({ type: 'triangle', f: 1500, f2: 900, dur: 0.05, vol: 0.02 }); },
-    gpop(k = 0) { if (!gate('gpop', 45)) return; tone({ type: 'sine', f: 420 + Math.min(k, 8) * 30, f2: 1100 + Math.min(k, 8) * 60, dur: 0.12, vol: 0.11 }); noise({ dur: 0.12, vol: 0.11, filter: 'bandpass', f: 1800, f2: 600, q: 1.5 }); },
-    ghit(crit) { if (!gate('ghit', 70)) return; noise({ dur: 0.06, vol: crit ? 0.12 : 0.07, filter: 'bandpass', f: crit ? 3200 : 1400, q: 2 }); if (crit) tone({ type: 'triangle', f: 1800, f2: 2400, dur: 0.06, vol: 0.05 }); },
+    // weapons: each gun has its own voice, loud enough to hear over the music but soft enough for auto-fire
+    pew(v = 0) { if (!gate('pew', 60)) return; const f = 1250 * Math.pow(2, (v + Math.random() * 0.8 - 0.4) / 12); tone({ type: 'square', f, f2: f * 0.42, dur: 0.07, vol: 0.055, filter: 'lowpass', ff: 3800 }); tone({ type: 'triangle', f: f * 1.5, f2: f * 0.6, dur: 0.05, vol: 0.07 }); noise({ dur: 0.04, vol: 0.06, filter: 'highpass', f: 4200 }); },
+    scat() { if (!gate('pew', 60)) return; noise({ dur: 0.11, vol: 0.15, filter: 'bandpass', f: 2600, f2: 650, q: 1.3 }); tone({ type: 'square', f: 560, f2: 190, dur: 0.08, vol: 0.055, filter: 'lowpass', ff: 2200 }); tone({ type: 'triangle', f: 1700 + Math.random() * 200, f2: 950, dur: 0.05, vol: 0.05 }); },
+    lance() { if (!gate('pew', 60)) return; tone({ type: 'sawtooth', f: 240, f2: 1500, dur: 0.15, vol: 0.045, filter: 'lowpass', ff: 3200 }); tone({ type: 'sine', f: 1800, f2: 2700, dur: 0.17, vol: 0.055 }); noise({ dur: 0.15, vol: 0.06, filter: 'highpass', f: 5200 }); },
+    wing() { if (!gate('wing', 110)) return; tone({ type: 'triangle', f: 2200 + Math.random() * 240, f2: 1500, dur: 0.04, vol: 0.035 }); },
+    gtick() { if (!gate('gtick', 45)) return; noise({ dur: 0.045, vol: 0.09, filter: 'bandpass', f: 1100 + Math.random() * 400, q: 2.2 }); tone({ type: 'triangle', f: 420, f2: 230, dur: 0.04, vol: 0.05 }); },
+    sboom() { if (!gate('sboom', 80)) return; noise({ dur: 0.22, vol: 0.2, filter: 'lowpass', f: 1600, f2: 200 }); tone({ type: 'sine', f: 180, f2: 60, dur: 0.16, vol: 0.12 }); },
+    boom() { noise({ dur: 0.75, vol: 0.4, filter: 'lowpass', f: 1000, f2: 80 }); tone({ type: 'sine', f: 130, f2: 40, dur: 0.5, vol: 0.28 }); },
+    tick() { if (!gate('tick', 70)) return; tone({ type: 'square', f: 1900, dur: 0.035, vol: 0.06, filter: 'lowpass', ff: 3000 }); },
+    drop() { if (!gate('drop', 120)) return; tone({ type: 'sine', f: 950, f2: 280, dur: 0.24, vol: 0.08 }); },
+    gpop(k = 0) { if (!gate('gpop', 40)) return; const up = Math.pow(2, Math.min(k, 12) / 12); tone({ type: 'sine', f: 420 * up, f2: 1150 * up, dur: 0.12, vol: 0.16 }); tone({ type: 'triangle', f: 840 * up, f2: 1700 * up, dur: 0.08, vol: 0.06, delay: 0.02 }); noise({ dur: 0.12, vol: 0.15, filter: 'bandpass', f: 1800, f2: 600, q: 1.5 }); },
+    ghit(crit) { if (!gate('ghit', 60)) return; noise({ dur: 0.06, vol: crit ? 0.16 : 0.11, filter: 'bandpass', f: crit ? 3200 : 1300, q: 2 }); tone({ type: 'triangle', f: crit ? 1800 : 300, f2: crit ? 2600 : 180, dur: crit ? 0.08 : 0.05, vol: crit ? 0.08 : 0.06 }); },
     armed() { [0, 5, 9, 14].forEach((s, i) => tone({ type: 'triangle', f: N(72 + s), dur: 0.16, vol: 0.12, delay: i * 0.06 })); noise({ dur: 0.4, vol: 0.12, filter: 'highpass', f: 3000, delay: 0.1 }); },
-    seek() { if (!gate('seek', 200)) return; noise({ dur: 0.35, vol: 0.12, filter: 'bandpass', f: 900, f2: 3200, q: 1.5 }); },
+    seek() { if (!gate('seek', 200)) return; noise({ dur: 0.4, vol: 0.18, filter: 'bandpass', f: 700, f2: 3400, q: 1.3 }); tone({ type: 'sine', f: 170, f2: 70, dur: 0.12, vol: 0.14 }); },
     nova() { noise({ dur: 0.7, vol: 0.3, filter: 'bandpass', f: 400, f2: 5000, q: 0.9 }); [0, 7, 12, 19].forEach((s, i) => tone({ type: 'sine', f: N(76 + s), dur: 0.4, vol: 0.08, delay: i * 0.04 })); },
     rumble() { noise({ dur: 0.9, vol: 0.28, filter: 'lowpass', f: 380, f2: 70, attack: 0.04 }); },
     roar() { noise({ dur: 1.0, vol: 0.32, filter: 'lowpass', f: 900, f2: 120, attack: 0.06, q: 2 }); noise({ dur: 0.8, vol: 0.12, filter: 'bandpass', f: 300, f2: 180, q: 4, delay: 0.05 }); },
@@ -1263,6 +1273,12 @@ const Music = (() => {
 // ================================================================ ICONS
 const INK = '#2b2240';
 const svgI = inner => `<svg viewBox="0 0 64 64" fill="none" stroke="${INK}" stroke-width="4" stroke-linejoin="round" stroke-linecap="round">${inner}</svg>`;
+const ICON_IMG = {};
+function iconImg(id) { // the upgrade icons as images, for drawing them on the canvas
+  let im = ICON_IMG[id];
+  if (!im) { im = ICON_IMG[id] = new Image(); im.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(ICONS[id].replace('<svg ', '<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" ')); }
+  return im.complete && im.naturalWidth ? im : null;
+}
 const ICONS = {
   engine: svgI('<path d="M24 8h16v10l9 24H15l9-24z" fill="#c9ced8"/><path d="M24 18h16" stroke-width="3"/><path d="M20 44c1 9 7 14 12 16 5-2 11-7 12-16z" fill="#ff9f43"/><path d="M27 44c0 5 3 8 5 9 2-1 5-4 5-9z" fill="#ffd93d" stroke-width="3"/>'),
   boosters: svgI('<path d="M32 6c6 5 8 12 8 20v22H24V26c0-8 2-15 8-20z" fill="#fff6e5"/><path d="M14 20c4 3 5 8 5 12v16h-9V32c0-4 1-9 4-12zM50 20c-4 3-5 8-5 12v16h9V32c0-4-1-9-4-12z" fill="#ff5a5f"/><path d="M26 52l6 8 6-8M10 52l4 6 4-6M46 52l4 6 4-6" fill="#ffd93d" stroke-width="3"/>'),
@@ -2400,9 +2416,9 @@ function simulateFlight(st, opts = {}) {
 // in deep space the sim clock runs faster while coasting, to keep flights snappy
 function simWarp(R) {
   const coasting = R.fuel <= 0 && R.dropFuel <= 0 && R.stage2Fuel <= 0;
-  if (R.alt < 8000 || R.boss) return 1; // no time warp while a boss is on screen
-  const k = invLerp(8000, 50000, R.alt);
-  return 1 + (coasting ? 4 : 1.5) * k;
+  if (R.alt < 8000 || R.boss) return (R.warpN = 1); // no time warp while a boss is on screen
+  const k = invLerp(8000, 50000, R.alt), w = R.warpN = 1 + (coasting ? 4 : 1.5) * k;
+  return R.alt > GATE_ALT * 0.98 && !R.ended && combatOn() ? Math.min(w, combatWarp(R.alt)) : w; // past the Gate time runs closer to real time, so there's a fight to have
 }
 
 // ---------------------------------------------------------- auto-upgrade
@@ -3669,14 +3685,21 @@ function makeObstacle(type, x, py) {
     case 'dragonling': o.r = 24; o.slow = 0.15; o.dir = chance(0.5) ? 1 : -1; o.vx = o.dir * rand(20, 60); o.fireCd = rand(0.4, 1.4); o.fireWarn = 0; o.col = pick(['#7be0c0', '#ff9f43', '#c9a6ff', '#ff8ad0']); break;
     case 'fireball': o.r = 13; o.small = true; o.slow = 0.12; o.hot = true; o.hp = 1; break;
     // ---- the Gloom (past the Starlight Gate). gl: screen-relative motion (scr = px/s down the screen), see gloomTick
-    case 'gloom': o.r = 27; o.gl = true; o.small = true; o.slow = 0.08; o.scr = 195; o.hp = 3; break;
-    case 'spitter': o.r = 37; o.gl = true; o.slow = 0.1; o.scr = 95; o.hp = 9; o.spitT = rand(1.2, 2.2); break;
-    case 'megaroid': o.r = rand(92, 124); o.gl = true; o.big = true; o.dmg = 2; o.slow = 0.25; o.scr = 120; o.hp = 34; o.verts = rockVerts(13, 0.22); o.craters = craters(5); o.vr = rand(-0.3, 0.3); break;
-    case 'rock': o.r = rand(34, 42); o.gl = true; o.dmg = 1; o.slow = 0.15; o.scr = 150; o.hp = 7; o.verts = rockVerts(10, 0.3); o.craters = craters(2); o.vr = rand(-1.5, 1.5); break;
-    case 'pebble': o.r = rand(15, 20); o.gl = true; o.small = true; o.slow = 0.06; o.scr = 190; o.hp = 2; o.verts = rockVerts(7, 0.35); o.vr = rand(-4, 4); break;
-    case 'block': o.r = 40; o.gl = true; o.dmg = 2; o.slow = 0.2; o.scr = 140; o.hp = 5; break;
-    case 'blob': o.r = 12; o.gl = true; o.shot = true; o.small = true; o.slow = 0.05; o.scr = 300; o.hp = 1; break;
-    case 'ball': o.r = 18; o.gl = true; o.shot = true; o.small = true; o.slow = 0.06; o.scr = -300; o.hp = 3; break;
+    case 'gloom': o.r = 32; o.gl = true; o.small = true; o.slow = 0.08; o.scr = 195; o.hp = 3; break;
+    case 'spitter': o.r = 44; o.gl = true; o.slow = 0.1; o.scr = 95; o.hp = 9; o.spitT = rand(1.2, 2.2); break;
+    case 'megaroid': o.r = rand(110, 148); o.gl = true; o.big = true; o.dmg = 2; o.slow = 0.25; o.scr = 120; o.hp = 34; o.verts = rockVerts(13, 0.22); o.craters = craters(5); o.vr = rand(-0.3, 0.3); break;
+    case 'rock': o.r = rand(41, 50); o.gl = true; o.dmg = 1; o.slow = 0.15; o.scr = 150; o.hp = 7; o.verts = rockVerts(10, 0.3); o.craters = craters(2); o.vr = rand(-1.5, 1.5); break;
+    case 'pebble': o.r = rand(18, 24); o.gl = true; o.small = true; o.slow = 0.06; o.scr = 190; o.hp = 2; o.verts = rockVerts(7, 0.35); o.vr = rand(-4, 4); break;
+    case 'block': o.r = 48; o.gl = true; o.dmg = 2; o.slow = 0.2; o.scr = 140; o.hp = 5; break;
+    case 'blob': o.r = 14; o.gl = true; o.shot = true; o.small = true; o.slow = 0.05; o.scr = 300; o.hp = 1; break;
+    case 'ball': o.r = 21; o.gl = true; o.shot = true; o.small = true; o.slow = 0.06; o.scr = -300; o.hp = 3; break;
+    case 'swoop': o.r = 30; o.gl = true; o.small = true; o.slow = 0.08; o.scr = 0; o.hp = 2; break; // soot bat: swoops in from the side
+    case 'puffer': o.r = 54; o.gl = true; o.slow = 0.15; o.scr = 105; o.hp = 10; break; // big puff: bursts into pufflings
+    case 'mini': o.r = 20; o.gl = true; o.small = true; o.slow = 0.05; o.scr = 150; o.hp = 1; break;
+    case 'zap': o.r = 30; o.gl = true; o.slow = 0.1; o.scr = 95; o.hp = 6; break; // zap twins: a crackling beam between them
+    case 'urchin': o.r = 34; o.gl = true; o.slow = 0.12; o.scr = 85; o.hp = 5; o.spin = rand(-1.6, 1.6); break; // spike mine: bursts when you get close
+    case 'blimp': o.r = 78; o.gl = true; o.big = true; o.dmg = 2; o.slow = 0.25; o.scr = 62; o.hp = 45; o.bombT = rand(1, 1.8); break; // gloom blimp: drops ink bombs
+    case 'lucky': o.r = 28; o.gl = true; o.small = true; o.slow = 0.05; o.scr = 55; o.hp = 3; break; // lucky puff: golden, flees
   }
   return o;
 }
@@ -4263,7 +4286,13 @@ const GUIDE = [
   { id: 'gloom', name: 'Gloomlet', desc: 'A grumpy puff of soot that eats starlight. Pop it and the starlight it swallowed gives your rocket a push.', ext: 42, min: GATE_ALT },
   { id: 'spitter', name: 'Spitter', desc: 'Puffs out its pink cheeks, then spits ink at you. Dodge sideways, or shoot the blobs.', ext: 56, min: GATE_ALT },
   { id: 'megaroid', name: 'Megaroid', desc: 'A huge gloomy rock. Keep shooting: it cracks into smaller rocks, and those crack into pebbles.', ext: 130, min: GATE_ALT },
-  { id: 'block', name: 'Gloom Wall', desc: 'Soot bricks right across the sky. Blast a hole through. The cracked brick breaks fastest.', ext: 48, min: GATE_ALT * 1.25 },
+  { id: 'block', name: 'Gloom Wall', desc: 'Soot bricks right across the sky. Blast a hole through. The cracked brick breaks fastest.', ext: 56, min: GATE_ALT * 1.25 },
+  { id: 'swoop', name: 'Soot Bat', desc: 'Swoops in from the side in a big U and flaps back up. Easy to pop as it dips past you.', ext: 64, min: GATE_ALT },
+  { id: 'puffer', name: 'Big Puff', desc: 'A fat, slow Gloom. Pop it and three little pufflings tumble out.', ext: 66, min: GATE_ALT * 1.15 },
+  { id: 'lucky', name: 'Lucky Puff', desc: 'A golden Gloom that zigzags about, then gets shy and flies off. Pop it first for a pile of coins.', ext: 40, min: GATE_ALT },
+  { id: 'zap', name: 'Zap Twins', desc: 'Two fizzy orbs holding a crackling beam between them. Flying through it hurts. Pop either twin and the beam goes out.', ext: 44, min: 1.15e6 },
+  { id: 'urchin', name: 'Spike Mine', desc: 'Drifts along minding its business, until you get close. Then it blinks, puffs up and bursts into ink. Pop it from far away.', ext: 52, min: 1.8e6 },
+  { id: 'blimp', name: 'Gloom Blimp', desc: 'A grumpy airship full of pufflings. It drops ink bombs, so stay out from under it. Pop it for a big reward.', ext: 120, min: 2.3e6 },
   { boss: 'storm', stat: 'king', name: 'The Storm King', desc: 'Rules the clouds around 2 km. When a yellow stripe appears under you, get out of it!' },
   { boss: 'whale', stat: 'whale', name: 'Big Blue', desc: 'A friendly sky whale above 9 km. Its spout is the best boost in the sky.' },
   { boss: 'pirates', stat: 'pirates', name: 'Captain Calico', desc: 'A pirate cat in a flying ship, 26 to 55 km up. Red X lanes get cannonballs: slide into a green SAFE lane!' },
@@ -4470,12 +4499,12 @@ function spawnChunk(y0, y1) {
   const z = zoneAt(est);
   const k = (y1 - y0) / 1000;
   const vw = W / G.cam.z;
-  const spread = Math.min(vw, G.zoomK > 0.3 ? 2400 : 1100) * 0.55;
+  const spread = Math.min(vw, G.zoomK > 0.3 ? 3600 : 1100) * 0.55;
   const cx = G.cam.x;
   if (y0 < R.startPy + 380) return;
   const ease = (S.flights === 0 ? 0.5 : S.flights < 3 ? 0.75 : 1) * (S.settings.relaxed ? 0.7 : 1);
   for (const type in z.spawn) {
-    let rate = z.spawn[type] * k * ease * (st.hazMul || 1) * (est >= GATE_ALT && st.gun ? 0.5 : 1) * (R.hold ? 0 : 1); // the Gloom takes over past the Gate
+    let rate = z.spawn[type] * k * ease * (st.hazMul || 1) * (est >= GATE_ALT && st.gun ? 0.3 : 1) * (R.hold ? 0 : 1); // the Gloom takes over past the Gate
     if (type === 'storm') rate *= 1 - 0.3 * st.weather;
     if (R.boss) rate *= 0.35; // keep the set piece readable
     const n = Math.floor(rate) + (Math.random() < rate % 1 ? 1 : 0);
@@ -4591,10 +4620,12 @@ function updateFlight(dt) {
   if (st.repair && R.hp < st.hp && !R.crashed) { R.repairT += dt; if (R.repairT >= st.repair) { R.repairT = 0; R.hp++; sfx.repair(); floater(R.x, R.py + 40, '+1 ♥', '#5fd068'); } }
   if (st.scoop && R.alt < 12000 && R.fuel > 0) R.fuel = Math.min(R.stage === 2 ? Infinity : st.fuelCap, R.fuel + st.fuelCap * 0.005 * st.scoop * dt);
   // --- physics (sub-stepped, warped in deep space). Very long flights meet the 'solar wind' so a run never drags on forever.
-  const windT = st.windT || 70, wt = R.time - (R.heldFor || 0); // time spent in a Gloom boss's grip doesn't count
-  R.kMul = wt > windT ? 1 + Math.pow((wt - windT) / 12, 2) : 1;
   const warp = simWarp(R);
   R.warp = warp;
+  // the solar-wind clock: real time, but scaled back when the warp is eased so the same height stays reachable; a boss's grip doesn't count
+  R.wclk = (R.wclk || 0) + (R.hold ? 0 : dt * warp / Math.max(1, R.warpN || warp));
+  const windT = st.windT || 70, wt = R.wclk;
+  R.kMul = wt > windT ? 1 + Math.pow((wt - windT) / 12, 2) : 1;
   const tiltCos = lerp(Math.cos(R.tilt), 1, st.vector / 3);
   let simDt = dt * warp;
   const steps = Math.max(1, Math.ceil(simDt / 0.02));
@@ -4744,13 +4775,14 @@ function autoDodge() {
 // swallowed, and that pushes the rocket along.
 const combatOn = () => frontierOpen() && lvl('blaster') > 0;
 const combatK = alt => smooth(invLerp(GATE_ALT, GATE_ALT * 1.16, alt));
-function combatZoom() { const m = Math.min(W, H * 1.25); return m < 560 ? 0.74 : m < 980 ? 0.66 : 0.58; } // how far the camera pulls back
+function combatZoom() { const m = Math.min(W, H * 1.25); return m < 560 ? 0.55 : m < 980 ? 0.48 : 0.42; }
+const GL_SPR = 1.2, GL_SPD = 1.35, combatWarp = a => 1.5 + 1.8 * invLerp(1.2e6, 6e6, a); /* eased most on the first frontier legs, so long legs don't drag */ // zoomed out past the Gate: sprites a bit bigger, Gloom a bit faster, time warp eased so fights last // how far the camera pulls back
 const gloomScale = alt => Math.sqrt(Math.max(1, alt / GATE_ALT)); // the Gloom toughens up the further out you go
 const GUN = {
   rate: l => 2.6 + 0.5 * (l - 1), dmg: l => 1 + 0.35 * (l - 1), twin: l => l >= 4,
   seekCd: l => Math.max(1.1, 3.1 - 0.5 * l), seekDmg: l => 5 + 2 * l,
   wingN: l => Math.min(2, l), wingRate: l => 1.5 + 0.6 * l,
-  novaR: l => 230 + 70 * l, novaDmg: l => 14 + 12 * l, lanceMul: l => 1.5 + 0.3 * l,
+  novaR: l => 300 + 90 * l, novaDmg: l => 14 + 12 * l, lanceMul: l => 1.5 + 0.3 * l,
 };
 // rough damage per second against one big target (used by the auto-upgrade and the workshop text)
 function gunDps(g) {
@@ -4764,14 +4796,17 @@ function gunDps(g) {
   return d;
 }
 const novaCdOf = l => 6.2 - 0.9 * l;
-const KILL_COINS = { gloom: 6, spitter: 14, megaroid: 30, rock: 6, pebble: 2, block: 4, blob: 1, ball: 3, crystal: 4, jelly: 4, ice: 3, fireball: 1, junk: 2, asteroid: 4, comet: 5 };
-const KILL_PAY = 3; // a popped Gloomlet pays 18 coins' worth
-const GLOOM_PUSH = 0.00035; // starlight per popped coin's worth: a Gloomlet adds ~0.2% to your speed
+// which gun is doing the shooting: the Star Blaster, or the fork that replaced its bolts
+function mainGun(g) { return g.lance ? { id: 'lance', name: 'Sun Lance', lv: g.lance, col: '#ffd93d' } : g.scatter ? { id: 'scatter', name: 'Scatter Cannon', lv: g.scatter, col: '#ff8ad0' } : { id: 'blaster', name: 'Star Blaster', lv: g.lv, col: '#fff6c8' }; }
+const gunPods = L => { const d = rocketDims(L); return { lat: d.BW / 2 + 9, up: d.BL / 2 + 12 }; }; // pod muzzle, in rocket units
+const KILL_COINS = { gloom: 6, spitter: 14, megaroid: 30, rock: 6, pebble: 2, block: 4, blob: 1, ball: 3, swoop: 5, puffer: 12, mini: 2, zap: 10, urchin: 8, blimp: 40, lucky: 12, crystal: 4, jelly: 4, ice: 3, fireball: 1, junk: 2, asteroid: 4, comet: 5 };
+const KILL_PAY = 2.5; // a popped Gloomlet pays 15 coins' worth
+const GLOOM_PUSH = 0.00035, PUSH_CAP = Math.log(1.6); // starlight per popped coin's worth: a Gloomlet adds ~0.2% to your speed
 // ---- the five Gloom bosses, one at each frontier stop
 const GUARD_BOUNTY = 0.8; // of the stop's first-delivery reward
 const GUARDS = {
-  x1: { top: 1.02, name: 'The Grumbleberg', sub: 'A GRUMPY GIANT SPACE ROCK', look: 'rock', hp: 150, time: 40, col: '#ffb27a', atk: ['pebbles', 'aimed'], rage: ['pebbles', 'aimed', 'pebbles'], gap: 2.5, weak: [0, -0.42, 0.26],
-    desc: 'Sits in front of the Teapot Tea Room and grumbles. Rains pebbles and spits soot. Aim for the glowing crack on its forehead.' },
+  x1: { top: 1.02, name: 'The Grumbleberg', sub: 'A GRUMPY GIANT SPACE ROCK', look: 'rock', hp: 150, time: 40, col: '#ffb27a', atk: ['pebbles', 'bats', 'aimed'], rage: ['pebbles', 'aimed', 'bats', 'pebbles'], gap: 2.5, weak: [0, -0.42, 0.26],
+    desc: 'Sits in front of the Teapot Tea Room and grumbles. Rains pebbles, lets loose its soot bats and spits soot. Aim for the glowing crack on its forehead.' },
   x2: { top: 1.05, name: 'Mother Gloom', sub: 'SHE NEVER STOPS MAKING GLOOMLETS', look: 'cloud', hp: 380, time: 42, col: '#c9a6ff', atk: ['minions', 'spray'], rage: ['minions', 'aimed', 'spray'], gap: 2.6, weak: [0, 0.08, 0.3],
     desc: 'A huge soot cloud on the way to Pip’s planet. Keeps puffing out Gloomlets, and sneezes rings of ink.' },
   x3: { top: 1.5, name: 'The Junk Juggler', sub: 'A ROBOT MADE OF SPACE JUNK', look: 'robot', hp: 700, time: 44, col: '#7fdcff', atk: ['juggle', 'aimed'], rage: ['juggle', 'pebbles', 'aimed'], gap: 2.4, weak: [0.24, -0.12, 0.24],
@@ -4800,9 +4835,13 @@ function updateCombat(R, dt) {
   G.zoomK += (zt - G.zoomK) * Math.min(1, dt * (zt > G.zoomK ? 1.4 : 3));
   if (R.hold) R.heldFor = (R.heldFor || 0) + dt;
   if (R.novaCd > 0) R.novaCd -= dt;
+  if (R.gunFlash) for (const k in R.gunFlash) if (R.gunFlash[k] > 0) R.gunFlash[k] -= dt;
+  if (R.wing) for (const w of R.wing) if (w.flash > 0) w.flash -= dt;
+  if (R.wpnShow > 0) R.wpnShow -= dt;
   if (!gun || R.alt < GATE_ALT || R.ended) { updateShots(R, dt); return; }
   if (!R.armed) {
-    R.armed = true; banner('WEAPONS ONLINE', '#ff8ad0', 2.2, 'POP THE GLOOM!'); sfx.armed();
+    const mg = mainGun(gun);
+    R.armed = true; R.wpnShow = 5; banner('WEAPONS ONLINE', '#ff8ad0', 2.4, `${mg.name.toUpperCase()} LV${mg.lv} · POP THE GLOOM!`); sfx.armed();
     if (!S.seen.tip_arms) { S.seen.tip_arms = 1; toast('<b>Ada:</b> Your Star Blaster fires all by itself. Steer under the Gloom to pop it. Every pop frees a little starlight, and that pushes you along!', 5200, true); }
   }
   // wing drones trail along beside the rocket
@@ -4822,17 +4861,17 @@ function updateCombat(R, dt) {
     while (R.fireT <= 0) { R.fireT += 1 / rate; fireVolley(R, gun); }
     if (gun.seek) {
       R.seekT = (R.seekT == null ? 1 : R.seekT) - dt;
-      if (R.seekT <= 0) { const tg = seekTarget(R); if (tg) { R.seekT = GUN.seekCd(gun.seek); for (const s of [-1, 1]) launchSeeker(R, s, GUN.seekDmg(gun.seek)); sfx.seek(); } else R.seekT = 0.3; }
+      if (R.seekT <= 0) { const tg = seekTarget(R); if (tg) { R.seekT = GUN.seekCd(gun.seek); for (const s of [-1, 1]) launchSeeker(R, s, GUN.seekDmg(gun.seek)); sfx.seek(); (R.gunFlash = R.gunFlash || {}).seek = 0.35; } else R.seekT = 0.3; }
     }
     if (R.wing) for (const w of R.wing) {
       w.fireT -= dt;
-      if (w.fireT <= 0) { w.fireT += 1 / GUN.wingRate(gun.wing); G.shots.push({ k: 'wing', x: w.x, py: w.py + 14, vx: 0, vy: (R.vpy || 0) + 1250, dmg: gun.dmg * 0.55, r: 6, pierce: 1, t: 0, life: 1.4 }); }
+      if (w.fireT <= 0) { w.fireT += 1 / GUN.wingRate(gun.wing); sfx.wing(); w.flash = 0.07; (R.gunFlash = R.gunFlash || {}).wing = 0.16; G.shots.push({ k: 'wing', x: w.x, py: w.py + 14, vx: 0, vy: (R.vpy || 0) + 1650, dmg: gun.dmg * 0.55, r: 7, pierce: 1, t: 0, life: 1.6 }); }
     }
   }
   // waves of Gloom while you climb (not during a boss fight, and not once the climb has run out of steam)
-  if (!R.guard && !R.crashed && R.vy > Math.max(150, R.peakV * 0.1)) {
+  if (!R.guard && !R.crashed && R.vy > 150) {
     R.waveT = (R.waveT == null ? 1.2 : R.waveT) - dt;
-    if (R.waveT <= 0) { spawnWave(R); R.waveT = rand(2.3, 3.3) * (S.settings.relaxed ? 1.3 : 1) * (R.alt < GATE_ALT * 1.2 ? 1.25 : 1); }
+    if (R.waveT <= 0) { spawnWave(R); R.waveT = rand(1.6, 2.3) * (S.settings.relaxed ? 1.3 : 1); }
   }
   // a Gloom boss waits just below the next frontier stop
   if (!R.guard && !R.crashed && !R.guardSeen) {
@@ -4853,18 +4892,24 @@ function updateCombat(R, dt) {
   updateShots(R, dt);
   if (R.nova) { R.nova.t += dt; if (R.nova.t > 0.6) R.nova = null; }
 }
+// the muzzle of a gun pod (side s = -1 left, 1 right) in world space; pods sit on the rocket's shoulders
+function podTip(R, s, gun) {
+  const sc = G.rocketScale, pd = gunPods(G.look), up = (pd.up + (gun && gun.lance ? 10 : 0)) * sc, lat = pd.lat * sc, ct = Math.cos(R.tilt), st = Math.sin(R.tilt);
+  return [R.x + s * lat * ct + up * st, R.py + up * ct - s * lat * st];
+}
 function fireVolley(R, gun) {
-  const sc = G.rocketScale, d = rocketDims(G.look), nose = (d.BL / 2 + d.NH * 0.6) * sc;
-  const ax = Math.sin(R.tilt), ay = Math.cos(R.tilt), nx = R.x + ax * nose, ny = R.py + ay * nose;
-  const base = R.tilt * 0.5, sp = 1500, v0 = R.vpy || 0;
-  const add = (ang, dmg, k, off = 0) => G.shots.push({ k, x: nx + off, py: ny, vx: Math.sin(ang) * sp, vy: v0 + Math.cos(ang) * sp, ang, dmg, r: k === 'lance' ? 9 : 7, pierce: k === 'lance' ? gun.lance + 1 : 1, t: 0, life: 1.3 });
-  const twin = GUN.twin(gun.lv), barrels = twin ? [-7 * sc, 7 * sc] : [0], bd = twin ? 0.65 : 1;
-  if (gun.lance) { for (const o of barrels) add(base, gun.dmg * bd * GUN.lanceMul(gun.lance), 'lance', o); }
+  const base = R.tilt * 0.5, sp = 2000, v0 = R.vpy || 0;
+  const add = (ang, dmg, k, s) => { const [x, py] = podTip(R, s, gun); G.shots.push({ k, x, py, vx: Math.sin(ang) * sp, vy: v0 + Math.cos(ang) * sp, ang, dmg, r: k === 'lance' ? 11 : 8.5, pierce: k === 'lance' ? gun.lance + 1 : 1, t: 0, life: 1.5 }); };
+  // one pod at a time (left, right, left...), or both together once the blaster has twin barrels
+  const twin = GUN.twin(gun.lv), side = R.barrel = R.barrel === 1 ? -1 : 1, pods = twin && !gun.scatter ? [-1, 1] : [side], bd = twin ? 0.65 : 1;
+  if (gun.lance) { for (const s of pods) add(base, gun.dmg * bd * GUN.lanceMul(gun.lance), 'lance', s); }
   else if (gun.scatter) {
     const wide = gun.scatter === 2 || gun.scatter === 4, step = wide ? 0.21 : 0.13, n = gun.scatter >= 3 ? 5 : 3;
-    for (let i = 0; i < n; i++) add(base + (i - (n - 1) / 2) * step, gun.dmg * 0.8 * (twin ? 1.2 : 1), 'scat');
-  } else for (const o of barrels) add(base, gun.dmg * bd, 'bolt', o);
-  sfx.pew();
+    for (let i = 0; i < n; i++) add(base + (i - (n - 1) / 2) * step, gun.dmg * 0.8 * (twin ? 1.2 : 1), 'scat', side);
+  } else for (const s of pods) add(base, gun.dmg * bd, 'bolt', s);
+  if (gun.lance) sfx.lance(); else if (gun.scatter) sfx.scat(); else sfx.pew(side > 0 ? 2 : 0);
+  const fl = R.gunFlash = R.gunFlash || {};
+  fl.main = 0.1; fl.pod = 0.08; fl.side = pods.length > 1 ? 0 : side;
 }
 function seekTarget(R) { // the biggest, grumpiest thing in view: the boss first
   if (R.guard && !R.guard.out && R.guard.enter >= 1) return R.guard;
@@ -4878,15 +4923,16 @@ function seekTarget(R) { // the biggest, grumpiest thing in view: the boss first
   return best;
 }
 function launchSeeker(R, side, dmg) {
-  const sc = G.rocketScale;
-  G.shots.push({ k: 'seek', x: R.x + side * 18 * sc, py: R.py, vx: side * 420, vy: (R.vpy || 0) + 300, dmg, r: 9, pierce: 1, t: 0, life: 2.6, tgt: null, side });
+  const sc = G.rocketScale, d = rocketDims(G.look), s2 = R.visStage === 2, lat = (d.BW / 2 + (s2 ? 4 : d.FW * 0.55)) * sc, up = (s2 ? -2 : -(d.BL / 2 - 10)) * sc, ct = Math.cos(R.tilt), st = Math.sin(R.tilt);
+  // they drop off the racks on the fins
+  G.shots.push({ k: 'seek', x: R.x + side * lat * ct + up * st, py: R.py + up * ct - side * lat * st, vx: side * 560, vy: (R.vpy || 0) + 400, dmg, r: 11, pierce: 1, t: 0, life: 2.8, tgt: null, side });
 }
 // Nova Burst: the afterburner's ignition lets off a ring of starlight
 function novaBurst(R) {
   const g = G.st.gun; if (!g || !g.nova || R.alt < GATE_ALT) return;
   const rad = GUN.novaR(g.nova), dmg = GUN.novaDmg(g.nova);
   R.nova = { t: 0, r: rad, x: R.x, py: R.py };
-  sfx.nova(); G.cam.shake = Math.max(G.cam.shake, 8);
+  sfx.nova(); G.cam.shake = Math.max(G.cam.shake, 8); (R.gunFlash = R.gunFlash || {}).nova = 0.5;
   G.parts.push({ k: 'shock', x: R.x, py: R.py, vx: 0, vy: 0, r: rad * 0.8, life: 0.55, t: 0, col: '#fff6c8', ride: true }, { k: 'shock', x: R.x, py: R.py, vx: 0, vy: 0, r: rad * 0.6, life: 0.45, t: 0, col: '#ff8ad0', ride: true });
   for (const o of G.obs) { if (o.dead || !(o.hp > 0)) continue; const dd = Math.hypot(o.x - R.x, o.py - R.py) - o.r; if (dd < rad) damageObstacle(o, R, o.shot ? 99 : dmg); }
   const gd = R.guard; if (gd && gd.enter >= 1 && !gd.out) { const p = gd.pos; if (Math.hypot(p.x - R.x, p.py - R.py) - p.r < rad) hurtGuard(R, dmg * 1.5, p.x, p.py - p.r * 0.5, true); }
@@ -4902,8 +4948,8 @@ function updateShots(R, dt) {
       if (!s.tgt || s.tgt.dead || (s.tgt === R.guard && (!R.guard || R.guard.out))) s.tgt = seekTarget(R);
       const tp = s.tgt ? (s.tgt === R.guard ? R.guard.pos : s.tgt) : null;
       const rel = (R.vpy || 0);
-      if (tp) { const dx = tp.x - s.x, dy = (tp.py) - s.py, d = Math.hypot(dx, dy) || 1, sp = 1100, k = Math.min(1, dt * (s.t < 0.25 ? 2 : 7)); s.vx += (dx / d * sp - s.vx) * k; s.vy += (rel + dy / d * sp - s.vy) * k; }
-      else s.vy += 1400 * dt;
+      if (tp) { const dx = tp.x - s.x, dy = (tp.py) - s.py, d = Math.hypot(dx, dy) || 1, sp = 1480, k = Math.min(1, dt * (s.t < 0.25 ? 2 : 7)); s.vx += (dx / d * sp - s.vx) * k; s.vy += (rel + dy / d * sp - s.vy) * k; }
+      else s.vy += 1900 * dt;
       if (chance(dt * 40)) G.parts.push({ k: 'puff', x: s.x, py: s.py, vx: rand(-20, 20), vy: rel * 0.6, r: rand(3, 5), life: 0.35, t: 0, col: '#ffffff' });
     }
     s.x += s.vx * dt; s.py += s.vy * dt;
@@ -4914,6 +4960,7 @@ function updateShots(R, dt) {
       if (dx * dx + dy * dy < Math.pow(gp.r * 0.92 + s.r, 2)) {
         const w = gd.d.weak, wx = gp.x + w[0] * gp.r, wy = gp.py - w[1] * gp.r, crit = Math.hypot(s.x - wx, s.py - wy) < w[2] * gp.r + s.r;
         hurtGuard(R, s.dmg * (crit ? 1.6 : 1), s.x, s.py, crit);
+        if (s.k === 'seek') { sfx.sboom(); G.parts.push({ k: 'shock', x: s.x, py: s.py, vx: 0, vy: 0, r: 80, life: 0.3, t: 0, col: '#ffd93d' }); sparks(s.x, s.py, 10, ['#ffd93d', '#ffffff', '#ff8ad0'], 260); }
         if (s.k === 'lance' && --s.pierce > 0) s.hitG = true; else { s.dead = true; continue; } // a lance hits the boss once, then flies on
       }
     }
@@ -4922,7 +4969,8 @@ function updateShots(R, dt) {
       const dx = s.x - o.x, dy = s.py - o.py, rr2 = o.r + s.r;
       if (dx * dx + dy * dy > rr2 * rr2) continue;
       damageObstacle(o, R, s.dmg);
-      sparks(s.x, s.py, 3, s.k === 'lance' ? ['#ffe58a', '#fff'] : ['#fff6c8', '#ff8ad0'], 160);
+      sparks(s.x, s.py, s.k === 'seek' ? 10 : 4, s.k === 'lance' ? ['#ffe58a', '#fff'] : s.k === 'scat' ? ['#ff8ad0', '#fff'] : s.k === 'wing' ? ['#4fd8ff', '#fff'] : ['#fff6c8', '#ffe58a'], s.k === 'seek' ? 260 : 170);
+      if (s.k === 'seek') { sfx.sboom(); G.parts.push({ k: 'shock', x: s.x, py: s.py, vx: 0, vy: 0, r: 70, life: 0.3, t: 0, col: '#ffd93d' }); } else if (!o.dead) sfx.gtick();
       if (s.k === 'lance' && --s.pierce > 0) { (s.hit = s.hit || []).push(o); continue; }
       s.dead = true; break;
     }
@@ -4943,10 +4991,15 @@ function killObstacle(o, R, quiet) {
   S.stats.kills = (S.stats.kills || 0) + 1;
   if (o.gl && !o.shot) { R.popped = (R.popped || 0) + 1; S.stats.popped = (S.stats.popped || 0) + 1; }
   // the starlight it swallowed comes pouring back out, and gives the rocket a push
-  if (o.gl && !o.shot && R.vy > 0 && !R.hold && !R.ended) R.vy *= 1 + GLOOM_PUSH * k;
+  // (capped per flight, so a long fight doesn't snowball into a runaway climb)
+  if (o.gl && !o.shot && R.vy > 0 && !R.hold && !R.ended && (R.pushed || 0) < PUSH_CAP) { const p = GLOOM_PUSH * k; R.vy *= 1 + p; R.pushed = (R.pushed || 0) + Math.log(1 + p); }
   const big = o.big || o.type === 'spitter';
+  if (o.gl && !quiet && !o.shot) {
+    R.combo = R.time - (R.lastKill || -9) < 1.3 ? (R.combo || 0) + 1 : 1; R.lastKill = R.time;
+    if (R.combo >= 5 && R.combo % 5 === 0) { floater(R.x, R.py + 120, `${R.combo} POP STREAK!`, '#ff8ad0', 18 + Math.min(R.combo, 20) * 0.3); sfx.chime(); }
+  }
   if (!quiet) {
-    if (o.gl) sfx.gpop(big ? 0 : k); else sfx.smash();
+    if (o.gl) sfx.gpop(big ? 0 : Math.min(R.combo || 1, 12)); else sfx.smash();
     if (k >= 4) floater(o.x, o.py + 10, '+' + fmtMoney(v), '#ffe58a', big ? 18 : 14);
   }
   const cols = o.gl ? ['#fff6c8', '#ffe58a', '#c9a6ff', '#ffffff'] : ['#ffffff', '#c9ced8', '#ffd93d'];
@@ -4963,6 +5016,14 @@ function killObstacle(o, R, quiet) {
     }
     G.cam.shake = Math.max(G.cam.shake, o.type === 'megaroid' ? 10 : 4);
   }
+  if (o.type === 'puffer' || o.type === 'blimp') { // out tumble the pufflings
+    const n = o.type === 'blimp' ? 5 : 3;
+    for (let i = 0; i < n; i++) { const a = (i / n) * TAU + rand(-0.3, 0.3), c = makeObstacle('mini', o.x + Math.cos(a) * o.r * 0.5, o.py + Math.sin(a) * o.r * 0.4); c.hp = c.maxHp = 1; c.gs = o.gs; c.vx = Math.cos(a) * rand(140, 220); c.scr = 120 - Math.sin(a) * 140; c.age = 0; G.obs.push(c); }
+    if (o.type === 'blimp') { G.cam.shake = Math.max(G.cam.shake, 12); sfx.boom(); puff(o.x, o.py, 14, '#5b4a7a', 260, [10, 24], [0.6, 1.2]); floater(o.x, o.py + 70, 'BLIMP POPPED!', '#ffe58a', 20); }
+  }
+  if (o.type === 'lucky' && !quiet) { const b = Math.round(coinValue(R.alt) * 25 * KILL_PAY); R.killCash += b; floater(o.x, o.py + 50, 'LUCKY! +' + fmtMoney(b), '#ffd93d', 22); sfx.bigcoin(); sparks(o.x, o.py, 26, ['#ffd93d', '#fff6c8', '#ffffff'], 340); }
+  if (o.type === 'urchin') { if (o.arm != null) { o.dead = false; urchinBurst(o); } else if (!quiet) floater(o.x, o.py + 40, 'DEFUSED!', '#8affc1', 15); }
+  if (o.type === 'zap' && o.mate && !o.mate.dead) { o.mate.angry = true; sparks(o.mate.x, o.mate.py, 8, ['#4fd8ff', '#ffffff'], 200); }
   if (o.type === 'block' && o.wall) { o.wall.broken++; if (!o.wall.told) { o.wall.told = 1; floater(o.x, o.py + 50, 'BREAK THROUGH!', '#ffe58a', 18); } }
 }
 
@@ -4971,21 +5032,32 @@ function viewBox() { const z = G.cam.z, vw = W / z; return { vw, top: G.cam.py +
 function mkGloom(type, x, py, hp, gs) { const o = makeObstacle(type, x, py); o.gs = gs; if (o.scr && G.R && G.R.alt < GATE_ALT * 1.3) o.scr *= 0.72; /* the first waves past the Gate drift in gently */ o.hp = o.maxHp = Math.max(1, Math.round(hp * gs * (S.settings.relaxed ? 0.8 : 1))); G.obs.push(o); return o; }
 function spawnWave(R) {
   const V = viewBox(), vw = V.vw, top = V.top + 70, gs = gloomScale(R.alt), late = R.alt > 2.6e6, cx = G.cam.x;
-  const nBig = vw > 1300 ? 7 : vw > 900 ? 6 : 5;
-  const pool = [['line', 3], ['vee', 2.4], ['snake', 2], ['swirl', 1.4], ['spit', late ? 1.7 : 1], ['rock', late ? 1.3 : 0.8], ['wall', R.time - (R.wallT || -99) > 14 && R.alt > GATE_ALT * 1.25 ? (late ? 1.1 : 0.7) : 0]];
+  const nBig = vw > 2200 ? 9 : vw > 1300 ? 7 : vw > 900 ? 6 : 5, a = R.alt, G1 = GATE_ALT, Vh = V.top - V.bot;
+  // new kinds of Gloom join in as you climb, so each frontier leg brings something new
+  const pool = [['line', 2.4], ['vee', 2], ['swoop', 2.4], ['puffer', a > G1 * 1.15 ? 1.5 : 1],
+    ['snake', a > G1 * 1.3 ? 1.6 : 0], ['swirl', a > G1 * 1.3 ? 1.2 : 0], ['spit', a > G1 * 1.4 ? (late ? 1.6 : 1.1) : 0], ['rock', a > G1 * 1.4 ? (late ? 0.9 : 0.6) : 0],
+    ['zap', a > 1.15e6 ? 1.5 : 0], ['wall', R.time - (R.wallT || -99) > 16 && a > G1 * 1.25 ? (late ? 0.9 : 0.6) : 0],
+    ['urchin', a > 1.8e6 ? 1.4 : 0], ['blimp', a > 2.3e6 && R.time - (R.blimpT || -99) > 16 ? 1 : 0]];
   let sum = 0; for (const p of pool) sum += p[1];
-  let q = Math.random() * sum, kind = 'line'; for (const p of pool) { q -= p[1]; if (q <= 0) { kind = p[0]; break; } }
-  if (kind === R.lastWave && kind !== 'line') kind = 'line';
+  const roll = () => { let q = Math.random() * sum; for (const p of pool) { q -= p[1]; if (q <= 0) return p[0]; } return 'line'; };
+  const hist = R.waveHist || (R.waveHist = []), n0 = R.waveN = (R.waveN || 0) + 1;
+  let kind = roll();
+  for (let k = 0; k < 6 && hist.includes(kind); k++) kind = roll(); // keep it fresh: never the same kind as the last two waves
+  if (n0 === 1) kind = 'swoop'; else if (n0 === 2 && !hist.includes('puffer')) kind = 'puffer';
+  hist.push(kind); if (hist.length > 2) hist.shift();
   R.lastWave = kind;
+  // now and then a golden Lucky Puff tags along, and higher up the waves come in pairs
+  if (chance(a > 2e6 ? 0.1 : 0.14)) { const o = mkGloom('lucky', cx + rand(-vw * 0.3, vw * 0.3), V.top - Vh * 0.12, 3, gs); o.f = { k: 'zig', cx: o.x, amp: Math.min(vw * 0.3, 320), w: rand(1.8, 2.6), ph: rand(0, TAU) }; }
+  if (late && kind !== 'wall' && kind !== 'blimp' && chance(0.3)) spawnSwoop(R, V, gs, Math.max(3, nBig - 2));
   if (kind === 'line' || kind === 'vee') {
-    const n = nBig, spc = Math.min(110, vw * 0.75 / n), x0 = cx + rand(-vw * 0.18, vw * 0.18), amp = rand(30, 70), ph = rand(0, TAU);
-    for (let i = 0; i < n; i++) { const m = i - (n - 1) / 2, o = mkGloom('gloom', x0 + m * spc, top + (kind === 'vee' ? Math.abs(m) * 46 : 0), 3, gs); o.f = { k: 'sway', cx: o.x, amp, w: 1.1, ph }; }
+    const n = nBig, spc = Math.min(132, vw * 0.75 / n), x0 = cx + rand(-vw * 0.18, vw * 0.18), amp = rand(30, 70), ph = rand(0, TAU);
+    for (let i = 0; i < n; i++) { const m = i - (n - 1) / 2, o = mkGloom('gloom', x0 + m * spc, top + (kind === 'vee' ? Math.abs(m) * 56 : 0), 3, gs); o.f = { k: 'sway', cx: o.x, amp, w: 1.1, ph }; }
   } else if (kind === 'snake') {
     const n = nBig + 1, dir = chance(0.5) ? 1 : -1, y = top - rand(0, 160);
-    for (let i = 0; i < n; i++) { const o = mkGloom('gloom', cx - dir * (vw / 2 + 50 + i * 62), y, 3, gs); o.scr = 60; o.f = { k: 'snake', cx: o.x, vx: dir * 230, amp: 55, w: 3, ph: i * 0.55 }; }
+    for (let i = 0; i < n; i++) { const o = mkGloom('gloom', cx - dir * (vw / 2 + 60 + i * 74), y, 3, gs); o.scr = 60; o.f = { k: 'snake', cx: o.x, vx: dir * 230, amp: 55, w: 3, ph: i * 0.55 }; }
   } else if (kind === 'swirl') {
     const n = 6, c = { x: cx + rand(-vw * 0.2, vw * 0.2), py: top + 100 };
-    for (let i = 0; i < n; i++) { const o = mkGloom('gloom', c.x, c.py, 3, gs); o.scr = null; o.f = { k: 'swirl', cx: c.x, cpy: c.py, rad: 86, ang: i / n * TAU, w: 1.7, scr: 125 }; }
+    for (let i = 0; i < n; i++) { const o = mkGloom('gloom', c.x, c.py, 3, gs); o.scr = null; o.f = { k: 'swirl', cx: c.x, cpy: c.py, rad: 104, ang: i / n * TAU, w: 1.7, scr: 125 }; }
   } else if (kind === 'spit') {
     const n = vw > 900 ? 2 : 1;
     for (let i = 0; i < n; i++) { const o = mkGloom('spitter', n === 1 ? cx + rand(-vw * 0.2, vw * 0.2) : cx + (i ? 1 : -1) * vw * rand(0.18, 0.3), top + 40, 9, gs); o.f = { k: 'sway', cx: o.x, amp: rand(40, 90), w: 0.8, ph: rand(0, TAU) }; }
@@ -4993,13 +5065,37 @@ function spawnWave(R) {
   } else if (kind === 'rock') {
     const o = mkGloom('megaroid', cx + rand(-vw * 0.25, vw * 0.25), top + 110, 34, gs); o.vx = rand(-40, 40);
     if (chance(0.5)) for (let i = 0; i < 2; i++) { const g = mkGloom('gloom', o.x + (i ? 1 : -1) * 200, top + 60, 3, gs); g.f = { k: 'sway', cx: g.x, amp: 30, w: 1.4, ph: i * 3 }; }
+  } else if (kind === 'swoop') spawnSwoop(R, V, gs, nBig);
+  else if (kind === 'puffer') {
+    const n = vw > 1300 ? 3 : 2;
+    for (let i = 0; i < n; i++) { const o = mkGloom('puffer', cx + (i - (n - 1) / 2) * Math.min(vw * 0.32, 420) + rand(-60, 60), top + 30 + i * 70, 10, gs); o.f = { k: 'sway', cx: o.x, amp: rand(30, 60), w: 0.7, ph: rand(0, TAU) }; }
+  } else if (kind === 'zap') {
+    const n = vw > 1600 ? 2 : 1;
+    for (let j = 0; j < n; j++) {
+      const gap = rand(300, 430), mx = n === 1 ? cx + rand(-vw * 0.15, vw * 0.15) : cx + (j ? 1 : -1) * vw * 0.24, y = top + 40 + j * 160, amp = rand(30, 70), ph = rand(0, TAU);
+      const A = mkGloom('zap', mx - gap / 2, y, 6, gs), B = mkGloom('zap', mx + gap / 2, y, 6, gs);
+      A.mate = B; B.mate = A; A.lead = true;
+      A.f = { k: 'sway', cx: A.x, amp, w: 0.9, ph }; B.f = { k: 'sway', cx: B.x, amp, w: 0.9, ph };
+    }
+  } else if (kind === 'urchin') {
+    const n = vw > 1300 ? 4 : 3;
+    for (let i = 0; i < n; i++) { const o = mkGloom('urchin', cx + (i - (n - 1) / 2) * vw * 0.22 + rand(-50, 50), top + rand(0, 260), 5, gs); o.f = { k: 'sway', cx: o.x, amp: rand(20, 50), w: 0.6, ph: rand(0, TAU) }; }
+  } else if (kind === 'blimp') {
+    R.blimpT = R.time;
+    const dir = chance(0.5) ? 1 : -1, o = mkGloom('blimp', cx - dir * vw * 0.25, top + 60, 45, gs); o.vx = dir * 55; o.dir = dir;
+    for (let i = 0; i < 2; i++) { const g = mkGloom('mini', o.x + (i ? 1 : -1) * 150, top + 10, 1, gs); g.f = { k: 'sway', cx: g.x, amp: 30, w: 1.5, ph: i * 3 }; }
+    banner('GLOOM BLIMP!', '#c9a6ff', 1.6, 'STAY OUT FROM UNDER IT'); sfx.rumble();
   } else if (kind === 'wall') {
     R.wallT = R.time;
-    const sz = 80, n = Math.ceil(vw * 1.1 / sz) + 1, x0 = cx - (n - 1) * sz / 2, weak = randi(1, n - 2), wall = { broken: 0, n };
+    const sz = 96, n = Math.ceil(vw * 1.1 / sz) + 1, x0 = cx - (n - 1) * sz / 2, weak = randi(1, n - 2), wall = { broken: 0, n };
     for (let i = 0; i < n; i++) { const o = mkGloom('block', x0 + i * sz, top + 40, i === weak ? 0.34 : 5, gs); o.wall = wall; o.i = i; o.weak = i === weak; o.eyes = chance(0.3); }
     banner('GLOOM WALL!', '#c9a6ff', 1.6, 'BLAST A HOLE THROUGH IT');
     sfx.rumble();
   }
+}
+function spawnSwoop(R, V, gs, n) {
+  const dir = chance(0.5) ? 1 : -1, Vh = V.top - V.bot, y = V.top - Vh * rand(0.08, 0.22);
+  for (let i = 0; i < n; i++) { const o = mkGloom('swoop', G.cam.x - dir * (V.vw / 2 + 50 + i * 78), y + i * 12, 2, gs); o.vx = dir * 290; o.dir = dir; o.age = -i * 0.27; }
 }
 // screen-relative motion and behaviour for the Gloom (called from updateObstacles)
 function gloomTick(o, dt, R) {
@@ -5007,9 +5103,9 @@ function gloomTick(o, dt, R) {
   if (o.flash > 0) o.flash -= dt;
   const f = o.f;
   if (f) {
-    if (f.k === 'sway') o.x = f.cx + Math.sin(o.age * f.w + f.ph) * f.amp;
-    else if (f.k === 'snake') { f.cx += f.vx * dt; o.x = f.cx; o.py += Math.cos(o.age * f.w + f.ph) * f.amp * f.w * dt; }
-    else if (f.k === 'swirl') { f.ang += f.w * dt; f.cpy += ((G.mode === 'flight' ? R.vpy || 0 : 0) - f.scr) * dt; o.x = f.cx + Math.cos(f.ang) * f.rad; o.py = f.cpy + Math.sin(f.ang) * f.rad * 0.8; }
+    if (f.k === 'sway' || f.k === 'zig') o.x = f.cx + Math.sin(o.age * f.w + f.ph) * f.amp;
+    else if (f.k === 'snake') { f.cx += f.vx * GL_SPD * dt; o.x = f.cx; o.py += Math.cos(o.age * f.w + f.ph) * f.amp * f.w * dt; }
+    else if (f.k === 'swirl') { f.ang += f.w * dt; f.cpy += ((G.mode === 'flight' ? R.vpy || 0 : 0) - f.scr * GL_SPD) * dt; o.x = f.cx + Math.cos(f.ang) * f.rad; o.py = f.cpy + Math.sin(f.ang) * f.rad * 0.8; }
   }
   if (o.type === 'gloom' && !o.dive && o.age > 1 && R && !R.crashed && !R.ended) { // some take a swoop at you
     const dy = o.py - R.py, dx = R.x - o.x;
@@ -5025,12 +5121,27 @@ function gloomTick(o, dt, R) {
       if (o.warn) { o.warn = false; const n = R.alt > 2.6e6 ? 3 : 1; for (let i = 0; i < n; i++) spitBlob(o.x, o.py - o.r * 0.5, R.x, R.py, 320, (i - (n - 1) / 2) * 0.22); sfx.spit(); }
     }
   }
+  if (o.type === 'swoop') o.scr = o.age < 0 ? 0 : 820 * Math.cos(o.age * 1.15); // a big U: dips down, then flaps back up and away
+  else if (o.type === 'lucky') { if (o.age > 4.6 && !o.fled) { o.fled = true; floater(o.x, o.py + 40, 'Bye!', '#ffe58a', 14); } o.scr = o.fled ? -320 : 55; if (chance(dt * 10)) sparks(o.x, o.py, 1, ['#ffe58a', '#ffffff'], 60); }
+  else if (o.type === 'zap' && o.lead && o.mate && !o.mate.dead && R && !R.crashed && !R.ended && !(R.invuln > 0) && !(R.dashT > 0)) { // the beam zaps you if you fly through it
+    const m = o.mate, dx = m.x - o.x, dy = m.py - o.py, L2 = dx * dx + dy * dy || 1, u = clamp(((R.x - o.x) * dx + (R.py - o.py) * dy) / L2, 0, 1);
+    if (u > 0.05 && u < 0.95 && Math.hypot(R.x - (o.x + dx * u), R.py - (o.py + dy * u)) < 22 * G.rocketScale) { sfx.zap(); floater(R.x, R.py + 90, 'BZZT!', '#8affef', 18); hitRocket(o, true); }
+  } else if (o.type === 'urchin') {
+    o.rot = (o.rot || 0) + o.spin * dt;
+    if (o.arm == null && R && !R.crashed && !R.ended && Math.hypot(o.x - R.x, o.py - R.py) < 280) { o.arm = 0.9; sfx.tick(); }
+    if (o.arm != null) { const was = o.arm; o.arm -= dt; if (Math.floor(was * 6) !== Math.floor(o.arm * 6)) sfx.tick(); if (o.arm <= 0) urchinBurst(o); }
+  } else if (o.type === 'blimp' && R && !R.ended) {
+    const V = viewBox();
+    if ((o.x < V.l + o.r * 1.4 && o.vx < 0) || (o.x > V.r - o.r * 1.4 && o.vx > 0)) { o.vx = -o.vx; o.dir = -o.dir; }
+    o.bombT -= dt; const sy = w2s(o.x, o.py)[1];
+    if (o.bombT <= 0 && sy > (G.hudB || 100) && sy < H * 0.72) { o.bombT = rand(1.2, 1.8); const b = makeObstacle('blob', o.x + rand(-24, 24), o.py - o.r * 0.6); b.vx = o.vx * 0.3; b.scr = 240; b.bomb = 1; G.obs.push(b); sfx.drop(); }
+  }
   if (o.type === 'ball') { // juggling balls fly up, fall back down and bounce off the sides of the screen
     o.scr += 480 * dt; const V = viewBox();
     if (o.x < V.l + o.r && o.vx < 0) o.vx = -o.vx; if (o.x > V.r - o.r && o.vx > 0) o.vx = -o.vx;
     o.rot += o.vx * 0.01 * dt;
   }
-  if (o.gl) { const V = viewBox(); if (o.py > V.top + 900 || (o.f && o.f.k === 'snake' && o.age > 2 && Math.abs(o.x - G.cam.x) > V.vw * 0.75)) o.dead = true; }
+  if (o.gl) { const V = viewBox(); if (o.py > V.top + 900 || (((o.f && o.f.k === 'snake') || o.type === 'swoop') && o.age > 2 && Math.abs(o.x - G.cam.x) > V.vw * 0.75)) o.dead = true; }
 }
 // an ink blob aimed at a point, moving down the screen at speed s (a = extra angle)
 function spitBlob(x, py, tx, tpy, s, a = 0) {
@@ -5038,6 +5149,7 @@ function spitBlob(x, py, tx, tpy, s, a = 0) {
   const ux = dx / d, uy = dy / d, vx = ux * c - uy * sn, vy = ux * sn + uy * c;
   const o = makeObstacle('blob', x, py); o.vx = vx * s; o.scr = Math.max(60, vy * s); G.obs.push(o); return o;
 }
+function urchinBurst(o) { if (o.dead) return; o.dead = true; radialBlobs(o.x, o.py, 8, 230, rand(0, 1)); sfx.spit(); sfx.gpop(0); sparks(o.x, o.py, 14, ['#ff8ad0', '#ffffff', '#c2457a'], 260); puff(o.x, o.py, 8, '#5b4a7a', 180); G.cam.shake = Math.max(G.cam.shake, 5); }
 function radialBlobs(x, py, n, s, off = 0) { for (let i = 0; i < n; i++) { const a = off + i / n * TAU, o = makeObstacle('blob', x, py); o.vx = Math.cos(a) * s; o.scr = Math.sin(a) * s; G.obs.push(o); } }
 
 // ---------------------------------------------------------------- Gloom boss fights
@@ -5111,6 +5223,10 @@ function guardAttack(R, g, a) {
   } else if (a === 'minions') {
     const n = g.rage ? 5 : 4;
     for (let i = 0; i < n; i++) { const t = (i / (n - 1)) * 2 - 1, o = mkGloom('gloom', p.x + t * p.r * 0.7, p.py - p.r * 0.2, 3, gloomScale(R.alt)); o.scr = 120; o.f = { k: 'sway', cx: p.x + t * V.vw * 0.32, amp: 40, w: 1.2, ph: i }; o.fromBoss = 1; }
+    sfx.puffs();
+  } else if (a === 'bats') { // soot bats flap out of its cracks and swoop down at you
+    const n = g.rage ? 6 : 4, gs = gloomScale(R.alt);
+    for (let i = 0; i < n; i++) { const dir = i % 2 ? 1 : -1, o = mkGloom('swoop', p.x - dir * p.r * (0.7 + 0.25 * (i >> 1)), p.py - p.r * 0.1, 2, gs); o.vx = dir * 250; o.dir = dir; o.age = -(i >> 1) * 0.22; o.fromBoss = 1; }
     sfx.puffs();
   } else if (a === 'juggle') {
     const n = g.rage ? 4 : 3;
@@ -5186,10 +5302,11 @@ function guardLose(R) {
 function guardSave(g) { if (!g || g.out === 'won' || g.echo) return; S.guard = S.guard || {}; const s = S.guard[g.id] || {}; s.hp = Math.max(0.02, g.hp / g.max); s.tries = (s.tries || 0) + 1; S.guard[g.id] = s; }
 
 // ---------------------------------------------------------------- drawing
+function starPath(c, x, y, r1, r2, n) { c.beginPath(); for (let j = 0; j < n * 2; j++) { const a = -Math.PI / 2 + j / (n * 2) * TAU, q = j % 2 ? r2 : r1; c.lineTo(x + Math.cos(a) * q, y + Math.sin(a) * q); } c.closePath(); }
 function drawGloomBody(c, r, t, o = {}) { // a grumpy soot puff: lumpy outline, rim light, angry little eyes
   const wob = o.wob || 0;
   c.save();
-  const g = c.createRadialGradient(0, 0, r * 0.4, 0, 0, r * 1.5); g.addColorStop(0, 'rgba(201,166,255,.32)'); g.addColorStop(1, 'rgba(201,166,255,0)');
+  const g = c.createRadialGradient(0, 0, r * 0.4, 0, 0, r * 1.5); g.addColorStop(0, o.glow || 'rgba(201,166,255,.32)'); g.addColorStop(1, 'rgba(201,166,255,0)');
   c.fillStyle = g; circ(c, 0, 0, r * 1.5); c.fill();
   ink(c, 3);
   c.beginPath();
@@ -5198,16 +5315,17 @@ function drawGloomBody(c, r, t, o = {}) { // a grumpy soot puff: lumpy outline, 
   c.closePath();
   if (o.rim) { c.save(); c.lineWidth = o.rim; c.strokeStyle = 'rgba(238,228,255,.9)'; c.stroke(); c.restore(); }
   fillStroke(c, o.flash ? '#ffffff' : (o.col || '#5b4a7a'), o.ink || 3);
-  if (!o.flash) { c.fillStyle = 'rgba(160,140,210,.55)'; c.beginPath(); c.ellipse(-r * 0.28, -r * 0.38, r * 0.34, r * 0.2, -0.4, 0, TAU); c.fill(); }
+  if (!o.flash) { c.fillStyle = o.hi || 'rgba(160,140,210,.55)'; c.beginPath(); c.ellipse(-r * 0.28, -r * 0.38, r * 0.34, r * 0.2, -0.4, 0, TAU); c.fill(); }
   // eyes
   const ey = -r * 0.08 + (o.puff ? -r * 0.06 : 0), ex = r * 0.32, er = r * 0.2;
   for (const s of [-1, 1]) {
     c.fillStyle = '#fff'; circ(c, s * ex, ey, er); c.fill(); c.lineWidth = 2; c.strokeStyle = INK; c.stroke();
     c.fillStyle = o.angry ? '#ff5a5f' : '#2b2240'; circ(c, s * ex + (o.lx || 0) * er * 0.4, ey + er * 0.25, er * 0.5); c.fill();
-    c.lineWidth = Math.max(2.5, r * 0.09); c.beginPath(); c.moveTo(s * (ex + er * 1.1), ey - er * 1.5); c.lineTo(s * (ex - er * 0.9), ey - er * 0.7); c.stroke();
+    if (!o.calm) { c.lineWidth = Math.max(2.5, r * 0.09); c.beginPath(); c.moveTo(s * (ex + er * 1.1), ey - er * 1.5); c.lineTo(s * (ex - er * 0.9), ey - er * 0.7); c.stroke(); }
   }
   // mouth: a frown, or puffed cheeks before a spit
   if (o.puff) { c.fillStyle = '#ff8ad0'; for (const s of [-1, 1]) { circ(c, s * r * 0.55, r * 0.3, r * 0.22); c.fill(); } c.fillStyle = INK; circ(c, 0, r * 0.42, r * 0.12); c.fill(); }
+  else if (o.calm) { c.lineWidth = Math.max(2.5, r * 0.08); c.beginPath(); c.arc(0, r * 0.22, r * 0.24, Math.PI * 0.15, Math.PI * 0.85); c.stroke(); }
   else { c.lineWidth = Math.max(2.5, r * 0.08); c.beginPath(); c.arc(0, r * 0.62, r * 0.24, -Math.PI * 0.8, -Math.PI * 0.2); c.stroke(); }
   c.restore();
 }
@@ -5269,6 +5387,71 @@ function drawGloomObs(c, o, t) {
       c.fillStyle = 'rgba(255,255,255,.7)'; circ(c, o.r * 0.25, -o.r * 0.35, o.r * 0.28); c.fill();
       c.restore(); break;
     }
+    case 'swoop': { // soot bat: flapping wings behind a small grumpy puff
+      const r = o.r, fa = Math.sin(t * 15 + (o.seed || 0) * 9), rim = Math.max(6, 8 / G.cam.z), lw = Math.max(3, 1.8 / G.cam.z);
+      for (const sd of [-1, 1]) {
+        c.save(); c.scale(sd, 1); c.translate(r * 0.45, -r * 0.05); c.rotate(-0.15 - fa * 0.55);
+        c.beginPath(); c.moveTo(0, 0); c.quadraticCurveTo(r * 0.7, -r * 1.1, r * 1.65, -r * 0.75); c.lineTo(r * 1.35, -r * 0.2); c.quadraticCurveTo(r * 1.15, -r * 0.35, r * 0.95, -r * 0.05); c.quadraticCurveTo(r * 0.7, -r * 0.2, r * 0.45, r * 0.18); c.closePath();
+        c.lineJoin = 'round'; c.lineWidth = rim; c.strokeStyle = 'rgba(238,228,255,.85)'; c.stroke(); ink(c, lw); fillStroke(c, fl ? '#fff' : '#3b2d55', lw);
+        c.strokeStyle = 'rgba(160,140,210,.6)'; c.lineWidth = 2; c.beginPath(); c.moveTo(r * 0.2, -r * 0.05); c.lineTo(r * 1.3, -r * 0.6); c.stroke();
+        c.restore();
+      }
+      drawGloomBody(c, r * 0.82, t + (o.seed || 0) * 9, { flash: fl, angry: true, rim, ink: lw, col: '#4a3b6a' });
+      break;
+    }
+    case 'puffer': case 'mini': {
+      const big = o.type === 'puffer', sq = big && o.hp < o.maxHp * 0.5 ? 1 + 0.06 * Math.sin(t * 18) : 1;
+      c.save(); c.scale(sq, 1 / sq);
+      drawGloomBody(c, o.r, t + (o.seed || 0) * 9, { flash: fl, col: big ? '#56679a' : '#7a68a8', hi: big ? 'rgba(170,190,240,.55)' : undefined, puff: big, angry: !big, rim: Math.max(6, 8 / G.cam.z), ink: Math.max(3, 1.8 / G.cam.z), glow: big ? 'rgba(150,180,255,.35)' : undefined });
+      c.restore(); if (big) drawHpPip(c, o); break;
+    }
+    case 'lucky': {
+      drawGloomBody(c, o.r, t + (o.seed || 0) * 9, { flash: fl, col: '#ffd23d', hi: 'rgba(255,255,255,.75)', calm: !o.fled, rim: Math.max(6, 8 / G.cam.z), ink: Math.max(3, 1.8 / G.cam.z), glow: 'rgba(255,217,61,.55)' });
+      c.save(); c.fillStyle = '#ffffff'; for (let i = 0; i < 3; i++) { const a = t * 2 + i * 2.1, d = o.r * 1.35; c.save(); c.translate(Math.cos(a) * d, Math.sin(a) * d); c.rotate(t * 3); starPath(c, 0, 0, 7, 3, 4); c.fill(); c.restore(); } c.restore();
+      break;
+    }
+    case 'zap': { // fizzy orb; the lead one draws the crackling beam to its twin
+      const r = o.r, m = o.mate;
+      if (o.lead && m && !m.dead) {
+        const dx = m.x - o.x, dy = -(m.py - o.py), segs = 9, pts = [];
+        for (let i = 0; i <= segs; i++) { const u = i / segs, j = i > 0 && i < segs ? 14 : 0; pts.push([dx * u + rand(-j, j), dy * u + rand(-j, j)]); }
+        c.save(); c.lineCap = 'round'; c.lineJoin = 'round';
+        for (const [w, col, al] of [[26, '#4fd8ff', 0.22], [10, '#4fd8ff', 0.9], [4, '#ffffff', 1]]) { c.globalAlpha = al; c.strokeStyle = col; c.lineWidth = w * Math.max(1, 0.45 / G.cam.z); c.beginPath(); pts.forEach(([x, y], i) => i ? c.lineTo(x, y) : c.moveTo(x, y)); c.stroke(); }
+        c.restore();
+      }
+      c.save();
+      const gl = c.createRadialGradient(0, 0, r * 0.3, 0, 0, r * 1.9); gl.addColorStop(0, 'rgba(79,216,255,.55)'); gl.addColorStop(1, 'rgba(79,216,255,0)'); c.fillStyle = gl; circ(c, 0, 0, r * 1.9); c.fill();
+      circ(c, 0, 0, r); c.lineWidth = Math.max(6, 8 / G.cam.z); c.strokeStyle = 'rgba(220,250,255,.9)'; c.stroke(); fillStroke(c, fl ? '#fff' : '#24507a', Math.max(3, 1.8 / G.cam.z));
+      c.strokeStyle = '#4fd8ff'; c.lineWidth = 3; c.beginPath(); c.arc(0, 0, r * 0.72, t * 4, t * 4 + 4.2); c.stroke();
+      for (const sd of [-1, 1]) { c.fillStyle = '#fff'; circ(c, sd * r * 0.3, -r * 0.05, r * 0.2); c.fill(); c.fillStyle = o.angry ? '#ff5a5f' : '#0b2340'; circ(c, sd * r * 0.3, 0, r * 0.1); c.fill(); }
+      c.lineWidth = 3; c.strokeStyle = INK; c.beginPath(); c.arc(0, r * 0.38, r * 0.18, -Math.PI * 0.85, -Math.PI * 0.15); c.stroke();
+      c.restore(); break;
+    }
+    case 'urchin': { // spike mine: spins, and puffs up blinking when you get close
+      const r = o.r, armed = o.arm != null, k = armed ? 1 - clamp(o.arm / 0.9, 0, 1) : 0, blink = armed && Math.sin(t * (20 + k * 30)) > 0, sz = 1 + 0.3 * k;
+      c.save(); c.scale(sz, sz);
+      if (armed) { const g2 = c.createRadialGradient(0, 0, r * 0.4, 0, 0, r * 2); g2.addColorStop(0, 'rgba(255,90,95,.5)'); g2.addColorStop(1, 'rgba(255,90,95,0)'); c.fillStyle = g2; circ(c, 0, 0, r * 2); c.fill(); }
+      c.save(); c.rotate(o.rot || 0); const n = 11; c.beginPath();
+      for (let i = 0; i < n * 2; i++) { const a = i / (n * 2) * TAU, rr2 = i % 2 ? r * 0.8 : r * 1.28; i ? c.lineTo(Math.cos(a) * rr2, Math.sin(a) * rr2) : c.moveTo(Math.cos(a) * rr2, Math.sin(a) * rr2); }
+      c.closePath(); c.lineJoin = 'round'; c.lineWidth = Math.max(6, 8 / G.cam.z); c.strokeStyle = 'rgba(255,228,240,.9)'; c.stroke(); fillStroke(c, fl || blink ? '#ffffff' : '#c2457a', Math.max(3, 1.8 / G.cam.z));
+      c.restore();
+      circ(c, 0, 0, r * 0.62); fillStroke(c, '#7a2a55', 2.5);
+      for (const sd of [-1, 1]) { c.fillStyle = '#fff'; circ(c, sd * r * 0.24, -r * 0.08, r * 0.16); c.fill(); c.fillStyle = armed ? '#ff5a5f' : INK; circ(c, sd * r * 0.24, -r * 0.04, r * 0.08); c.fill(); c.strokeStyle = INK; c.lineWidth = 3; c.beginPath(); c.moveTo(sd * r * 0.42, -r * 0.34); c.lineTo(sd * r * 0.1, -r * 0.2); c.stroke(); }
+      c.restore(); break;
+    }
+    case 'blimp': { // a grumpy soot airship with a spinning propeller and a little gondola
+      const r = o.r, rim = Math.max(6, 8 / G.cam.z), lw = Math.max(3, 1.8 / G.cam.z);
+      c.save(); if ((o.dir || 1) < 0) c.scale(-1, 1);
+      c.save(); ink(c, lw); rr(c, -r * 0.45, r * 0.62, r * 0.8, r * 0.34, r * 0.1); c.lineWidth = rim; c.strokeStyle = 'rgba(238,228,255,.85)'; c.stroke(); fillStroke(c, '#7d6aa3', lw);
+      c.fillStyle = '#ffe58a'; for (let i = 0; i < 3; i++) { rr(c, -r * 0.36 + i * r * 0.24, r * 0.7, r * 0.14, r * 0.14, 3); c.fill(); } c.restore();
+      for (const sd of [-1, 1]) { c.beginPath(); c.moveTo(-r * 1.25, sd * r * 0.25); c.lineTo(-r * 1.85, sd * r * 0.72); c.lineTo(-r * 1.6, 0); c.closePath(); c.lineJoin = 'round'; c.lineWidth = rim; c.strokeStyle = 'rgba(238,228,255,.85)'; c.stroke(); ink(c, lw); fillStroke(c, '#3b2d55', lw); }
+      c.beginPath(); c.ellipse(0, 0, r * 1.55, r * 0.82, 0, 0, TAU); c.lineWidth = rim; c.strokeStyle = 'rgba(238,228,255,.85)'; c.stroke(); ink(c, lw); fillStroke(c, fl ? '#fff' : '#4a3b66', lw);
+      if (!fl) { c.fillStyle = 'rgba(160,140,210,.5)'; c.beginPath(); c.ellipse(-r * 0.2, -r * 0.42, r * 0.9, r * 0.18, 0, 0, TAU); c.fill(); c.strokeStyle = 'rgba(43,34,64,.45)'; c.lineWidth = 3; for (const yy of [-0.35, 0.35]) { c.beginPath(); c.ellipse(0, 0, r * 1.5, r * 0.82 * Math.abs(yy) * 2.2, 0, yy < 0 ? Math.PI : 0, yy < 0 ? TAU : Math.PI); c.stroke(); } }
+      const pa = t * 30; c.save(); c.translate(-r * 1.72, 0); c.fillStyle = '#c9ced8'; c.strokeStyle = INK; c.lineWidth = 2.5; for (const q of [0, Math.PI]) { c.beginPath(); c.ellipse(0, Math.cos(pa + q) * r * 0.32, r * 0.08, Math.abs(Math.cos(pa + q)) * r * 0.34 + 2, 0, 0, TAU); c.fill(); c.stroke(); } c.restore();
+      for (const sd of [-1, 1]) { const ex = r * 0.9 + sd * r * 0.22; c.fillStyle = '#fff'; circ(c, ex, -r * 0.08, r * 0.14); c.fill(); c.strokeStyle = INK; c.lineWidth = 2.5; c.stroke(); c.fillStyle = '#ff5a5f'; circ(c, ex + r * 0.04, -r * 0.04, r * 0.07); c.fill(); c.lineWidth = 4; c.beginPath(); c.moveTo(ex - r * 0.16, -r * 0.3 + sd * r * 0.04); c.lineTo(ex + r * 0.16, -r * 0.24 - sd * r * 0.04); c.stroke(); }
+      c.lineWidth = 4; c.beginPath(); c.arc(r * 0.9, r * 0.32, r * 0.14, -Math.PI * 0.85, -Math.PI * 0.15); c.stroke();
+      c.restore(); drawHpPip(c, o); break;
+    }
     case 'ball': {
       c.save(); c.rotate(o.rot); ink(c, 3); circ(c, 0, 0, o.r); fillStroke(c, fl ? '#fff' : '#fff6e5', 3);
       c.save(); circ(c, 0, 0, o.r - 1.5); c.clip(); c.fillStyle = o.col || '#ff5a5f'; for (let i = -1; i <= 1; i += 2) c.fillRect(i * o.r * 0.45 - o.r * 0.18, -o.r, o.r * 0.36, o.r * 2); c.restore();
@@ -5280,14 +5463,15 @@ function drawGloomObs(c, o, t) {
 function drawShots() {
   if (!G.shots.length) return;
   ctx.save(); ctx.lineCap = 'round';
+  const sk = 1 + (GL_SPR - 1) * G.zoomK;
   for (const s of G.shots) {
     const x = s.x, y = -s.py;
     if (s.k === 'seek') {
       const a = Math.atan2(s.vx, s.vy - (G.R ? G.R.vpy || 0 : 0));
-      ctx.save(); ctx.translate(x, y); ctx.rotate(a); ink(ctx, 2); rr(ctx, -4, -10, 8, 18, 4); fillStroke(ctx, '#fff6e5', 2); ctx.beginPath(); ctx.moveTo(-4, -6); ctx.quadraticCurveTo(0, -16, 4, -6); fillStroke(ctx, '#ff5a8a', 2); ctx.fillStyle = '#ffd93d'; ctx.beginPath(); ctx.moveTo(-3, 8); ctx.lineTo(0, 16 + Math.sin(G.t * 50) * 3); ctx.lineTo(3, 8); ctx.fill(); ctx.restore();
+      ctx.save(); ctx.translate(x, y); ctx.rotate(a); ctx.scale(sk, sk); ink(ctx, 2); rr(ctx, -4, -10, 8, 18, 4); fillStroke(ctx, '#fff6e5', 2); ctx.beginPath(); ctx.moveTo(-4, -6); ctx.quadraticCurveTo(0, -16, 4, -6); fillStroke(ctx, '#ff5a8a', 2); ctx.fillStyle = '#ffd93d'; ctx.beginPath(); ctx.moveTo(-3, 8); ctx.lineTo(0, 16 + Math.sin(G.t * 50) * 3); ctx.lineTo(3, 8); ctx.fill(); ctx.restore();
       continue;
     }
-    const len = s.k === 'lance' ? 58 : s.k === 'wing' ? 16 : 24, w = s.k === 'lance' ? 9 : s.k === 'wing' ? 5 : 7;
+    const len = (s.k === 'lance' ? 58 : s.k === 'wing' ? 16 : 24) * sk, w = (s.k === 'lance' ? 9 : s.k === 'wing' ? 5 : 7) * sk;
     const ux = Math.sin(s.ang || 0), uy = Math.cos(s.ang || 0);
     const col = s.k === 'lance' ? '#ffd93d' : s.k === 'scat' ? '#ff8ad0' : s.k === 'wing' ? '#4fd8ff' : '#fff6c8';
     ctx.globalAlpha = 0.35; ctx.strokeStyle = col; ctx.lineWidth = w * 2.4; ctx.beginPath(); ctx.moveTo(x - ux * len * 0.2, y + uy * len * 0.2); ctx.lineTo(x - ux * len, y + uy * len); ctx.stroke();
@@ -5296,17 +5480,63 @@ function drawShots() {
   }
   ctx.restore();
 }
+// the guns bolted to the rocket: a pod on each shoulder (its look shows the gun you picked) and seeker racks on the fins
+function drawGunMounts(c, L, gun, o) {
+  const d = rocketDims(L), hw = d.BW / 2, top = -d.BL / 2, bot = d.BL / 2, pd = gunPods(L), t = G.t;
+  const kind = gun.lance ? 'lance' : gun.scatter ? 'scat' : 'bolt', tipY = -pd.up - (kind === 'lance' ? 10 : 0), y0 = top + 12;
+  c.save(); ink(c, 2.5);
+  if (gun.seek) for (const s of [-1, 1]) { // a seeker on each fin; it slides back on after a launch
+    const k = o.seekK == null ? 1 : o.seekK, x = s * (o.s2 ? hw + 4 : hw + d.FW * 0.55), y = (o.s2 ? 10 : bot - 2) + (1 - k) * 12; // on the fins, or beside the upper stage once the fins are gone
+    c.save(); c.globalAlpha = k < 1 ? 0.25 + 0.6 * k : 1; c.translate(x, y);
+    rr(c, -3.5, -16, 7, 17, 3.5); fillStroke(c, '#fff6e5', 2.5);
+    c.beginPath(); c.moveTo(-3.5, -12); c.quadraticCurveTo(0, -23, 3.5, -12); fillStroke(c, '#ff5a8a', 2.5);
+    c.restore();
+  }
+  for (const s of [-1, 1]) {
+    const x = s * pd.lat;
+    c.lineCap = 'round'; c.strokeStyle = INK; c.lineWidth = 6; c.beginPath(); c.moveTo(s * (hw - 2), y0 + 1); c.lineTo(x, y0 + 1); c.stroke();
+    c.strokeStyle = '#8a93a6'; c.lineWidth = 2.5; c.stroke();
+    if (kind === 'lance') { // a long golden barrel with a glowing sun on the tip
+      rr(c, x - 5, y0 - 8, 10, 13, 4); fillStroke(c, '#c9ced8', 2.5);
+      rr(c, x - 3, tipY + 3, 6, y0 - 8 - tipY - 3, 3); fillStroke(c, '#ffd93d', 2.5);
+      if (o.hot) { const g = c.createRadialGradient(x, tipY + 2, 1, x, tipY + 2, 11); g.addColorStop(0, 'rgba(255,246,200,.9)'); g.addColorStop(1, 'rgba(255,217,61,0)'); c.fillStyle = g; circ(c, x, tipY + 2, 11 + Math.sin(t * 9 + s) * 1.5); c.fill(); }
+      circ(c, x, tipY + 2, 3.6); fillStroke(c, '#fff6c8', 2);
+    } else if (kind === 'scat') { // a pink pod with a flared, three-hole muzzle
+      rr(c, x - 4.5, tipY + 7, 9, y0 + 5 - tipY - 7, 4); fillStroke(c, '#ff8ad0', 2.5);
+      c.beginPath(); c.moveTo(x - 4, tipY + 8); c.lineTo(x - 7.5, tipY); c.lineTo(x + 7.5, tipY); c.lineTo(x + 4, tipY + 8); c.closePath(); fillStroke(c, '#ffd6ec', 2.5);
+      c.fillStyle = INK; for (const q of [-3.6, 0, 3.6]) { circ(c, x + q, tipY + 2.6, 1.2); c.fill(); }
+    } else { // the Star Blaster: a stubby cream barrel with a pink band
+      rr(c, x - 4, tipY, 8, y0 + 5 - tipY, 4); fillStroke(c, '#e7e3dc', 2.5);
+      c.fillStyle = '#ff5a8a'; c.fillRect(x - 2.6, tipY + 6, 5.2, 3.5);
+      if (GUN.twin(gun.lv)) { c.fillStyle = '#ffd93d'; c.fillRect(x - 2.6, tipY + 12, 5.2, 2.5); }
+    }
+    if (o.flash > 0 && (!o.side || o.side === s)) { // muzzle flash
+      const k = o.flash / 0.08, col = kind === 'lance' ? '#ffe58a' : kind === 'scat' ? '#ff8ad0' : '#fff6c8';
+      c.save(); c.globalAlpha = Math.min(1, k * 1.2); c.lineWidth = 2;
+      starPath(c, x, tipY - 5, 9 + 5 * k, 4, 5); c.fillStyle = col; c.fill();
+      circ(c, x, tipY - 4, 4); c.fillStyle = '#ffffff'; c.fill(); c.restore();
+    }
+  }
+  c.restore();
+}
+function drawHangarDrones(L, n) { // Pip's cousins wait beside the parked rocket
+  const d = rocketDims(L);
+  for (let i = 0; i < n; i++) {
+    const s = i ? 1 : -1, x = s * (d.BW / 2 + 52), y = -d.BL / 2 - 4 + Math.sin(G.t * 2.2 + i * 2) * 5;
+    ctx.save(); ctx.translate(x, y); ctx.scale(1.15, 1.15); drawDrone(ctx, s, false); ctx.restore();
+  }
+}
+function drawDrone(c, side, flash) {
+  ink(c, 2.5); c.beginPath(); c.ellipse(0, 4, 17, 7, 0, 0, TAU); fillStroke(c, '#4fd8ff', 2.5);
+  c.beginPath(); c.arc(0, 2, 9, Math.PI, 0); fillStroke(c, 'rgba(191,248,255,.85)', 2.5);
+  c.fillStyle = '#8be36b'; circ(c, 0, 0, 4.5); c.fill(); c.fillStyle = INK; circ(c, -1.6, -0.6, 1); circ(c, 1.6, -0.6, 1); c.fill();
+  c.fillStyle = Math.sin(G.t * 8 + side) > 0 ? '#ff5a5f' : '#ffd93d'; circ(c, side * 12, 6, 2.2); c.fill();
+  if (flash) { c.save(); starPath(c, 0, -11, 8, 3.5, 5); c.fillStyle = '#bff8ff'; c.fill(); circ(c, 0, -10, 3); c.fillStyle = '#fff'; c.fill(); c.restore(); }
+}
 function drawWingDrones() {
   const R = G.R; if (!R || !R.wing || !G.st.gun || R.alt < GATE_ALT * 0.99 || R.crashed) return;
   const sc = G.rocketScale;
-  for (const w of R.wing) {
-    ctx.save(); ctx.translate(w.x, -w.py); ctx.scale(sc * 1.3, sc * 1.3);
-    ink(ctx, 2.5); ctx.beginPath(); ctx.ellipse(0, 4, 17, 7, 0, 0, TAU); fillStroke(ctx, '#4fd8ff', 2.5);
-    ctx.beginPath(); ctx.arc(0, 2, 9, Math.PI, 0); fillStroke(ctx, 'rgba(191,248,255,.85)', 2.5);
-    ctx.fillStyle = '#8be36b'; circ(ctx, 0, 0, 4.5); ctx.fill(); ctx.fillStyle = INK; circ(ctx, -1.6, -0.6, 1); circ(ctx, 1.6, -0.6, 1); ctx.fill();
-    ctx.fillStyle = Math.sin(G.t * 8 + w.side) > 0 ? '#ff5a5f' : '#ffd93d'; circ(ctx, w.side * 12, 6, 2.2); ctx.fill();
-    ctx.restore();
-  }
+  for (const w of R.wing) { ctx.save(); ctx.translate(w.x, -w.py); ctx.scale(sc * 1.3, sc * 1.3); drawDrone(ctx, w.side, w.flash > 0); ctx.restore(); }
 }
 function drawNovaRing() {
   const R = G.R, n = R && R.nova; if (!n) return;
@@ -5588,6 +5818,12 @@ const TIPS = {
   block: 'A Gloom wall! Blast a hole through it. The cracked brick breaks fastest.',
   blob: 'Ink blobs! Shoot them or dodge them.',
   ball: 'Juggling balls! They bounce off the sides. Shoot them down.',
+  swoop: 'Soot Bats swoop in from the side and loop back up. Line up under them as they dip.',
+  puffer: 'A Big Puff! Pop it and it bursts into three little pufflings.',
+  zap: 'Zap Twins! The beam between them zaps you. Pop either twin to break it.',
+  urchin: 'A Spike Mine blinks when you get close, then bursts into ink. Pop it from far away!',
+  blimp: 'A Gloom Blimp! It drops ink bombs. Get out from under it and keep shooting.',
+  lucky: 'A Lucky Puff! Golden and shy. Pop it before it flies off for a pile of coins.',
   lost: 'Lost property! Catch it and it goes back to its owner. Check Lost & Found in the trophy book.',
 };
 function tipOnce(type) {
@@ -5607,7 +5843,7 @@ function updateObstacles(dt) {
   G.warnings.length = 0;
   for (const o of G.obs) {
     if (o.dead) continue;
-    if (o.gl) { if (o.scr != null) o.vy = (G.mode === 'flight' ? R.vpy || 0 : 0) - o.scr; gloomTick(o, dt, R); if (o.dead) continue; }
+    if (o.gl) { if (o.scr != null) o.vy = (G.mode === 'flight' ? R.vpy || 0 : 0) - o.scr * GL_SPD; if (o.vx) o.x += o.vx * dt * (GL_SPD - 1); gloomTick(o, dt, R); if (o.dead) continue; }
     o.x += o.vx * dt; o.py += o.vy * dt; o.rot += o.vr * dt;
     if (o.hitT > 0) o.hitT -= dt;
     if (o.knock) { o.x += o.knock.x * dt; o.py += o.knock.y * dt; o.knock.x *= 0.96; o.knock.y *= 0.96; o.rot += 6 * dt; }
@@ -6317,6 +6553,7 @@ function viewAlt() {
 function render() {
   const alt = viewAlt();
   const abv = G.R && G.mode === 'flight' ? (G.R.abVis || 0) : 0;
+  G.rocketScale = 1.1 * (1 + (GL_SPR - 1) * G.zoomK);
   const z = G.cam.z = worldZoom() * lerp(1, combatZoom(), G.zoomK) * (1 - 0.075 * abv + 0.03 * (G.R && G.R.abKick > 0 ? Math.sin(G.R.abKick / 0.5 * Math.PI) : 0)); // past the Gate the camera pulls well back
   ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
   // ---- sky
@@ -7503,7 +7740,8 @@ function drawObstacleShape(c, o, t) {
     case 'eel': drawEel(c, o, t); break;
     case 'dragonling': drawDragonling(c, o, t); break;
     case 'fireball': drawFireball(c, o, t); break;
-    case 'gloom': case 'spitter': case 'megaroid': case 'rock': case 'pebble': case 'block': case 'blob': case 'ball': drawGloomObs(c, o, t); break;
+    case 'gloom': case 'spitter': case 'megaroid': case 'rock': case 'pebble': case 'block': case 'blob': case 'ball':
+    case 'swoop': case 'puffer': case 'mini': case 'zap': case 'urchin': case 'blimp': case 'lucky': drawGloomObs(c, o, t); break;
   }
 }
 function drawPickup(p) {
@@ -7775,6 +8013,7 @@ function drawPlayerRocket() {
     ctx.translate(0, -py); ctx.scale(sc, sc);
     if (pk > 0) { const d = rocketDims(look), base = d.BL / 2 + d.BH; ctx.translate(0, base); ctx.rotate(Math.sin(pk * 38) * 0.1 * pk); ctx.scale(1 + Math.sin(pk * 30) * 0.07 * pk, 1 - Math.sin(pk * 30) * 0.07 * pk); ctx.translate(0, -base); }
     drawRocket(ctx, look, { t: G.t, throttle: pk > 0.55 ? 0.45 : 0, faces: hangarFaces(), shieldOn: false, mood: pk > 0 ? 'joy' : 'happy' });
+    if (G.st && G.st.gun && G.mode === 'hangar') { drawGunMounts(ctx, look, G.st.gun, {}); if (G.st.gun.wing) drawHangarDrones(look, GUN.wingN(G.st.gun.wing)); }
     if (G.poke.rocketLineT > 0 && G.mode === 'hangar') { const d = rocketDims(look); speechBubble(ctx, G.poke.rocketLine, 26, -d.BL / 2 - 24, clamp(G.poke.rocketLineT * 3, 0, 1), 150); }
     ctx.restore(); return;
   }
@@ -7797,6 +8036,8 @@ function drawPlayerRocket() {
   if (R.invuln > 0 && Math.sin(G.t * 40) > 0) ctx.globalAlpha = 0.55;
   const mood = R.delivered ? 'joy' : R.mood;
   drawRocket(ctx, look, { t: G.t, throttle: G.mode === 'launch' ? 0.08 : R.throttle, faces: R.delivered ? [] : R.faces, mood, boostersOn: R.boosters, dropsOn: R.drops, stage: R.visStage, shieldOn: R.shieldOn, ab: R.abT > 0, boostFlame: R.boostT > 0, steer: R.steer });
+  const gun = G.st && G.st.gun;
+  if (gun) { const f = R.gunFlash || {}; drawGunMounts(ctx, look, gun, { flash: f.pod || 0, side: f.side || 0, seekK: gun.seek && R.armed ? clamp(1 - (R.seekT || 0) / GUN.seekCd(gun.seek), 0, 1) : 1, hot: R.armed && !R.ended, s2: R.visStage === 2 }); }
   ctx.restore();
   ctx.globalAlpha = 1;
   if (ret) drawReturnKit(ret, sd, rocketDims(look));
@@ -8040,10 +8281,51 @@ function drawHUD() {
   }
   if (R.stun > 0) text(ctx, 'ZAPPED!', W / 2, H * 0.3, 28, '#fff36b');
   if (R.guard) drawGuardHUD();
+  drawWeaponHUD(R, small, pad);
+}
+// the loadout, bottom left: one tile per weapon (the gun doing the shooting is the big one), each blinking when it fires
+function drawWeaponHUD(R, small, pad) {
+  const gun = G.st.gun;
+  G.wpnH = 0;
+  if (!gun || !R.armed || R.ended || R.crashed || G.mode !== 'flight') return;
+  // sized to stay clear of the tips at the bottom centre (short landscape and tablets get a more compact strip)
+  const mg = mainGun(gun), f = R.gunFlash || {}, [ts, big, gap] = H < 520 ? [32, 40, 4] : small ? [34, 44, 5] : W < 900 ? [36, 46, 6] : [42, 54, 7];
+  const tiles = [{ id: mg.id, lv: mg.lv, fl: f.main, main: true, col: mg.col }];
+  if (mg.id !== 'blaster') tiles.push({ id: 'blaster', lv: gun.lv, fl: f.main });
+  if (gun.seek) tiles.push({ id: 'seeker', lv: gun.seek, fl: f.seek, cd: clamp((R.seekT || 0) / GUN.seekCd(gun.seek), 0, 1) });
+  if (gun.wing) tiles.push({ id: 'wingmen', lv: gun.wing, fl: f.wing });
+  if (gun.nova) tiles.push({ id: 'novaburst', lv: gun.nova, fl: f.nova, cd: clamp((R.novaCd || 0) / novaCdOf(gun.nova), 0, 1), ready: !(R.novaCd > 0) });
+  const fs = small || H < 520 ? 11 : 13, by = H - pad - (small ? 2 : 4); // tile bottoms line up
+  let x = pad + 2;
+  ctx.save();
+  // the gun's name sits above the strip (bigger for a few seconds after the weapons come online)
+  const k = clamp((R.wpnShow || 0) / 0.5, 0, 1), nf = fs + 4 * k;
+  text(ctx, `${mg.name.toUpperCase()} LV${mg.lv}`, x, by - big - nf * 0.8 - 2, nf, mg.col, 'left', INK, 3);
+  for (const tl of tiles) {
+    const sz = tl.main ? big : ts, y = by - sz, fl = Math.max(0, tl.fl || 0), pop = fl > 0 ? 1 + 0.08 * Math.min(1, fl / 0.12) : 1;
+    ctx.save(); ctx.translate(x + sz / 2, y + sz / 2); ctx.scale(pop, pop);
+    rr(ctx, -sz / 2, -sz / 2, sz, sz, sz * 0.26); ink(ctx, 3);
+    fillStroke(ctx, tl.main ? 'rgba(255,250,240,.95)' : 'rgba(255,250,240,.82)', 3);
+    if (tl.main) { ctx.strokeStyle = tl.col === '#fff6c8' ? '#ffd93d' : tl.col; ctx.lineWidth = 3; rr(ctx, -sz / 2 + 4, -sz / 2 + 4, sz - 8, sz - 8, sz * 0.2); ctx.stroke(); }
+    const im = iconImg(tl.id), is = sz * 0.68;
+    if (im) ctx.drawImage(im, -is / 2, -is / 2 - sz * 0.04, is, is);
+    if (tl.cd > 0) { // cooling down: a dark wedge that unwinds
+      ctx.save(); rr(ctx, -sz / 2 + 2, -sz / 2 + 2, sz - 4, sz - 4, sz * 0.22); ctx.clip();
+      ctx.fillStyle = 'rgba(43,34,64,.55)'; ctx.beginPath(); ctx.moveTo(0, 0); ctx.arc(0, 0, sz, -Math.PI / 2, -Math.PI / 2 + TAU * tl.cd); ctx.closePath(); ctx.fill(); ctx.restore();
+    } else if (tl.ready) { ctx.strokeStyle = `rgba(255,138,208,${0.55 + 0.45 * Math.sin(G.t * 6)})`; ctx.lineWidth = 3; rr(ctx, -sz / 2 - 4, -sz / 2 - 4, sz + 8, sz + 8, sz * 0.3); ctx.stroke(); }
+    if (fl > 0) { ctx.globalAlpha = Math.min(1, fl / 0.1); ctx.strokeStyle = '#ffd93d'; ctx.lineWidth = 3.5; rr(ctx, -sz / 2 - 3, -sz / 2 - 3, sz + 6, sz + 6, sz * 0.3); ctx.stroke(); ctx.globalAlpha = 1; }
+    // level badge
+    const bs = ts < 40 ? 9 : 11; rr(ctx, sz / 2 - bs * 1.9, sz / 2 - bs * 1.15, bs * 2.3, bs * 1.6, bs * 0.7); ink(ctx, 2.5); fillStroke(ctx, tl.main ? '#ff5a8a' : '#2b2240', 2.5);
+    text(ctx, String(tl.lv), sz / 2 - bs * 0.75, sz / 2 - bs * 0.32, bs, '#fff', 'center', null);
+    ctx.restore();
+    x += sz + gap;
+  }
+  ctx.restore();
+  G.wpnH = big + nf * 1.4 + 8;
 }
 function drawJobsHUD(R, small, pad) {
   const fs = small ? 11 : 13, lh = small ? 19 : 23, bx = fs * 1.35;
-  let y = H - pad - (R.jobs.length - 1) * lh - (small ? 6 : 8);
+  let y = H - pad - (R.jobs.length - 1) * lh - (small ? 6 : 8) - (G.wpnH || 0);
   ctx.save();
   for (const j of R.jobs) {
     const d = JOB_TYPES[j.t], x = pad + 2;
@@ -8510,6 +8792,7 @@ const UI = (() => {
       const box = el('div', 'nbox', ICONS[u.icon]);
       if (s === 'locked') box.insertAdjacentHTML('beforeend', `<span class="lock">${ICONS.lock}</span>`);
       if (!S.viewed[u.id] && s !== 'locked') box.appendChild(el('span', 'newb', 'NEW'));
+      else if (u.fork && forkChoice(u.fork) === u.id) box.appendChild(el('span', 'eqb', 'PICKED'));
       // level meter inside the button: one segment per level, or a smooth bar for long upgrades
       const pips = el('div', 'pips' + (u.max > 6 ? ' bar' : ''));
       if (u.max > 6) { const f = el('span', 'pip on'); f.style.width = (L / u.max * 100) + '%'; pips.appendChild(f); }
@@ -8543,7 +8826,8 @@ const UI = (() => {
     body.appendChild(fx);
     if (s === 'locked') body.appendChild(el('div', 'note', reqText(u)));
     if (s === 'open' && matchMedia(WIDE_MQ).matches) { const hp = heightPreview(u); if (hp) body.appendChild(el('div', 'est', `<small>Next level: est. height</small><span>~${fmtAlt(hp[0])} → <b>~${fmtAlt(hp[1])}</b></span>`)); }
-    if (u.fork) { const other = UPGRADES.find(x => x.fork === u.fork && x.id !== u.id); body.appendChild(el('div', 'note', s === 'forkout' ? `You picked ${other.name}. Swap to switch paths.` : `Fork: pick this OR ${other.name}`)); }
+    if (u.fork) { const other = UPGRADES.find(x => x.fork === u.fork && x.id !== u.id); body.appendChild(el('div', 'note', s === 'forkout' ? `You picked ${other.name}. Swap to switch paths.` : forkChoice(u.fork) === u.id ? (u.fork === 'gun' ? '✓ Picked: your blaster fires these now.' : `✓ Picked (${other.name} was the other path).`) : `Fork: pick this OR ${other.name}`)); }
+    if (u.id === 'blaster' && G.st && G.st.gun) { const g = G.st.gun, mg = mainGun(g), L2 = [`${mg.name} ${mg.lv}`]; if (mg.id !== 'blaster') L2.push(`Star Blaster ${g.lv}`); if (g.seek) L2.push(`Seekers ${g.seek}`); if (g.wing) L2.push(`Drones ${g.wing}`); if (g.nova) L2.push(`Nova ${g.nova}`); body.appendChild(el('div', 'note', `<b>Fitted now:</b> ${L2.join(' · ')}`)); }
     d.appendChild(body);
     const act = el('div', 'dact');
     if (s === 'max') { const b = el('button', 'btn ghost', 'Maxed!'); b.disabled = true; act.appendChild(b); }
@@ -9717,7 +10001,7 @@ requestAnimationFrame(frame);
 
 // debug / test hooks
 window.__skyhop = {
-  G, DEBUG, RIVAL, SKY_EVENTS, BOSSES, get S() { return S; }, w2s, computeStats, simulateFlight, UPGRADES, ROUTES, UP, art: { drawStation, routeIconCanvas, drawFace, makePostcard, guideIcon, GUIDE },
+  G, DEBUG, RIVAL, SKY_EVENTS, BOSSES, get S() { return S; }, w2s, AudioSys, computeStats, simulateFlight, UPGRADES, ROUTES, UP, art: { drawStation, routeIconCanvas, drawFace, makePostcard, guideIcon, GUIDE },
   guardNow(id, echo) { if (G.R && G.mode === 'flight') { G.R.guardSeen = false; startGuard(G.R, routeById(id), !!echo); } },
   set bot(v) { DEBUG.bot = v; }, set timeScale(v) { DEBUG.timeScale = v; }, set season(v) { DEBUG.season = v; },
   setMoney(v) { S.money = v; if (UI.current === 'hangar') UI.refresh(); },
