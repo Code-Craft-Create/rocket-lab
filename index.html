@@ -391,7 +391,7 @@ button{font-family:var(--font)}
 .route .r-name{font-size:19px;font-weight:900;line-height:1.05}
 .route .r-meta{display:flex;flex-wrap:wrap;gap:6px;margin-top:5px}
 .chip{font-size:12px;font-weight:900;border:3px solid var(--ink);border-radius:999px;padding:1px 8px;background:var(--paper);white-space:nowrap}
-.chip.alt{background:#d8f0ff}.chip.pax{background:#ffe3f1}.chip.pay{background:#fff1b8}.chip.warn{background:#ffd0d0}.chip.ok{background:#d7f7dc}.chip.twist{background:#ead9ff}.chip.streak{background:#ffb4a2;font-size:11px;vertical-align:2px}.route.daily{background:linear-gradient(135deg,#fff6e5 60%,#ffe3f1)}.route .twists{margin-top:5px}.route .twists .chip{font-size:11px;margin-right:2px}
+.chip.boss{background:#3b2d55;color:#ffe58a;white-space:normal}.chip.alt{background:#d8f0ff}.chip.pax{background:#ffe3f1}.chip.pay{background:#fff1b8}.chip.warn{background:#ffd0d0}.chip.ok{background:#d7f7dc}.chip.twist{background:#ead9ff}.chip.streak{background:#ffb4a2;font-size:11px;vertical-align:2px}.route.daily{background:linear-gradient(135deg,#fff6e5 60%,#ffe3f1)}.route .twists{margin-top:5px}.route .twists .chip{font-size:11px;margin-right:2px}
 .ach-bar{position:relative;height:16px;margin-top:6px;border:3px solid var(--ink);border-radius:999px;background:#efe6d6;overflow:hidden}
 .ach-bar i{position:absolute;left:0;top:0;bottom:0;background:linear-gradient(90deg,#4fd8ff,#5fd068)}
 .ach-bar span{position:relative;display:block;text-align:center;font-size:10px;font-weight:900;line-height:10px}
@@ -1001,6 +1001,16 @@ const AudioSys = (() => {
     fire() { if (!gate('fire', 160)) return; noise({ dur: 0.35, vol: 0.22, filter: 'lowpass', f: 1400, f2: 300, q: 0.8 }); noise({ dur: 0.12, vol: 0.1, filter: 'bandpass', f: 2500, q: 2 }); },
     warp() { tone({ type: 'sine', f: 200, f2: 1600, dur: 0.8, vol: 0.12 }); noise({ dur: 0.8, vol: 0.15, filter: 'bandpass', f: 300, f2: 5000, q: 4 }); },
     ach() { [0, 4, 7, 12, 16].forEach((s, i) => tone({ type: 'triangle', f: N(79 + s), dur: 0.3, vol: 0.12, delay: i * 0.05 })); },
+    pew() { if (!gate('pew', 75)) return; noise({ dur: 0.07, vol: 0.05, filter: 'bandpass', f: 5200, f2: 2200, q: 2.5 }); tone({ type: 'triangle', f: 1500, f2: 900, dur: 0.05, vol: 0.02 }); },
+    gpop(k = 0) { if (!gate('gpop', 45)) return; tone({ type: 'sine', f: 420 + Math.min(k, 8) * 30, f2: 1100 + Math.min(k, 8) * 60, dur: 0.12, vol: 0.11 }); noise({ dur: 0.12, vol: 0.11, filter: 'bandpass', f: 1800, f2: 600, q: 1.5 }); },
+    ghit(crit) { if (!gate('ghit', 70)) return; noise({ dur: 0.06, vol: crit ? 0.12 : 0.07, filter: 'bandpass', f: crit ? 3200 : 1400, q: 2 }); if (crit) tone({ type: 'triangle', f: 1800, f2: 2400, dur: 0.06, vol: 0.05 }); },
+    armed() { [0, 5, 9, 14].forEach((s, i) => tone({ type: 'triangle', f: N(72 + s), dur: 0.16, vol: 0.12, delay: i * 0.06 })); noise({ dur: 0.4, vol: 0.12, filter: 'highpass', f: 3000, delay: 0.1 }); },
+    seek() { if (!gate('seek', 200)) return; noise({ dur: 0.35, vol: 0.12, filter: 'bandpass', f: 900, f2: 3200, q: 1.5 }); },
+    nova() { noise({ dur: 0.7, vol: 0.3, filter: 'bandpass', f: 400, f2: 5000, q: 0.9 }); [0, 7, 12, 19].forEach((s, i) => tone({ type: 'sine', f: N(76 + s), dur: 0.4, vol: 0.08, delay: i * 0.04 })); },
+    rumble() { noise({ dur: 0.9, vol: 0.28, filter: 'lowpass', f: 380, f2: 70, attack: 0.04 }); },
+    roar() { noise({ dur: 1.0, vol: 0.32, filter: 'lowpass', f: 900, f2: 120, attack: 0.06, q: 2 }); noise({ dur: 0.8, vol: 0.12, filter: 'bandpass', f: 300, f2: 180, q: 4, delay: 0.05 }); },
+    spit() { if (!gate('spit', 90)) return; noise({ dur: 0.18, vol: 0.14, filter: 'bandpass', f: 700, f2: 1800, q: 2 }); tone({ type: 'sine', f: 300, f2: 140, dur: 0.12, vol: 0.08 }); },
+    puffs() { for (let i = 0; i < 3; i++) noise({ dur: 0.14, vol: 0.12, filter: 'lowpass', f: 1000, f2: 300, delay: i * 0.09 }); },
     pop2() { if (!gate('pop2', 90)) return; noise({ dur: 0.35, vol: 0.16, filter: 'lowpass', f: 900, f2: 200 }); tone({ type: 'sine', f: 180, f2: 60, dur: 0.25, vol: 0.12 }); noise({ dur: 0.6, vol: 0.05, filter: 'highpass', f: 4000, delay: 0.08 }); },
     mail() { [0, 0.16].forEach(d => { tone({ type: 'sine', f: 2093, dur: 0.5, vol: 0.07, delay: d }); tone({ type: 'sine', f: 2960, dur: 0.35, vol: 0.035, delay: d }); }); },
     paper() { noise({ dur: 0.25, vol: 0.12, filter: 'bandpass', f: 2500, f2: 5000, q: 0.8 }); noise({ dur: 0.2, vol: 0.08, filter: 'bandpass', f: 1800, f2: 3500, q: 0.8, delay: 0.18 }); },
@@ -1305,6 +1315,13 @@ const ICONS = {
   chart: svgI('<path d="M8 12l16-6 16 6 16-6v44l-16 6-16-6-16 6z" fill="#fff6e5"/><path d="M24 6v44M40 12v44" stroke-width="3"/><path d="M14 22l3 6 6 1-5 4 2 6-6-3-5 3 2-6-5-4 6-1z" fill="#ffd93d" stroke-width="2"/><circle cx="46" cy="38" r="5" fill="#2ec4b6" stroke-width="2.5"/>'),
   lantern: svgI('<path d="M24 14h16l4 8v24l-4 8H24l-4-8V22z" fill="#ffd93d"/><path d="M26 6h12v8H26z" fill="#c9ced8"/><path d="M20 22h24M20 46h24" stroke-width="3"/><circle cx="32" cy="34" r="5" fill="#fff" stroke-width="3"/>'),
   // Pebbleton
+  b_arms: svgI('<path d="M32 22l5 10 11 1.5-8 7.5 2 11-10-5.5-10 5.5 2-11-8-7.5 11-1.5z" fill="#ff5a8a"/><path d="M32 4v10M18 8l4 8M46 8l-4 8" stroke="#ffd93d" stroke-width="4"/>'),
+  blaster: svgI('<rect x="22" y="32" width="20" height="24" rx="6" fill="#c9ced8"/><path d="M26 32V20h12v12" fill="#8a93a6"/><path d="M32 3l2.6 5.2 5.7.8-4.1 4 1 5.6-5.2-2.7-5.2 2.7 1-5.6-4.1-4 5.7-.8z" fill="#fff6c8" stroke-width="2.5"/><circle cx="32" cy="44" r="5" fill="#ff5a8a" stroke-width="3"/>'),
+  seeker: svgI('<path d="M8 58C12 44 20 34 32 28" stroke="#9b93b3" stroke-width="3" stroke-dasharray="3 5"/><g transform="rotate(45 42 22)"><rect x="36" y="12" width="12" height="24" rx="5" fill="#fff6e5"/><path d="M36 19q6-15 12 0z" fill="#ff5a8a"/><path d="M36 31l-5 6h5M48 31l5 6h-5" fill="#4d96ff" stroke-width="3"/></g><circle cx="52" cy="10" r="5" fill="none" stroke="#ff5a5f" stroke-width="2.5"/>'),
+  wingmen: svgI('<ellipse cx="18" cy="40" rx="13" ry="6" fill="#4fd8ff"/><path d="M11 39a7 7 0 0 1 14 0" fill="#bff8ff"/><circle cx="18" cy="36" r="3" fill="#8be36b" stroke-width="2"/><ellipse cx="46" cy="26" rx="13" ry="6" fill="#4fd8ff"/><path d="M39 25a7 7 0 0 1 14 0" fill="#bff8ff"/><circle cx="46" cy="22" r="3" fill="#8be36b" stroke-width="2"/><path d="M18 28v-8M46 14V6" stroke="#fff6c8" stroke-width="4"/>'),
+  scatter: svgI('<path d="M32 46L12 12M32 46L21 8M32 46V6M32 46L43 8M32 46L52 12" stroke="#ff8ad0" stroke-width="4" stroke-dasharray="7 6"/><rect x="22" y="44" width="20" height="14" rx="5" fill="#c9ced8"/>'),
+  lance: svgI('<path d="M32 58V22" stroke="#ffd93d" stroke-width="11"/><path d="M32 56V22" stroke="#fff6c8" stroke-width="3"/><path d="M23 24l9-18 9 18z" fill="#ffd93d"/><path d="M12 44h9M43 34h9" stroke="#ffe58a" stroke-width="3"/>'),
+  novaburst: svgI('<circle cx="32" cy="32" r="21" fill="none" stroke="#ff8ad0" stroke-width="5"/><circle cx="32" cy="32" r="11" fill="#fff6c8"/><path d="M32 3v8M32 53v8M3 32h8M53 32h8M12 12l6 6M46 46l6 6M52 12l-6 6M12 52l6-6" stroke="#ffd93d" stroke-width="3.5"/>'),
   b_town: svgI('<path d="M8 56V30l12-10 12 10v26z" fill="#ffb703"/><path d="M32 56V22l12-12 12 12v34z" fill="#ff8fab"/><path d="M16 56V44h8v12M40 56V40h8v16" stroke-width="3"/><path d="M4 56h56" stroke-width="4"/>'),
   fountain: svgI('<path d="M8 44h48l-6 12H14z" fill="#9fdcff"/><path d="M26 44V30h12v14" fill="#fff6e5" stroke-width="3"/><path d="M32 30c0-10 8-16 16-12M32 30c0-10-8-16-16-12" stroke="#4d96ff" stroke-width="3.5"/><path d="M32 30V12" stroke="#4d96ff" stroke-width="4"/>'),
   wheel: svgI('<circle cx="32" cy="26" r="20" fill="#fff6e5"/><circle cx="32" cy="26" r="4" fill="#ff5a5f" stroke-width="3"/><path d="M32 6v40M12 26h40M18 12l28 28M46 12L18 40" stroke-width="2.5"/><path d="M24 58l8-32 8 32" stroke-width="4"/><circle cx="32" cy="6" r="4" fill="#ffd93d" stroke-width="2.5"/><circle cx="12" cy="26" r="4" fill="#4d96ff" stroke-width="2.5"/><circle cx="52" cy="26" r="4" fill="#5fd068" stroke-width="2.5"/>'),
@@ -1840,6 +1857,7 @@ const WORKSHOP_NEWS = [
   { t: 'Busy day? Tap the purple Auto button next to Buy and I’ll pick the best upgrades for your coins. Tap it again quick to undo. You can make it happen after every flight in Settings.', when: () => autoUnlocked() },
   { t: 'No more parachutes in space, dear! Up there the rocket does a retro burn, puffs out a heat shield and only opens its chutes once it’s back in the air.', when: () => S.bestAlt >= 10000 },
   { t: 'I gave the afterburner a proper kick. Hit BOOST and hold on to your hat! It even bowls small stuff out of the way.', when: () => lvl('afterburner') > 0 },
+  { t: 'Good news from the Frontier workshop: star sails, nova cores and comet ice cost about half what they did. The Edge of the Map is a lot closer now!', when: () => frontierOpen() },
 ];
 const STORY = {
   intro: [
@@ -1934,6 +1952,17 @@ const STORY = {
     ['pip', 'Beep! I can see my face in it. Hello, face.'],
     ['ada', 'From a shed and a dream to a whole town looking up at the sky. Thank you, sweetpea. Now off you go, there’s always further!'],
   ],
+  gloom: [
+    ['pip', 'Beep! Pilot, bad news. Past the Gate the stars are going out. It is the GLOOM: grumpy soot that eats starlight!'],
+    ['ada', 'Then we’ll pop it, dear. I’ve bolted a Star Blaster to the nose. It fires all by itself once you’re past the Gate.'],
+    ['ada', 'Every bit of Gloom you pop lets its starlight out, and that gives the rocket a lovely push. More weapons are in the new Arsenal tab.'],
+    ['pip', 'And a big Gloom boss sits in front of every stop. Whatever you knock off it stays knocked off, so keep trying!'],
+  ],
+  g_x1: [['ada', 'Ha! The Grumbleberg crumbled. Look at all that starlight pouring back out!']],
+  g_x2: [['pip', 'Beep! Mother Gloom is gone and my planet can see the stars again. My family is doing the happy dance.']],
+  g_x3: [['ada', 'The Junk Juggler dropped his balls. Ringmaster Ringo wants to hire them for the show.']],
+  g_x4: [['ada', 'We got the lamp back from the Gloomfin! Keeper Lumen is polishing it already.']],
+  g_x5: [['ada', 'The Inkblot is just a puddle now. Not a speck of Gloom left between here and the Edge of the Map!'], ['pip', 'Beep... Gloom always comes back a bit. If an old boss turns up again, pop it for a fresh bounty!']],
   frontier: [
     ['pip', 'Beep! Pilot! Did you see what is past the Gate? A tea room! My planet! A whole carnival on a comet!'],
     ['ada', 'Well I never. The map goes on, sweetpea! Five new stops, all the way out to the Edge of the Map.'],
@@ -1993,6 +2022,7 @@ const BRANCHES = [
   { id: 'pad', name: 'Launch Site', icon: 'b_pad', col: '#9b5de5', unlock: () => routeDone('r0') },
   { id: 'cabin', name: 'Cabin', icon: 'b_cabin', col: '#f15bb5', unlock: () => routeDone('r1') },
   { id: 'front', name: 'Frontier', icon: 'b_front', col: '#2ec4b6', unlock: () => frontierOpen() },
+  { id: 'arms', name: 'Arsenal', icon: 'b_arms', col: '#ff5a8a', unlock: () => frontierOpen() },
   { id: 'town', name: 'Pebbleton', icon: 'b_town', col: '#ffb703', unlock: () => townOpen() },
 ];
 
@@ -2115,24 +2145,43 @@ const UPGRADES = [
     fx: l => `Altitude pay ×${(1 + 0.25 * l).toFixed(2)}` },
 
   // ---- frontier (opens after the Starlight Gate): big-ticket parts for the five stops beyond it
-  { id: 'sail', br: 'front', name: 'Star Sail', icon: 'sail', pos: [1, 0], max: 4, base: 150000, g: 2.2,
+  { id: 'sail', br: 'front', name: 'Star Sail', icon: 'sail', pos: [1, 0], max: 4, base: 90000, g: 2,
     desc: 'A shimmering sail that rides the starlight. Starlight pushes you along while you coast, and the solar wind holds off for longer.',
     fx: l => `Solar wind after ${70 + STAT.sail(l)}s, space drag ×${STAT.sailDrag(l).toFixed(2)}` },
-  { id: 'nova', br: 'front', name: 'Nova Core', icon: 'nova', pos: [0, 1], max: 4, base: 250000, g: 2.2, req: [['sail', 1]],
+  { id: 'nova', br: 'front', name: 'Nova Core', icon: 'nova', pos: [0, 1], max: 4, base: 130000, g: 2, req: [['sail', 1]],
     desc: 'A tiny captured star in a jar. Enormous thrust, surprisingly polite.',
     fx: l => `Thrust ×${(1 + 0.13 * l).toFixed(2)}` },
-  { id: 'cometice', br: 'front', name: 'Comet Ice Tanks', icon: 'cometice', pos: [2, 1], max: 4, base: 250000, g: 2.2, req: [['sail', 1]],
+  { id: 'cometice', br: 'front', name: 'Comet Ice Tanks', icon: 'cometice', pos: [2, 1], max: 4, base: 130000, g: 2, req: [['sail', 1]],
     desc: 'Frozen comet slush makes fantastic fuel, and it packs down small, so the rocket doesn’t get any heavier.',
     fx: l => `Fuel ×${(1 + 0.15 * l).toFixed(2)}, same weight` },
-  { id: 'hyper', br: 'front', name: 'Hyperdrive', icon: 'hyper', pos: [1, 2], max: 4, base: 500000, g: 2.3, req: [['nova', 2], ['cometice', 2]],
+  { id: 'hyper', br: 'front', name: 'Hyperdrive', icon: 'hyper', pos: [1, 2], max: 4, base: 260000, g: 2.1, req: [['nova', 2], ['cometice', 2]],
     desc: 'Makes the Warp Coil sing. You hardly slow down at all while coasting through deep space.',
     fx: l => `Space drag ×${STAT.hyper(l).toFixed(2)}` },
-  { id: 'chart', br: 'front', name: 'Star Charts', icon: 'chart', pos: [0.5, 3], max: 3, base: 800000, g: 2.4, req: [['hyper', 1]], fork: 'frontfork',
+  { id: 'chart', br: 'front', name: 'Star Charts', icon: 'chart', pos: [0.5, 3], max: 3, base: 380000, g: 2.2, req: [['hyper', 1]], fork: 'frontfork',
     desc: 'FORK: Pip’s family maps of the frontier. Every coin past the Starlight Gate is worth much more.',
     fx: l => `Coins past the Gate ×${(1 + 0.4 * l).toFixed(1)}` },
-  { id: 'lantern', br: 'front', name: 'Guardian Lantern', icon: 'lantern', pos: [1.5, 3], max: 3, base: 800000, g: 2.4, req: [['hyper', 1]], fork: 'frontfork',
+  { id: 'lantern', br: 'front', name: 'Guardian Lantern', icon: 'lantern', pos: [1.5, 3], max: 3, base: 380000, g: 2.2, req: [['hyper', 1]], fork: 'frontfork',
     desc: 'FORK: A lighthouse lamp on your nose. Hazards keep their distance, and the warm glow gives you extra hearts.',
     fx: l => `Hazards −${l * 15}%, +${l} heart${l > 1 ? 's' : ''}` },
+  // ---- arsenal (opens after the Starlight Gate): weapons for the fight against the Gloom. They only fire past the Gate.
+  { id: 'blaster', br: 'arms', name: 'Star Blaster', icon: 'blaster', pos: [1, 0], max: 6, base: 60000, g: 1.85,
+    desc: 'Fires sparkly star bolts all by itself once you’re past the Starlight Gate. Steer under the Gloom to pop it.',
+    fx: l => l ? `${GUN.rate(l).toFixed(1)} shots a second, ${GUN.dmg(l).toFixed(2)} damage each${GUN.twin(l) ? ', twin barrels' : ''}` : 'No weapons' },
+  { id: 'seeker', br: 'arms', name: 'Seeker Rockets', icon: 'seeker', pos: [0, 1], max: 4, base: 160000, g: 2, req: [['blaster', 2]],
+    desc: 'Little homing rockets that always pick on the biggest, grumpiest thing in sight, bosses first.',
+    fx: l => l ? `2 rockets every ${GUN.seekCd(l).toFixed(1)}s, ${GUN.seekDmg(l)} damage each` : 'None' },
+  { id: 'wingmen', br: 'arms', name: 'Wing Drones', icon: 'wingmen', pos: [2, 1], max: 3, base: 220000, g: 2.2, req: [['blaster', 2]],
+    desc: 'Pip’s cousins fly tiny saucers beside your rocket and join in with their own pea-shooters.',
+    fx: l => l ? `${GUN.wingN(l)} drone${GUN.wingN(l) > 1 ? 's' : ''}, ${GUN.wingRate(l).toFixed(1)} shots a second each` : 'None' },
+  { id: 'scatter', br: 'arms', name: 'Scatter Cannon', icon: 'scatter', pos: [0.5, 2], max: 4, base: 300000, g: 2, req: [['blaster', 3]], fork: 'gun',
+    desc: 'FORK: Sprays a fan of pink bolts. Brilliant against swarms of little Gloom.',
+    fx: l => l ? `${l >= 3 ? 5 : 3} bolts per shot${l === 2 || l === 4 ? ', wider fan' : ''}` : 'Single bolts' },
+  { id: 'lance', br: 'arms', name: 'Sun Lance', icon: 'lance', pos: [1.5, 2], max: 4, base: 300000, g: 2, req: [['blaster', 3]], fork: 'gun',
+    desc: 'FORK: Long golden lances that punch straight through everything in a line. Brilliant against walls, big rocks and bosses.',
+    fx: l => l ? `Damage ×${GUN.lanceMul(l).toFixed(1)}, pierces ${l + 1} targets` : 'Single bolts' },
+  { id: 'novaburst', br: 'arms', name: 'Nova Burst', icon: 'novaburst', pos: [1, 3], max: 3, base: 450000, g: 2.2, req: [['seeker', 1], ['wingmen', 1], ['afterburner', 1]],
+    desc: 'Past the Gate the BOOST button lets off a ring of starlight that blasts everything nearby and pops enemy shots. It runs on starlight, so it works with an empty tank.',
+    fx: l => l ? `Radius ${GUN.novaR(l)}, ${GUN.novaDmg(l)} damage, every ${novaCdOf(l).toFixed(1)}s` : 'None' },
   // ---- Pebbleton town projects: they appear on the hills behind the yard
   { id: 'fountain', br: 'town', name: 'Wishing Fountain', icon: 'fountain', pos: [1, 0], max: 3, base: 150000, g: 2.2,
     desc: 'A fountain for the town square. Passengers toss in a coin before the flight, and their wishes pay out far more generously.',
@@ -2243,6 +2292,7 @@ function computeStats() {
   if (st.port) st.thrust *= 1 + 0.05 * st.port;
   st.starlight = chartedN(); if (st.starlight) st.thrust *= 1 + 0.02 * st.starlight; // each constellation found lends a little starlight
   if (st.lantern) st.hazMul = 1 - 0.15 * st.lantern;
+  st.gun = L('blaster') ? { lv: L('blaster'), rate: GUN.rate(L('blaster')), dmg: GUN.dmg(L('blaster')), scatter: L('scatter'), lance: L('lance'), seek: L('seeker'), wing: L('wingmen'), nova: L('novaburst') } : null;
   st.hp = STAT.hp(L('hull')) + (S.settings.relaxed ? 2 : 0) + L('lantern') + L('statue');
   st.cd = 0.0011 * STAT.drag(L('nose'));
   st.repair = L('repair') ? STAT.repair(L('repair')) : 0;
@@ -2361,7 +2411,7 @@ function simWarp(R) {
 const AUTO_W = { // what a level is worth besides height, as if it added this much height (fraction)
   hull: 0.06, nose: 0, repair: 0.05, shield: 0.06, ram: 0.05, fins: 0.04, magnet: 0.04, radar: 0.035, autododge: 0.05, vector: 0.03, dash: 0.035,
   afterburner: 0.07, finder: 0.04, scoop: 0.03, control: 0.07, giftshop: 0.05, weather: 0.03, catcher: 0.04, seats: 0.05, comfort: 0.03, snack: 0.04, lounge: 0.06, cargo: 0.05,
-  chart: 0.08, lantern: 0.08,
+  chart: 0.08, lantern: 0.08, blaster: 0.1, seeker: 0.07, wingmen: 0.06, scatter: 0.07, lance: 0.07, novaburst: 0.05,
 };
 function autoPlan(budget = S.money, maxBuys = 160) {
   const realUp = S.up, plan = [];
@@ -2376,6 +2426,7 @@ function autoPlan(budget = S.money, maxBuys = 160) {
       const st0 = computeStats(), pax = paxForRoute(r, st0).pax;
       const alt0 = Math.max(50, simulateFlight(st0, { launchQ: 1.15, pax, dt: 1 / 12 }).alt);
       const needH = nr && alt0 < nr.alt * 1.15 ? 1 : 0.55; // still short of the next stop? height matters most
+      const ga = guardAhead(), armsNeed = ga ? clamp(GUARDS[ga.id].hp * guardLeft(ga.id) / Math.max(1, gunDps(st0.gun) * GUARDS[ga.id].time * 0.45) - 0.7, 0, 2) : 0; // can we pop the boss in front of the next stop?
       let best = null, bestV = 0;
       for (const u of cands) {
         const L = lvl(u.id), cost = upCost(u);
@@ -2384,6 +2435,7 @@ function autoPlan(budget = S.money, maxBuys = 160) {
         S.up[u.id] = L;
         let v = Math.max(0, Math.log(alt1 / alt0)) * needH + (AUTO_W[u.id] || 0) / (1 + 0.35 * L);
         if (u.id === 'seats' && nr && nr.pax > (st0.seats || 0)) v += 5; // the next route can't fly without them
+        if (u.br === 'arms' && armsNeed > 0) v += 0.14 * armsNeed / (1 + 0.25 * L);
         v /= Math.pow(Math.max(1, cost), 0.65); // cheap and cheerful wins, but a big upgrade that really pays isn't starved
         if (v > bestV) { bestV = v; best = u; }
       }
@@ -3359,7 +3411,7 @@ const G = {
   spawnY: 0, launch: null, result: null, station: null, hangarPop: 0,
   poke: { rocket: 0, ada: 0, adaLine: '', crowd: 0, shed: 0, rocketLine: '', rocketLineT: 0, deco: 0, baronT: 0, baronLine: '' },
   input: { keys: {}, pointers: new Map(), steer: 0, boostPressed: false },
-  rocketScale: 1.1, warnings: [],
+  rocketScale: 1.1, warnings: [], shots: [], zoomK: 0,
 };
 
 function worldZoom() { return clamp(Math.min(W, H * 1.25) / 880, 0.6, 1.08); }
@@ -3504,7 +3556,7 @@ function prepareRocket() {
   G.ghostLook = G.ghost && G.ghost.lk ? Object.assign({}, G.ghost.lk, { paint: PAINTS.find(p => p.id === G.ghost.lk.paint) || PAINTS[0] }) : null;
   const rc = !daily && rivalLive(); G.rival = rc ? makeRival(rc, G.st) : null; R.rivalBeat = false;
   G.R = R;
-  G.obs = []; G.picks = []; G.parts = []; G.floaters = []; G.banners = []; G.station = null; G.warnings = [];
+  G.obs = []; G.picks = []; G.parts = []; G.floaters = []; G.banners = []; G.station = null; G.warnings = []; G.shots = []; G.zoomK = 0;
   G.spawnY = R.py + 260;
 }
 
@@ -3608,14 +3660,23 @@ function makeObstacle(type, x, py) {
     case 'meteor': o.r = rand(14, 24); o.vx = rand(-160, 160); o.vy = -rand(220, 380); o.verts = rockVerts(8, 0.35); o.vr = rand(-3, 3); o.slow = 0.25; o.py += 300; o.hot = true; break;
     case 'asteroid': o.r = rand(20, 58); o.small = o.r < 28; o.dmg = o.r > 44 ? 2 : 1; o.slow = 0.22 + o.r / 200; o.verts = rockVerts(11, 0.3); o.craters = craters(randi(2, 4)); o.vx = rand(-50, 50); o.vy = rand(-30, 10); o.vr = rand(-0.8, 0.8); break;
     case 'ufo': o.r = 36; o.beam = 0; o.vx = 0; o.baseX = x; o.slow = 0.25; o.amp = rand(80, 160); break;
-    case 'ice': o.r = rand(16, 40); o.small = o.r < 24; o.slow = 0.22; o.verts = rockVerts(7, 0.45); o.vx = rand(-70, 70); o.vy = rand(-40, 20); o.vr = rand(-2, 2); o.dmg = o.r > 34 ? 2 : 1; break;
+    case 'ice': o.r = rand(16, 40); o.small = o.r < 24; o.slow = 0.22; o.verts = rockVerts(7, 0.45); o.vx = rand(-70, 70); o.vy = rand(-40, 20); o.vr = rand(-2, 2); o.dmg = o.r > 34 ? 2 : 1; o.hp = Math.ceil(o.r / 10); break;
     case 'comet': o.dir = chance(0.5) ? 1 : -1; o.x = G.cam.x - o.dir * (vw / 2 + 150); o.vx = o.dir * rand(380, 560); o.vy = rand(-160, 40); o.r = 18; o.dmg = 2; o.slow = 0.3; break;
-    case 'jelly': o.r = 28; o.vx = rand(-30, 30); o.slow = 0.12; o.bouncy = true; break;
+    case 'jelly': o.r = 28; o.vx = rand(-30, 30); o.slow = 0.12; o.bouncy = true; o.hp = 3; break;
     case 'blackhole': o.r = 26; o.dmg = 2; o.slow = 0.4; o.pull = 340; break;
-    case 'crystal': o.r = rand(16, 36); o.small = o.r < 23; o.dmg = o.r > 30 ? 2 : 1; o.slow = 0.2; o.vx = rand(-40, 40); o.vy = rand(-20, 20); o.vr = rand(-1, 1); o.hue = pick(['#ff8ad0', '#7fdcff', '#c9a6ff', '#8affc1']); break;
+    case 'crystal': o.r = rand(16, 36); o.small = o.r < 23; o.dmg = o.r > 30 ? 2 : 1; o.slow = 0.2; o.vx = rand(-40, 40); o.vy = rand(-20, 20); o.vr = rand(-1, 1); o.hue = pick(['#ff8ad0', '#7fdcff', '#c9a6ff', '#8affc1']); o.hp = Math.ceil(o.r / 9); break;
     case 'eel': o.dir = chance(0.5) ? 1 : -1; o.x = G.cam.x - o.dir * (vw / 2 + 160); o.vx = o.dir * rand(150, 230); o.r = 15; o.slow = 0.2; o.long = 44; o.amp = rand(18, 34); o.ph = rand(0, TAU); break;
     case 'dragonling': o.r = 24; o.slow = 0.15; o.dir = chance(0.5) ? 1 : -1; o.vx = o.dir * rand(20, 60); o.fireCd = rand(0.4, 1.4); o.fireWarn = 0; o.col = pick(['#7be0c0', '#ff9f43', '#c9a6ff', '#ff8ad0']); break;
-    case 'fireball': o.r = 13; o.small = true; o.slow = 0.12; o.hot = true; break;
+    case 'fireball': o.r = 13; o.small = true; o.slow = 0.12; o.hot = true; o.hp = 1; break;
+    // ---- the Gloom (past the Starlight Gate). gl: screen-relative motion (scr = px/s down the screen), see gloomTick
+    case 'gloom': o.r = 27; o.gl = true; o.small = true; o.slow = 0.08; o.scr = 195; o.hp = 3; break;
+    case 'spitter': o.r = 37; o.gl = true; o.slow = 0.1; o.scr = 95; o.hp = 9; o.spitT = rand(1.2, 2.2); break;
+    case 'megaroid': o.r = rand(92, 124); o.gl = true; o.big = true; o.dmg = 2; o.slow = 0.25; o.scr = 120; o.hp = 34; o.verts = rockVerts(13, 0.22); o.craters = craters(5); o.vr = rand(-0.3, 0.3); break;
+    case 'rock': o.r = rand(34, 42); o.gl = true; o.dmg = 1; o.slow = 0.15; o.scr = 150; o.hp = 7; o.verts = rockVerts(10, 0.3); o.craters = craters(2); o.vr = rand(-1.5, 1.5); break;
+    case 'pebble': o.r = rand(15, 20); o.gl = true; o.small = true; o.slow = 0.06; o.scr = 190; o.hp = 2; o.verts = rockVerts(7, 0.35); o.vr = rand(-4, 4); break;
+    case 'block': o.r = 40; o.gl = true; o.dmg = 2; o.slow = 0.2; o.scr = 140; o.hp = 5; break;
+    case 'blob': o.r = 12; o.gl = true; o.shot = true; o.small = true; o.slow = 0.05; o.scr = 300; o.hp = 1; break;
+    case 'ball': o.r = 18; o.gl = true; o.shot = true; o.small = true; o.slow = 0.06; o.scr = -300; o.hp = 3; break;
   }
   return o;
 }
@@ -3678,7 +3739,7 @@ function drawRainbow(c, p) {
   c.restore();
 }
 function updateSkyEvent(R, dt, viewTop) {
-  if (R.ended || R.crashed) return;
+  if (R.ended || R.crashed || R.hold) return;
   const vw = W / G.cam.z;
   if (R.event) {
     const e = R.event; e.t += dt; e.acc += dt;
@@ -3730,10 +3791,11 @@ const gobbleS = u => u * 1.2 * Math.min(1, W / 440); // a touch smaller on narro
 const gobbleY = u => Math.min(Math.max(H * 0.2, 120 + 70 * u, (G.hudB || 0) + 90 * gobbleS(u)), H * G.cam.anchor - 240 * u); // big and round: keep it clear of the phone HUD
 const BANDIT_DUR = 11;
 function updateBoss(R, dt) {
-  if (R.ended || R.crashed) return;
+  if (R.ended || R.crashed || R.guard) return;
   const u = G.cam.z;
   if (!R.boss) {
     if (R.bossN >= (R.alt > GATE_ALT ? 3 : 2) || R.event || !(R.vy > 120) || R.time < 3) return; // past the Gate there's room for one more
+    { const ga = guardAhead(); if (ga && R.alt > guardAlt(ga) * 0.55) return; } // a Gloom boss is waiting up ahead
     for (const id in BOSSES) {
       const d = BOSSES[id], forced = DEBUG.forceBoss === id; // __skyhop.DEBUG.forceBoss = 'bandit' for playtests
       if (DEBUG.forceBoss && !forced) continue;
@@ -4198,6 +4260,10 @@ const GUIDE = [
   { id: 'crystal', name: 'Nebula Crystal', desc: 'Grows in the Nebula Shallows like frost on a window. Pretty and sharp. The big ones cost two hearts.', ext: 40 },
   { id: 'eel', name: 'Aurora Eel', desc: 'Swims through the Aurora Reach trailing light. A bump gives you a fizzy zap that scrambles your steering.', ext: 64 },
   { id: 'dragonling', name: 'Star Dragonling', desc: 'Baby dragons from the Edge of the Map. They mean well, but they sneeze fireballs when they get excited.', ext: 46 },
+  { id: 'gloom', name: 'Gloomlet', desc: 'A grumpy puff of soot that eats starlight. Pop it and the starlight it swallowed gives your rocket a push.', ext: 42, min: GATE_ALT },
+  { id: 'spitter', name: 'Spitter', desc: 'Puffs out its pink cheeks, then spits ink at you. Dodge sideways, or shoot the blobs.', ext: 56, min: GATE_ALT },
+  { id: 'megaroid', name: 'Megaroid', desc: 'A huge gloomy rock. Keep shooting: it cracks into smaller rocks, and those crack into pebbles.', ext: 130, min: GATE_ALT },
+  { id: 'block', name: 'Gloom Wall', desc: 'Soot bricks right across the sky. Blast a hole through. The cracked brick breaks fastest.', ext: 48, min: GATE_ALT * 1.25 },
   { boss: 'storm', stat: 'king', name: 'The Storm King', desc: 'Rules the clouds around 2 km. When a yellow stripe appears under you, get out of it!' },
   { boss: 'whale', stat: 'whale', name: 'Big Blue', desc: 'A friendly sky whale above 9 km. Its spout is the best boost in the sky.' },
   { boss: 'pirates', stat: 'pirates', name: 'Captain Calico', desc: 'A pirate cat in a flying ship, 26 to 55 km up. Red X lanes get cannonballs: slide into a green SAFE lane!' },
@@ -4205,10 +4271,10 @@ const GUIDE = [
   { boss: 'bandit', stat: 'bandit', name: 'Rascal the Comet Bandit', desc: 'A raccoon in a stolen saucer, 220 to 600 km up, with everyone’s luggage. Bump him three times while he swoops low, and dodge his tin cans.' },
   { boss: 'gobble', stat: 'gobble', name: 'The Gobble Nebula', desc: 'A hungry puff of stardust past 900 km. It slurps you toward its mouth, puffs its cheeks, then spits a goo beam straight down. Steer against the pull and get out of the purple stripe!' },
 ];
-const guideKey = g => g.boss ? 'gb_' + g.boss : 'g_' + g.id;
+const guideKey = g => g.boss ? 'gb_' + g.boss : g.guard ? 'gg_' + g.guard : 'g_' + g.id;
 const guideNewCount = () => GUIDE.filter(g => guideSeen(g) && !S.seen[guideKey(g)]).length;
-function guideSeen(g) { return g.boss ? !!S.seen['boss_' + g.boss] : !!S.seen['tip_' + g.id]; }
-function guideMinAlt(g) { if (g.boss) return BOSSES[g.boss].min; for (const z of ZONES) if (z.spawn && z.spawn[g.id]) return z.alt; return SKY_EVENTS.meteors.min; }
+function guideSeen(g) { return g.boss ? !!S.seen['boss_' + g.boss] : g.guard ? !!S.seen['guard_' + g.guard] : !!S.seen['tip_' + g.id]; }
+function guideMinAlt(g) { if (g.boss) return BOSSES[g.boss].min; if (g.guard) return guardAlt(routeById(g.guard)); if (g.min) return g.min; for (const z of ZONES) if (z.spawn && z.spawn[g.id]) return z.alt; return SKY_EVENTS.meteors.min; }
 function guideIcon(g, locked) {
   const cv2 = document.createElement('canvas'); cv2.width = cv2.height = 128;
   const c = cv2.getContext('2d'); c.scale(2, 2); c.translate(32, 32);
@@ -4219,6 +4285,7 @@ function guideIcon(g, locked) {
     else if (g.boss === 'pirates') { c.translate(0, 10); c.scale(0.19, 0.19); drawPirateShip(c, 0, false, 0); }
     else if (g.boss === 'bandit') { c.translate(2, 6); c.scale(0.36, 0.36); drawBanditShip(c, 0.3, false, 0); }
     else if (g.boss === 'gobble') { c.translate(0, 2); c.scale(0.27, 0.27); drawGobbleBody(c, 0.4, 0, 0); }
+    else if (g.guard) { const d = GUARDS[g.guard]; c.translate(0, d.look === 'fish' ? 6 : d.look === 'robot' ? 5 : 1); c.scale(0.21, 0.21); drawGuardLook(c, d.look, 100, 0.6, false, false, false, 1); }
     else {
       const o = makeObstacle(g.id, 0, 0);
       Object.assign(o, { x: 0, py: 0, dir: 1, seed: 0.37, rot: 0 });
@@ -4403,12 +4470,12 @@ function spawnChunk(y0, y1) {
   const z = zoneAt(est);
   const k = (y1 - y0) / 1000;
   const vw = W / G.cam.z;
-  const spread = Math.min(vw, 1100) * 0.55;
+  const spread = Math.min(vw, G.zoomK > 0.3 ? 2400 : 1100) * 0.55;
   const cx = G.cam.x;
   if (y0 < R.startPy + 380) return;
   const ease = (S.flights === 0 ? 0.5 : S.flights < 3 ? 0.75 : 1) * (S.settings.relaxed ? 0.7 : 1);
   for (const type in z.spawn) {
-    let rate = z.spawn[type] * k * ease * (st.hazMul || 1);
+    let rate = z.spawn[type] * k * ease * (st.hazMul || 1) * (est >= GATE_ALT && st.gun ? 0.5 : 1) * (R.hold ? 0 : 1); // the Gloom takes over past the Gate
     if (type === 'storm') rate *= 1 - 0.3 * st.weather;
     if (R.boss) rate *= 0.35; // keep the set piece readable
     const n = Math.floor(rate) + (Math.random() < rate % 1 ? 1 : 0);
@@ -4454,6 +4521,8 @@ function steerInput() {
 }
 function tryAfterburner() {
   const R = G.R, st = G.st;
+  const nova = G.mode === 'flight' && st.gun && st.gun.nova && R.alt >= GATE_ALT && !(R.novaCd > 0) && !R.ended;
+  if (nova && (R.hold || (R.fuel <= 0 && R.dropFuel <= 0) || R.abT > 0 || R.abCd > 0 || !st.ab)) { novaBurst(R); R.novaCd = novaCdOf(st.gun.nova); return; }
   if (!st.ab || G.mode !== 'flight' || R.abT > 0 || R.abCd > 0) return;
   if (R.fuel <= 0 && R.dropFuel <= 0) { sfx.deny(); return; }
   R.abT = st.ab.dur; R.abCd = st.ab.cd + st.ab.dur;
@@ -4466,6 +4535,7 @@ function tryAfterburner() {
   sparks(R.x, R.py - tail, 22, ['#ffd93d', '#ff9f43', '#ffffff'], 380);
   floater(R.x, R.py - tail - 10, 'BOOST!', '#ff9f43', 26);
   R.mood = 'joy'; R.moodT = 1.2;
+  if (nova) { novaBurst(R); R.novaCd = novaCdOf(st.gun.nova); }
 }
 // Dash Jets: a quick sideways zip with a barrel roll; the rocket can't be hit while it lasts
 const DASH_T = 0.22, DASH_V = 1050;
@@ -4521,27 +4591,27 @@ function updateFlight(dt) {
   if (st.repair && R.hp < st.hp && !R.crashed) { R.repairT += dt; if (R.repairT >= st.repair) { R.repairT = 0; R.hp++; sfx.repair(); floater(R.x, R.py + 40, '+1 ♥', '#5fd068'); } }
   if (st.scoop && R.alt < 12000 && R.fuel > 0) R.fuel = Math.min(R.stage === 2 ? Infinity : st.fuelCap, R.fuel + st.fuelCap * 0.005 * st.scoop * dt);
   // --- physics (sub-stepped, warped in deep space). Very long flights meet the 'solar wind' so a run never drags on forever.
-  const windT = st.windT || 70;
-  R.kMul = R.time > windT ? 1 + Math.pow((R.time - windT) / 12, 2) : 1;
+  const windT = st.windT || 70, wt = R.time - (R.heldFor || 0); // time spent in a Gloom boss's grip doesn't count
+  R.kMul = wt > windT ? 1 + Math.pow((wt - windT) / 12, 2) : 1;
   const warp = simWarp(R);
   R.warp = warp;
   const tiltCos = lerp(Math.cos(R.tilt), 1, st.vector / 3);
   let simDt = dt * warp;
   const steps = Math.max(1, Math.ceil(simDt / 0.02));
-  for (let i = 0; i < steps; i++) physStep(R, st, simDt / steps, { tiltCos });
+  if (!R.hold) for (let i = 0; i < steps; i++) physStep(R, st, simDt / steps, { tiltCos }); // a Gloom boss holds the climb in its grip
   handlePhysEvents();
   recordTrace(R, dt);
   // --- visual vertical motion: while the afterburner roars the world rushes past nearly twice as fast
   // (the screen speed is capped at high speeds, which is why a plain speed-up was hard to feel)
-  R.abVis = (R.abVis || 0) + ((R.abT > 0 ? 1 : 0) - (R.abVis || 0)) * Math.min(1, dt * (R.abT > 0 ? 7 : 2.2));
+  R.abVis = (R.abVis || 0) + ((R.abT > 0 && !R.hold ? 1 : 0) - (R.abVis || 0)) * Math.min(1, dt * (R.abT > 0 ? 7 : 2.2));
   if (R.abKick > 0) R.abKick = Math.max(0, R.abKick - dt);
-  const vpy = pxv(R.vy) * (1 + 0.9 * R.abVis);
+  const vpy = R.hold ? 110 : pxv(R.vy) * (1 + 0.9 * R.abVis);
   R.vpy = vpy;
   R.py += vpy * dt;
   if (R.py < R.startPy && R.vy <= 0 && R.alt <= R.floor + 0.01) { R.py = R.startPy; }
   // --- camera
   const speedK = clamp(Math.abs(vpy) / VCAP, 0, 1);
-  const anchorT = R.vy >= 0 ? 0.62 + 0.1 * speedK + 0.03 * (R.abVis || 0) : 0.42;
+  const anchorT = R.hold ? (guardFlat() ? 0.85 : 0.8) : R.vy >= 0 ? 0.62 + 0.1 * speedK + 0.03 * (R.abVis || 0) : 0.42;
   G.cam.anchor += (anchorT - G.cam.anchor) * Math.min(1, dt * 2);
   G.cam.py = R.py;
   G.cam.x += (R.x - G.cam.x) * Math.min(1, dt * 3.2);
@@ -4554,6 +4624,7 @@ function updateFlight(dt) {
   // --- entities
   updateObstacles(dt);
   updatePickups(dt);
+  updateCombat(R, dt);
   // --- milestones
   const zi = zoneIndex(R.alt);
   if (zi > R.zi) { R.zi = zi; banner(ZONES[zi].name, '#bff8ff', 2.2, 'NOW ENTERING'); sfx.zone(); if (zi === 3 && !S.seen.space) { S.seen.space = 1; S.pendingSpace = true; } }
@@ -4604,7 +4675,7 @@ function updateFlight(dt) {
   AudioSys.setWind(airAt(R.alt) * clamp(Math.abs(R.vy) / 400, 0, 1));
   // --- end?
   if (!R.shownEngineOut && R.fuel <= 0 && R.dropFuel <= 0 && R.stage2Fuel <= 0) { R.shownEngineOut = true; floater(R.x, R.py - 30, 'Fuel empty! Coasting...', '#ffd93d', 18); }
-  if (flightOver(R) && R.time > 0.6) endFlight(false);
+  if (!R.hold && flightOver(R) && R.time > 0.6) endFlight(false);
 }
 function handlePhysEvents() {
   const R = G.R;
@@ -4665,6 +4736,717 @@ function autoDodge() {
   }
   return clamp(push, -1, 1);
 }
+// ================================================================ BEYOND THE GATE: THE GLOOM
+// Past the Starlight Gate the camera pulls back to show far more sky, the Star Blaster switches on and the climb turns
+// into a fight. The Gloom (grumpy soot that swallows starlight) drifts down in waves, and a big Gloom boss guards each
+// frontier stop: it holds the rocket in its grip until it's popped, or until the grip runs out and it shoves you home.
+// Whatever damage you do to a boss stays done, so every try gets you closer. Popped Gloom frees the starlight it
+// swallowed, and that pushes the rocket along.
+const combatOn = () => frontierOpen() && lvl('blaster') > 0;
+const combatK = alt => smooth(invLerp(GATE_ALT, GATE_ALT * 1.16, alt));
+function combatZoom() { const m = Math.min(W, H * 1.25); return m < 560 ? 0.74 : m < 980 ? 0.66 : 0.58; } // how far the camera pulls back
+const gloomScale = alt => Math.sqrt(Math.max(1, alt / GATE_ALT)); // the Gloom toughens up the further out you go
+const GUN = {
+  rate: l => 2.6 + 0.5 * (l - 1), dmg: l => 1 + 0.35 * (l - 1), twin: l => l >= 4,
+  seekCd: l => Math.max(1.1, 3.1 - 0.5 * l), seekDmg: l => 5 + 2 * l,
+  wingN: l => Math.min(2, l), wingRate: l => 1.5 + 0.6 * l,
+  novaR: l => 230 + 70 * l, novaDmg: l => 14 + 12 * l, lanceMul: l => 1.5 + 0.3 * l,
+};
+// rough damage per second against one big target (used by the auto-upgrade and the workshop text)
+function gunDps(g) {
+  if (!g) return 0;
+  let shot = g.dmg * (GUN.twin(g.lv) ? 1.3 : 1);
+  if (g.lance) shot *= GUN.lanceMul(g.lance) * 0.85;
+  if (g.scatter) shot *= g.scatter >= 3 ? 2.6 : 1.9;
+  let d = shot * g.rate;
+  if (g.seek) d += 2 * GUN.seekDmg(g.seek) / GUN.seekCd(g.seek);
+  if (g.wing) d += GUN.wingN(g.wing) * GUN.wingRate(g.wing) * g.dmg * 0.55;
+  return d;
+}
+const novaCdOf = l => 6.2 - 0.9 * l;
+const KILL_COINS = { gloom: 6, spitter: 14, megaroid: 30, rock: 6, pebble: 2, block: 4, blob: 1, ball: 3, crystal: 4, jelly: 4, ice: 3, fireball: 1, junk: 2, asteroid: 4, comet: 5 };
+const KILL_PAY = 3; // a popped Gloomlet pays 18 coins' worth
+const GLOOM_PUSH = 0.00035; // starlight per popped coin's worth: a Gloomlet adds ~0.2% to your speed
+// ---- the five Gloom bosses, one at each frontier stop
+const GUARD_BOUNTY = 0.8; // of the stop's first-delivery reward
+const GUARDS = {
+  x1: { top: 1.02, name: 'The Grumbleberg', sub: 'A GRUMPY GIANT SPACE ROCK', look: 'rock', hp: 150, time: 40, col: '#ffb27a', atk: ['pebbles', 'aimed'], rage: ['pebbles', 'aimed', 'pebbles'], gap: 2.5, weak: [0, -0.42, 0.26],
+    desc: 'Sits in front of the Teapot Tea Room and grumbles. Rains pebbles and spits soot. Aim for the glowing crack on its forehead.' },
+  x2: { top: 1.05, name: 'Mother Gloom', sub: 'SHE NEVER STOPS MAKING GLOOMLETS', look: 'cloud', hp: 380, time: 42, col: '#c9a6ff', atk: ['minions', 'spray'], rage: ['minions', 'aimed', 'spray'], gap: 2.6, weak: [0, 0.08, 0.3],
+    desc: 'A huge soot cloud on the way to Pip’s planet. Keeps puffing out Gloomlets, and sneezes rings of ink.' },
+  x3: { top: 1.5, name: 'The Junk Juggler', sub: 'A ROBOT MADE OF SPACE JUNK', look: 'robot', hp: 700, time: 44, col: '#7fdcff', atk: ['juggle', 'aimed'], rage: ['juggle', 'pebbles', 'aimed'], gap: 2.4, weak: [0.24, -0.12, 0.24],
+    desc: 'Built itself out of old satellites near the Comet Carnival. Juggles bouncy balls at you. Its big glass eye is the weak spot.' },
+  x4: { top: 1.38, name: 'The Gloomfin', sub: 'IT SWALLOWED THE LIGHTHOUSE LAMP', look: 'fish', hp: 1050, time: 46, col: '#8affc1', atk: ['wave', 'spray', 'charge'], rage: ['wave', 'charge', 'minions', 'spray'], gap: 2.3, weak: [0, -1.05, 0.24],
+    desc: 'A giant soot anglerfish that gulped the Aurora Lighthouse’s lamp. Shoot the lamp on its lure, and dodge when it lunges.' },
+  x5: { top: 1.3, name: 'The Inkblot', sub: 'IT HAS BEEN EATING THE EDGE OF THE MAP', look: 'ink', hp: 1600, time: 50, col: '#ffe58a', atk: ['rain', 'wave', 'minions'], rage: ['rain', 'spray', 'wave', 'charge', 'minions'], gap: 2.1, weak: [0, -0.1, 0.3],
+    desc: 'The spilled ink that’s been eating the edge of every map. Rains ink, sweeps waves of it at you, and lunges. Hit its big eye.' },
+};
+for (const id in GUARDS) GUIDE.push({ guard: id, name: GUARDS[id].name, desc: GUARDS[id].desc }); // their Sky Guide pages
+const guardBeaten = id => !!(S.guard && S.guard[id] && S.guard[id].beaten);
+const guardLeft = id => { const s = S.guard && S.guard[id]; return s && s.hp != null ? s.hp : 1; };
+const guardsBeaten = () => Object.keys(GUARDS).filter(guardBeaten).length;
+function guardAhead() { // the boss guarding the next frontier stop, if there is one
+  if (!combatOn()) return null;
+  const nr = nextRoute();
+  return nr && nr.fr && GUARDS[nr.id] && !guardBeaten(nr.id) ? nr : null;
+}
+const guardAlt = r => r.alt * 0.92;
+
+// ---------------------------------------------------------------- per-frame combat
+function updateCombat(R, dt) {
+  const st = G.st, gun = st.gun;
+  // the camera pulls back as you pass the Gate (and comes back in for the trip home)
+  const zt = !R.ended && combatOn() ? combatK(R.alt) : 0;
+  G.zoomK += (zt - G.zoomK) * Math.min(1, dt * (zt > G.zoomK ? 1.4 : 3));
+  if (R.hold) R.heldFor = (R.heldFor || 0) + dt;
+  if (R.novaCd > 0) R.novaCd -= dt;
+  if (!gun || R.alt < GATE_ALT || R.ended) { updateShots(R, dt); return; }
+  if (!R.armed) {
+    R.armed = true; banner('WEAPONS ONLINE', '#ff8ad0', 2.2, 'POP THE GLOOM!'); sfx.armed();
+    if (!S.seen.tip_arms) { S.seen.tip_arms = 1; toast('<b>Ada:</b> Your Star Blaster fires all by itself. Steer under the Gloom to pop it. Every pop frees a little starlight, and that pushes you along!', 5200, true); }
+  }
+  // wing drones trail along beside the rocket
+  if (gun.wing) {
+    R.wing = R.wing || [];
+    const n = GUN.wingN(gun.wing), sc = G.rocketScale;
+    while (R.wing.length < n) R.wing.push({ x: R.x, py: R.py - 30, fireT: rand(0, 0.4), side: R.wing.length ? 1 : -1 });
+    for (const w of R.wing) {
+      const tx = R.x + w.side * 62 * sc + Math.sin(G.t * 2 + w.side) * 6, ty = R.py - 18 * sc + Math.cos(G.t * 2.6 + w.side) * 8;
+      w.x += (tx - w.x) * Math.min(1, dt * 7); w.py = ty + (w.py - ty) * Math.pow(0.0005, dt);
+    }
+  }
+  const firing = !R.crashed && !(R.guard && R.guard.out);
+  if (firing) {
+    R.fireT = (R.fireT || 0) - dt;
+    const rate = gun.rate * (gun.lance ? 0.85 : 1);
+    while (R.fireT <= 0) { R.fireT += 1 / rate; fireVolley(R, gun); }
+    if (gun.seek) {
+      R.seekT = (R.seekT == null ? 1 : R.seekT) - dt;
+      if (R.seekT <= 0) { const tg = seekTarget(R); if (tg) { R.seekT = GUN.seekCd(gun.seek); for (const s of [-1, 1]) launchSeeker(R, s, GUN.seekDmg(gun.seek)); sfx.seek(); } else R.seekT = 0.3; }
+    }
+    if (R.wing) for (const w of R.wing) {
+      w.fireT -= dt;
+      if (w.fireT <= 0) { w.fireT += 1 / GUN.wingRate(gun.wing); G.shots.push({ k: 'wing', x: w.x, py: w.py + 14, vx: 0, vy: (R.vpy || 0) + 1250, dmg: gun.dmg * 0.55, r: 6, pierce: 1, t: 0, life: 1.4 }); }
+    }
+  }
+  // waves of Gloom while you climb (not during a boss fight, and not once the climb has run out of steam)
+  if (!R.guard && !R.crashed && R.vy > Math.max(150, R.peakV * 0.1)) {
+    R.waveT = (R.waveT == null ? 1.2 : R.waveT) - dt;
+    if (R.waveT <= 0) { spawnWave(R); R.waveT = rand(2.3, 3.3) * (S.settings.relaxed ? 1.3 : 1) * (R.alt < GATE_ALT * 1.2 ? 1.25 : 1); }
+  }
+  // a Gloom boss waits just below the next frontier stop
+  if (!R.guard && !R.crashed && !R.guardSeen) {
+    const r = guardAhead();
+    if (r) { if (R.alt >= guardAlt(r)) startGuard(R, r); }
+    // once every boss is beaten, old bosses come back now and then for a rematch (and a fresh bounty)
+    else if (guardsBeaten() >= 5 && R.alt > 2.6e6 && R.vy > R.peakV * 0.3 && R.time > 20 && chance(dt * 0.08)) startGuard(R, routeById(pick(Object.keys(GUARDS))), true);
+  }
+  if (R.guard) updateGuard(R, dt);
+  if (R.tail) { // starlight tailwind after a boss: never slower than enough to reach the stop in a few seconds
+    const tw = R.tail; tw.t += dt;
+    if (R.alt >= tw.to || R.crashed || R.ended || R.hold) R.tail = null;
+    else {
+      R.vy = Math.max(R.vy, tw.v / Math.max(1, R.warp || 1));
+      if (chance(dt * 14)) G.parts.push({ k: 'freed', x: R.x + rand(-60, 60), py: R.py - rand(20, 70), vx: rand(-40, 40), vy: rand(-260, -120), r: rand(6, 11), life: rand(0.8, 1.3), t: 0, rot: rand(0, TAU), ride: true });
+    }
+  }
+  updateShots(R, dt);
+  if (R.nova) { R.nova.t += dt; if (R.nova.t > 0.6) R.nova = null; }
+}
+function fireVolley(R, gun) {
+  const sc = G.rocketScale, d = rocketDims(G.look), nose = (d.BL / 2 + d.NH * 0.6) * sc;
+  const ax = Math.sin(R.tilt), ay = Math.cos(R.tilt), nx = R.x + ax * nose, ny = R.py + ay * nose;
+  const base = R.tilt * 0.5, sp = 1500, v0 = R.vpy || 0;
+  const add = (ang, dmg, k, off = 0) => G.shots.push({ k, x: nx + off, py: ny, vx: Math.sin(ang) * sp, vy: v0 + Math.cos(ang) * sp, ang, dmg, r: k === 'lance' ? 9 : 7, pierce: k === 'lance' ? gun.lance + 1 : 1, t: 0, life: 1.3 });
+  const twin = GUN.twin(gun.lv), barrels = twin ? [-7 * sc, 7 * sc] : [0], bd = twin ? 0.65 : 1;
+  if (gun.lance) { for (const o of barrels) add(base, gun.dmg * bd * GUN.lanceMul(gun.lance), 'lance', o); }
+  else if (gun.scatter) {
+    const wide = gun.scatter === 2 || gun.scatter === 4, step = wide ? 0.21 : 0.13, n = gun.scatter >= 3 ? 5 : 3;
+    for (let i = 0; i < n; i++) add(base + (i - (n - 1) / 2) * step, gun.dmg * 0.8 * (twin ? 1.2 : 1), 'scat');
+  } else for (const o of barrels) add(base, gun.dmg * bd, 'bolt', o);
+  sfx.pew();
+}
+function seekTarget(R) { // the biggest, grumpiest thing in view: the boss first
+  if (R.guard && !R.guard.out && R.guard.enter >= 1) return R.guard;
+  const vw = W / G.cam.z, top = G.cam.py + (H * G.cam.anchor) / G.cam.z;
+  let best = null, bv = 0;
+  for (const o of G.obs) {
+    if (o.dead || !(o.hp > 0) || o.shot || o.py < R.py + 40 || o.py > top - 20 || Math.abs(o.x - G.cam.x) > vw / 2) continue;
+    const v = o.hp + (o.big ? 30 : 0) - Math.abs(o.x - R.x) * 0.01;
+    if (v > bv) { bv = v; best = o; }
+  }
+  return best;
+}
+function launchSeeker(R, side, dmg) {
+  const sc = G.rocketScale;
+  G.shots.push({ k: 'seek', x: R.x + side * 18 * sc, py: R.py, vx: side * 420, vy: (R.vpy || 0) + 300, dmg, r: 9, pierce: 1, t: 0, life: 2.6, tgt: null, side });
+}
+// Nova Burst: the afterburner's ignition lets off a ring of starlight
+function novaBurst(R) {
+  const g = G.st.gun; if (!g || !g.nova || R.alt < GATE_ALT) return;
+  const rad = GUN.novaR(g.nova), dmg = GUN.novaDmg(g.nova);
+  R.nova = { t: 0, r: rad, x: R.x, py: R.py };
+  sfx.nova(); G.cam.shake = Math.max(G.cam.shake, 8);
+  G.parts.push({ k: 'shock', x: R.x, py: R.py, vx: 0, vy: 0, r: rad * 0.8, life: 0.55, t: 0, col: '#fff6c8', ride: true }, { k: 'shock', x: R.x, py: R.py, vx: 0, vy: 0, r: rad * 0.6, life: 0.45, t: 0, col: '#ff8ad0', ride: true });
+  for (const o of G.obs) { if (o.dead || !(o.hp > 0)) continue; const dd = Math.hypot(o.x - R.x, o.py - R.py) - o.r; if (dd < rad) damageObstacle(o, R, o.shot ? 99 : dmg); }
+  const gd = R.guard; if (gd && gd.enter >= 1 && !gd.out) { const p = gd.pos; if (Math.hypot(p.x - R.x, p.py - R.py) - p.r < rad) hurtGuard(R, dmg * 1.5, p.x, p.py - p.r * 0.5, true); }
+}
+
+// ---------------------------------------------------------------- player shots
+function updateShots(R, dt) {
+  const vw = W / G.cam.z, top = G.cam.py + (H * G.cam.anchor) / G.cam.z, bot = G.cam.py - (H * (1 - G.cam.anchor)) / G.cam.z;
+  const gd = R.guard && R.guard.enter >= 1 && !R.guard.out ? R.guard : null, gp = gd && gd.pos;
+  for (const s of G.shots) {
+    s.t += dt;
+    if (s.k === 'seek') { // home in on the target, swinging out sideways first
+      if (!s.tgt || s.tgt.dead || (s.tgt === R.guard && (!R.guard || R.guard.out))) s.tgt = seekTarget(R);
+      const tp = s.tgt ? (s.tgt === R.guard ? R.guard.pos : s.tgt) : null;
+      const rel = (R.vpy || 0);
+      if (tp) { const dx = tp.x - s.x, dy = (tp.py) - s.py, d = Math.hypot(dx, dy) || 1, sp = 1100, k = Math.min(1, dt * (s.t < 0.25 ? 2 : 7)); s.vx += (dx / d * sp - s.vx) * k; s.vy += (rel + dy / d * sp - s.vy) * k; }
+      else s.vy += 1400 * dt;
+      if (chance(dt * 40)) G.parts.push({ k: 'puff', x: s.x, py: s.py, vx: rand(-20, 20), vy: rel * 0.6, r: rand(3, 5), life: 0.35, t: 0, col: '#ffffff' });
+    }
+    s.x += s.vx * dt; s.py += s.vy * dt;
+    if (s.t > s.life || s.py > top + 200 || s.py < bot - 100 || Math.abs(s.x - G.cam.x) > vw * 0.7) { s.dead = true; continue; }
+    // the boss
+    if (gp && !s.hitG) {
+      const dx = s.x - gp.x, dy = s.py - gp.py;
+      if (dx * dx + dy * dy < Math.pow(gp.r * 0.92 + s.r, 2)) {
+        const w = gd.d.weak, wx = gp.x + w[0] * gp.r, wy = gp.py - w[1] * gp.r, crit = Math.hypot(s.x - wx, s.py - wy) < w[2] * gp.r + s.r;
+        hurtGuard(R, s.dmg * (crit ? 1.6 : 1), s.x, s.py, crit);
+        if (s.k === 'lance' && --s.pierce > 0) s.hitG = true; else { s.dead = true; continue; } // a lance hits the boss once, then flies on
+      }
+    }
+    for (const o of G.obs) {
+      if (o.dead || !(o.hp > 0) || (s.hit && s.hit.includes(o))) continue;
+      const dx = s.x - o.x, dy = s.py - o.py, rr2 = o.r + s.r;
+      if (dx * dx + dy * dy > rr2 * rr2) continue;
+      damageObstacle(o, R, s.dmg);
+      sparks(s.x, s.py, 3, s.k === 'lance' ? ['#ffe58a', '#fff'] : ['#fff6c8', '#ff8ad0'], 160);
+      if (s.k === 'lance' && --s.pierce > 0) { (s.hit = s.hit || []).push(o); continue; }
+      s.dead = true; break;
+    }
+  }
+  G.shots = G.shots.filter(s => !s.dead);
+  if (G.shots.length > 160) G.shots.splice(0, G.shots.length - 160);
+}
+function damageObstacle(o, R, dmg) {
+  o.hp -= dmg; o.flash = 0.08;
+  if (o.hp <= 0) killObstacle(o, R);
+  else if (!o.big && !o.shot) o.py += 3; // a little knock back
+}
+function killObstacle(o, R, quiet) {
+  if (o.dead) return;
+  o.dead = true;
+  const k = KILL_COINS[o.type] || 2, v = Math.round(coinValue(R.alt) * k * KILL_PAY * (R.lucky > 0 ? 2 : 1));
+  R.kills = (R.kills || 0) + 1; R.killCash = (R.killCash || 0) + v;
+  S.stats.kills = (S.stats.kills || 0) + 1;
+  if (o.gl && !o.shot) { R.popped = (R.popped || 0) + 1; S.stats.popped = (S.stats.popped || 0) + 1; }
+  // the starlight it swallowed comes pouring back out, and gives the rocket a push
+  if (o.gl && !o.shot && R.vy > 0 && !R.hold && !R.ended) R.vy *= 1 + GLOOM_PUSH * k;
+  const big = o.big || o.type === 'spitter';
+  if (!quiet) {
+    if (o.gl) sfx.gpop(big ? 0 : k); else sfx.smash();
+    if (k >= 4) floater(o.x, o.py + 10, '+' + fmtMoney(v), '#ffe58a', big ? 18 : 14);
+  }
+  const cols = o.gl ? ['#fff6c8', '#ffe58a', '#c9a6ff', '#ffffff'] : ['#ffffff', '#c9ced8', '#ffd93d'];
+  sparks(o.x, o.py, big ? 22 : 9, cols, big ? 320 : 200);
+  if (o.gl && !o.shot) {
+    G.parts.push({ k: 'puff', x: o.x, py: o.py, vx: 0, vy: 0, r: o.r * 0.6, life: 0.35, t: 0, col: '#5b4a7a' });
+    G.parts.push({ k: 'freed', x: o.x, py: o.py, vx: rand(-40, 40), vy: 140, r: Math.min(14, 6 + o.r * 0.18), life: 1.2, t: 0, rot: rand(0, TAU), ride: true });
+  } else if (!o.shot) puff(o.x, o.py, big ? 10 : 4, '#cfc6e0', 140);
+  if (o.type === 'megaroid' || o.type === 'rock') { // big rocks crack into smaller ones
+    const n = o.type === 'megaroid' ? 3 : 2, child = o.type === 'megaroid' ? 'rock' : 'pebble', hp = (o.type === 'megaroid' ? 7 : 2) * (o.gs || 1);
+    for (let i = 0; i < n; i++) {
+      const a = (i / n) * TAU + rand(-0.4, 0.4), c = makeObstacle(child, o.x + Math.cos(a) * o.r * 0.4, o.py + Math.sin(a) * o.r * 0.4);
+      c.hp = c.maxHp = Math.max(1, Math.round(hp)); c.gs = o.gs; c.vx = Math.cos(a) * rand(120, 200) + o.vx * 0.5; c.scr = (o.scr || 100) - Math.sin(a) * 120; G.obs.push(c);
+    }
+    G.cam.shake = Math.max(G.cam.shake, o.type === 'megaroid' ? 10 : 4);
+  }
+  if (o.type === 'block' && o.wall) { o.wall.broken++; if (!o.wall.told) { o.wall.told = 1; floater(o.x, o.py + 50, 'BREAK THROUGH!', '#ffe58a', 18); } }
+}
+
+// ---------------------------------------------------------------- the Gloom: waves, behaviour, attacks
+function viewBox() { const z = G.cam.z, vw = W / z; return { vw, top: G.cam.py + (H * G.cam.anchor) / z, bot: G.cam.py - (H * (1 - G.cam.anchor)) / z, l: G.cam.x - vw / 2, r: G.cam.x + vw / 2 }; }
+function mkGloom(type, x, py, hp, gs) { const o = makeObstacle(type, x, py); o.gs = gs; if (o.scr && G.R && G.R.alt < GATE_ALT * 1.3) o.scr *= 0.72; /* the first waves past the Gate drift in gently */ o.hp = o.maxHp = Math.max(1, Math.round(hp * gs * (S.settings.relaxed ? 0.8 : 1))); G.obs.push(o); return o; }
+function spawnWave(R) {
+  const V = viewBox(), vw = V.vw, top = V.top + 70, gs = gloomScale(R.alt), late = R.alt > 2.6e6, cx = G.cam.x;
+  const nBig = vw > 1300 ? 7 : vw > 900 ? 6 : 5;
+  const pool = [['line', 3], ['vee', 2.4], ['snake', 2], ['swirl', 1.4], ['spit', late ? 1.7 : 1], ['rock', late ? 1.3 : 0.8], ['wall', R.time - (R.wallT || -99) > 14 && R.alt > GATE_ALT * 1.25 ? (late ? 1.1 : 0.7) : 0]];
+  let sum = 0; for (const p of pool) sum += p[1];
+  let q = Math.random() * sum, kind = 'line'; for (const p of pool) { q -= p[1]; if (q <= 0) { kind = p[0]; break; } }
+  if (kind === R.lastWave && kind !== 'line') kind = 'line';
+  R.lastWave = kind;
+  if (kind === 'line' || kind === 'vee') {
+    const n = nBig, spc = Math.min(110, vw * 0.75 / n), x0 = cx + rand(-vw * 0.18, vw * 0.18), amp = rand(30, 70), ph = rand(0, TAU);
+    for (let i = 0; i < n; i++) { const m = i - (n - 1) / 2, o = mkGloom('gloom', x0 + m * spc, top + (kind === 'vee' ? Math.abs(m) * 46 : 0), 3, gs); o.f = { k: 'sway', cx: o.x, amp, w: 1.1, ph }; }
+  } else if (kind === 'snake') {
+    const n = nBig + 1, dir = chance(0.5) ? 1 : -1, y = top - rand(0, 160);
+    for (let i = 0; i < n; i++) { const o = mkGloom('gloom', cx - dir * (vw / 2 + 50 + i * 62), y, 3, gs); o.scr = 60; o.f = { k: 'snake', cx: o.x, vx: dir * 230, amp: 55, w: 3, ph: i * 0.55 }; }
+  } else if (kind === 'swirl') {
+    const n = 6, c = { x: cx + rand(-vw * 0.2, vw * 0.2), py: top + 100 };
+    for (let i = 0; i < n; i++) { const o = mkGloom('gloom', c.x, c.py, 3, gs); o.scr = null; o.f = { k: 'swirl', cx: c.x, cpy: c.py, rad: 86, ang: i / n * TAU, w: 1.7, scr: 125 }; }
+  } else if (kind === 'spit') {
+    const n = vw > 900 ? 2 : 1;
+    for (let i = 0; i < n; i++) { const o = mkGloom('spitter', n === 1 ? cx + rand(-vw * 0.2, vw * 0.2) : cx + (i ? 1 : -1) * vw * rand(0.18, 0.3), top + 40, 9, gs); o.f = { k: 'sway', cx: o.x, amp: rand(40, 90), w: 0.8, ph: rand(0, TAU) }; }
+    for (let i = 0; i < 3; i++) { const o = mkGloom('gloom', cx + rand(-vw * 0.35, vw * 0.35), top + rand(0, 160), 3, gs); o.f = { k: 'sway', cx: o.x, amp: 40, w: 1.3, ph: rand(0, TAU) }; }
+  } else if (kind === 'rock') {
+    const o = mkGloom('megaroid', cx + rand(-vw * 0.25, vw * 0.25), top + 110, 34, gs); o.vx = rand(-40, 40);
+    if (chance(0.5)) for (let i = 0; i < 2; i++) { const g = mkGloom('gloom', o.x + (i ? 1 : -1) * 200, top + 60, 3, gs); g.f = { k: 'sway', cx: g.x, amp: 30, w: 1.4, ph: i * 3 }; }
+  } else if (kind === 'wall') {
+    R.wallT = R.time;
+    const sz = 80, n = Math.ceil(vw * 1.1 / sz) + 1, x0 = cx - (n - 1) * sz / 2, weak = randi(1, n - 2), wall = { broken: 0, n };
+    for (let i = 0; i < n; i++) { const o = mkGloom('block', x0 + i * sz, top + 40, i === weak ? 0.34 : 5, gs); o.wall = wall; o.i = i; o.weak = i === weak; o.eyes = chance(0.3); }
+    banner('GLOOM WALL!', '#c9a6ff', 1.6, 'BLAST A HOLE THROUGH IT');
+    sfx.rumble();
+  }
+}
+// screen-relative motion and behaviour for the Gloom (called from updateObstacles)
+function gloomTick(o, dt, R) {
+  o.age = (o.age || 0) + dt;
+  if (o.flash > 0) o.flash -= dt;
+  const f = o.f;
+  if (f) {
+    if (f.k === 'sway') o.x = f.cx + Math.sin(o.age * f.w + f.ph) * f.amp;
+    else if (f.k === 'snake') { f.cx += f.vx * dt; o.x = f.cx; o.py += Math.cos(o.age * f.w + f.ph) * f.amp * f.w * dt; }
+    else if (f.k === 'swirl') { f.ang += f.w * dt; f.cpy += ((G.mode === 'flight' ? R.vpy || 0 : 0) - f.scr) * dt; o.x = f.cx + Math.cos(f.ang) * f.rad; o.py = f.cpy + Math.sin(f.ang) * f.rad * 0.8; }
+  }
+  if (o.type === 'gloom' && !o.dive && o.age > 1 && R && !R.crashed && !R.ended) { // some take a swoop at you
+    const dy = o.py - R.py, dx = R.x - o.x;
+    if (dy > 160 && dy < 430 && Math.abs(dx) < 280 && chance(dt * 0.45)) o.dive = 0.45;
+  }
+  if (o.dive > 0) { o.dive -= dt; if (o.dive <= 0) { o.dive = -1; o.f = null; o.scr = 330; const dx = R.x - o.x; o.vx = clamp(dx * 1.1, -260, 260); } }
+  if (o.type === 'spitter' && R && !R.crashed && !R.ended) {
+    const sy = w2s(o.x, o.py)[1];
+    o.spitT -= dt;
+    if (o.spitT < 0.5 && !o.warn && sy > (G.hudB || 100) && o.py > R.py + 140) { o.warn = true; }
+    if (o.spitT <= 0) {
+      o.spitT = rand(1.8, 2.8);
+      if (o.warn) { o.warn = false; const n = R.alt > 2.6e6 ? 3 : 1; for (let i = 0; i < n; i++) spitBlob(o.x, o.py - o.r * 0.5, R.x, R.py, 320, (i - (n - 1) / 2) * 0.22); sfx.spit(); }
+    }
+  }
+  if (o.type === 'ball') { // juggling balls fly up, fall back down and bounce off the sides of the screen
+    o.scr += 480 * dt; const V = viewBox();
+    if (o.x < V.l + o.r && o.vx < 0) o.vx = -o.vx; if (o.x > V.r - o.r && o.vx > 0) o.vx = -o.vx;
+    o.rot += o.vx * 0.01 * dt;
+  }
+  if (o.gl) { const V = viewBox(); if (o.py > V.top + 900 || (o.f && o.f.k === 'snake' && o.age > 2 && Math.abs(o.x - G.cam.x) > V.vw * 0.75)) o.dead = true; }
+}
+// an ink blob aimed at a point, moving down the screen at speed s (a = extra angle)
+function spitBlob(x, py, tx, tpy, s, a = 0) {
+  const dx = tx - x, dy = py - tpy, d = Math.hypot(dx, dy) || 1, c = Math.cos(a), sn = Math.sin(a);
+  const ux = dx / d, uy = dy / d, vx = ux * c - uy * sn, vy = ux * sn + uy * c;
+  const o = makeObstacle('blob', x, py); o.vx = vx * s; o.scr = Math.max(60, vy * s); G.obs.push(o); return o;
+}
+function radialBlobs(x, py, n, s, off = 0) { for (let i = 0; i < n; i++) { const a = off + i / n * TAU, o = makeObstacle('blob', x, py); o.vx = Math.cos(a) * s; o.scr = Math.sin(a) * s; G.obs.push(o); } }
+
+// ---------------------------------------------------------------- Gloom boss fights
+function startGuard(R, r, echo = false) {
+  const d = GUARDS[r.id], n = S.stats.echoes || 0, max = Math.round(d.hp * (echo ? 1.5 + 0.15 * Math.min(n, 10) : 1) * (S.settings.relaxed ? 0.75 : 1));
+  R.guardSeen = true;
+  R.guard = { echo, id: r.id, d, max, hp: echo ? max : Math.max(1, Math.round(max * guardLeft(r.id))), t: 0, tLeft: d.time * (S.settings.relaxed ? 1.2 : 1), enter: 0, atkT: 1.4, atkI: 0, hurt: 0, cx: R.x, dy: 0, rage: false, out: null, outT: 0, hits0: R.hits, q: [], charge: null, pos: { x: R.x, py: R.py + 600, r: 100 } };
+  R.hold = { vy: Math.max(R.vy, 300) };
+  if (R.boss) { puff(R.x, R.py + 300, 10, '#d08cff', 200); R.boss = null; } // a passing set piece makes way
+  R.event = null;
+  for (const o of G.obs) if (o.gl && !o.dead) o.vanish = o.vanish || 0.001; // the small fry scatter
+  const first = !(S.guard && S.guard[r.id]);
+  S.seen['guard_' + r.id] = 1;
+  banner(d.name.toUpperCase(), d.col, 2.6, echo ? 'GLOOM REMATCH!' : first ? 'GLOOM BOSS!' : `GLOOM BOSS · ${Math.ceil(guardLeft(r.id) * 100)}% LEFT`);
+  sfx.roar(); G.cam.shake = 14; G.cam.flash = 0.3; G.cam.flashCol = '#3b2d55';
+  if (R.faces.length) R.bubble = { s: pick(['What IS that?!', 'It’s blocking the way!', 'Get it, pilot!', 'It looks grumpy...']), t: 0 };
+  if (!S.seen.tip_guard) { S.seen.tip_guard = 1; toast('<b>Ada:</b> A Gloom boss! It holds us in its grip, so pop it before the timer runs out. Whatever damage you do stays done, so every try counts.', 5600, true); }
+}
+// short landscape screens: the boss bar sits beside the HUD column instead of under it, and the boss shrinks to fit
+const guardFlat = () => H < 520 && W >= 600;
+function guardBar() {
+  const small = W < 600;
+  if (guardFlat()) { const x = Math.max(300, Math.round(W * 0.36)), w = W - x - 112; const y = Math.max(104, (G.hudB || 150) - 50); return { x, w, y, h: 16, fs: 14, small: true, bot: y + 36 }; }
+  const w = small ? W - 94 : Math.min(W - 160, 460), y = (G.hudB || 110) + (small ? 4 : 8);
+  return { x: small ? 16 : (W - w) / 2, w, y, h: small ? 14 : 18, fs: small ? 14 : 17, small, bot: y + (small ? 34 : 42) };
+}
+function guardGeom(g) {
+  const z = G.cam.z, flat = guardFlat(), small = Math.min(W, H) < 560;
+  const rs = (flat ? clamp(H * 0.125, 44, 80) : clamp(Math.min(W, H) * (small ? 0.2 : 0.16), 66, 150)) * (g.d.look === 'cloud' ? 1.08 : 1);
+  const top = flat ? Math.max(G.hudB || 150, guardBar().bot) + 6 : (G.hudB || 110) + (small ? 40 : 52);
+  const sy = Math.max(top + rs * (g.d.top || 1), H * 0.27), V = viewBox();
+  const r = rs / z, lim = V.vw / 2 - r * 1.05;
+  const x = g.cx + clamp(Math.sin(g.t * 0.5) * V.vw * 0.22, -lim, lim);
+  const ent = 1 - easeOutBack(clamp(g.enter, 0, 1)), lift = g.out === 'lost' ? smooth(clamp(g.outT / 1.4, 0, 1)) * (r * 3 + 300) : 0;
+  return { x: clamp(x, V.l + r, V.r - r), py: G.cam.py + (H * G.cam.anchor - sy) / z + ent * (r * 2.4 + 260 / z) + lift - g.dy, r };
+}
+function updateGuard(R, dt) {
+  const g = R.guard;
+  g.t += dt; g.hurt = Math.max(0, g.hurt - dt); g.flashCd = (g.flashCd || 0) - dt;
+  if (g.out) { g.outT += dt; g.pos = guardGeom(g); if (g.outT > 2.2) R.guard = null; return; }
+  g.enter = Math.min(1, g.enter + dt / 1.4);
+  g.cx += (R.x - g.cx) * Math.min(1, dt * 0.45); // it slowly follows you around
+  g.pos = guardGeom(g);
+  if (g.enter < 1) return;
+  if (!R.crashed) g.tLeft -= dt;
+  if (!g.rage && g.hp < g.max * 0.5) { g.rage = true; sfx.roar(); G.cam.shake = Math.max(G.cam.shake, 8); floater(g.pos.x, g.pos.py - g.pos.r - 20, 'GRRRR!', g.d.col, 22); }
+  for (const e of g.q) { e.t -= dt; if (e.t <= 0 && !e.done) { e.done = true; e.fn(); } }
+  g.q = g.q.filter(e => !e.done);
+  if (g.charge) updateCharge(R, g, dt);
+  g.atkT -= dt;
+  if (g.atkT <= 0 && !g.charge && !R.crashed) {
+    const list = g.rage ? g.d.rage : g.d.atk, a = list[g.atkI++ % list.length];
+    guardAttack(R, g, a);
+    g.atkT = g.d.gap * (g.rage ? 0.75 : 1) * (S.settings.relaxed ? 1.3 : 1);
+  }
+  if (g.tLeft <= 0 && !R.crashed) guardLose(R);
+}
+function guardAttack(R, g, a) {
+  const p = g.pos, V = viewBox(), mouth = { x: p.x, py: p.py - p.r * 0.45 };
+  g.mouthT = 0.5;
+  if (a === 'pebbles') { // a fan of rocks with a couple of gaps to slip through
+    const n = 9, gap = randi(1, n - 3);
+    for (let i = 0; i < n; i++) { if (i === gap || i === gap + 1) continue; const t = (i / (n - 1)) * 2 - 1, o = makeObstacle('pebble', mouth.x + t * p.r * 0.6, mouth.py); o.hp = o.maxHp = 2; o.vx = t * V.vw * 0.42; o.scr = 280 + rand(0, 40); o.gl = true; o.gs = 1; G.obs.push(o); }
+    sfx.rumble();
+  } else if (a === 'aimed') {
+    const n = g.rage ? 5 : 3;
+    for (let i = 0; i < n; i++) g.q.push({ t: i * 0.2, fn: () => { if (R.guard === g && !g.out) { spitBlob(g.pos.x, g.pos.py - g.pos.r * 0.45, R.x + R.vx * 0.3, R.py, 360); sfx.spit(); } } });
+  } else if (a === 'spray') {
+    radialBlobs(p.x, p.py, g.rage ? 16 : 12, 190, rand(0, 1)); sfx.spit();
+    if (g.rage) g.q.push({ t: 0.55, fn: () => { if (R.guard === g && !g.out) radialBlobs(g.pos.x, g.pos.py, 12, 220, 0.26); } });
+  } else if (a === 'minions') {
+    const n = g.rage ? 5 : 4;
+    for (let i = 0; i < n; i++) { const t = (i / (n - 1)) * 2 - 1, o = mkGloom('gloom', p.x + t * p.r * 0.7, p.py - p.r * 0.2, 3, gloomScale(R.alt)); o.scr = 120; o.f = { k: 'sway', cx: p.x + t * V.vw * 0.32, amp: 40, w: 1.2, ph: i }; o.fromBoss = 1; }
+    sfx.puffs();
+  } else if (a === 'juggle') {
+    const n = g.rage ? 4 : 3;
+    for (let i = 0; i < n; i++) { const o = makeObstacle('ball', p.x + (i - (n - 1) / 2) * p.r * 0.5, p.py - p.r * 0.3); o.hp = o.maxHp = 3 + Math.round(gloomScale(R.alt)); o.vx = (i - (n - 1) / 2) * 170 + rand(-40, 40); o.scr = -rand(260, 360); o.col = ['#ff5a5f', '#4fd8ff', '#ffd93d', '#5fd068'][i % 4]; G.obs.push(o); }
+    sfx.boing();
+  } else if (a === 'wave') { // a row of ink drops across the whole sky, with one gap (shoot more gaps yourself)
+    const n = Math.ceil(V.vw / 64) + 1, gapC = clamp((R.x - V.l) / 64 + randi(-3, 3), 2, n - 3) | 0, y = p.py - p.r * 0.2;
+    for (let i = 0; i < n; i++) { if (Math.abs(i - gapC) <= 1) continue; const o = makeObstacle('blob', V.l + i * 64, y); o.vx = 0; o.scr = 200; o.wave = 1; G.obs.push(o); }
+    sfx.spit();
+  } else if (a === 'rain') {
+    for (let i = 0; i < 12; i++) g.q.push({ t: i * 0.13, fn: () => { if (R.guard !== g || g.out) return; const V2 = viewBox(), x = chance(0.35) ? R.x + rand(-60, 60) : rand(V2.l + 30, V2.r - 30), o = makeObstacle('blob', x, V2.top + 30); o.vx = 0; o.scr = 420; o.drip = 1; G.obs.push(o); } });
+    sfx.puffs();
+  } else if (a === 'charge') { g.charge = { t: 0, st: 'warn', x: R.x }; sfx.roar(); }
+}
+// the lunge: a warning line, then the boss dives at the rocket's row and swims back up
+function updateCharge(R, g, dt) {
+  const c = g.charge; c.t += dt;
+  const p = g.pos, dist = Math.max(0, p.py + g.dy - R.py - p.r * 0.4);
+  if (c.st === 'warn') { g.cx += (c.x - g.cx) * Math.min(1, dt * 2); if (c.t > 0.8) { c.st = 'dive'; c.t = 0; c.d = dist; sfx.whoosh(); } }
+  else if (c.st === 'dive') { g.dy = c.d * smooth(clamp(c.t / 0.42, 0, 1)); if (c.t > 0.6) { c.st = 'back'; c.t = 0; } }
+  else if (c.st === 'back') { g.dy = c.d * (1 - smooth(clamp(c.t / 0.7, 0, 1))); if (c.t > 0.7) { g.dy = 0; g.charge = null; } }
+  if (c.st !== 'warn' && !R.crashed && R.invuln <= 0 && R.dashT <= 0) {
+    const q = guardGeom(g); g.pos = q;
+    if (Math.hypot(q.x - R.x, q.py - R.py) < q.r * 0.82 + 20 * G.rocketScale) hitRocket(g.body || (g.body = { type: 'guard', dmg: 2, slow: 0, cloud: true, x: 0, py: 0, hitT: 0 }), false);
+  }
+}
+function hurtGuard(R, dmg, x, py, crit) {
+  const g = R.guard; if (!g || g.out) return;
+  g.hp -= dmg; R.guardDmg = (R.guardDmg || 0) + dmg;
+  if (!(g.flashCd > 0) || dmg >= 8 && g.flashCd < 0.25) { g.hurt = 0.07; g.flashCd = 0.45; } // a gentle blink, not a strobe
+  if (crit) { sparks(x, py, 5, ['#ffe58a', '#ffffff', g.d.col], 220); if (chance(0.12)) floater(x, py + 20, 'CRIT!', '#ffe58a', 15); }
+  else if (chance(0.5)) sparks(x, py, 2, ['#fff6c8', g.d.col], 140);
+  sfx.ghit(crit);
+  if (g.hp <= 0) guardWin(R);
+}
+function guardWin(R) {
+  const g = R.guard, p = g.pos, r = routeById(g.id);
+  g.out = 'won'; g.outT = 0; g.hp = 0;
+  if (g.echo) { const n = S.stats.echoes || 0; S.stats.echoes = n + 1; R.guardCash = Math.round(r.reward * 0.5 * (1 + 0.1 * Math.min(n, 10))); } // a rematch pays a fresh bounty
+  else {
+    S.guard = S.guard || {};
+    const s = S.guard[g.id] || {}; s.beaten = 1; s.hp = 0; s.tries = (s.tries || 0) + 1; if (R.hits === g.hits0) s.clean = 1; S.guard[g.id] = s;
+    R.guardCash = Math.round(r.reward * GUARD_BOUNTY); S.pendingGuard = g.id;
+  }
+  if (R.hits === g.hits0) S.stats.cleanBoss = (S.stats.cleanBoss || 0) + 1;
+  R.guardWon = g.id;
+  banner('GLOOM BUSTED!', '#ffe58a', 2.8, g.d.name.toUpperCase());
+  sfx.explode(); sfx.cheer(); setTimeout(() => sfx.bigcoin(), 250);
+  G.cam.flash = 0.55; G.cam.flashCol = '#fff6c8'; G.cam.shake = 20; G.slow = 0.35; G.slowT = 1.0; buzz([40, 50, 80]);
+  confetti(p.x, p.py, 90); fireworks(p.x, p.py, 5, p.r);
+  for (let i = 0; i < 36; i++) { const a = rand(0, TAU), sp = rand(150, 520); G.parts.push({ k: 'freed', x: p.x + Math.cos(a) * p.r * 0.4, py: p.py + Math.sin(a) * p.r * 0.4, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp, r: rand(7, 14), life: rand(1, 1.8), t: 0, rot: rand(0, TAU), ride: true }); }
+  floater(p.x, p.py + 40, `BOUNTY +${fmtMoney(R.guardCash)}`, '#ffe58a', 24);
+  for (const o of G.obs) if (o.gl && !o.dead) killObstacle(o, R, true); // all of its Gloom pops at once
+  // let go: the climb carries on with a starlight kick
+  R.vy = R.hold.vy * 1.12; R.hold = null;
+  // the freed starlight blows you the rest of the way to the stop it was guarding (rematches just pay)
+  if (!g.echo && R.route && R.route.id === g.id && R.alt < r.alt) { R.tail = { to: r.alt * 1.01, v: (r.alt * 1.01 - R.alt) / 9, t: 0 }; setTimeout(() => { if (G.R === R && R.tail) floater(R.x, R.py + 90, 'Starlight tailwind!', '#fff6c8', 22); }, 1100); }
+  R.mood = 'joy'; R.moodT = 3;
+  if (R.faces.length) R.bubble = { s: pick(['We did it!', 'Hooray!', 'Bye bye, grumpy!', 'The stars are back!']), t: 0 };
+}
+function guardLose(R) {
+  const g = R.guard;
+  g.out = 'lost'; g.outT = 0;
+  if (g.echo) { banner('IT GOT AWAY!', '#c9a6ff', 2.2, 'MAYBE NEXT TIME'); sfx.boo(); R.vy = R.hold.vy; R.hold = null; return; } // a rematch just lets go
+  guardSave(g);
+  R.pushed = g.id;
+  banner('PUSHED BACK!', '#c9a6ff', 2.6, `${Math.ceil(g.hp / g.max * 100)}% LEFT · IT’LL BE WEAKER NEXT TIME`);
+  sfx.boo(); sfx.whoosh(); G.cam.flash = 0.4; G.cam.flashCol = '#2a1f40'; G.cam.shake = 12;
+  if (R.faces.length) R.bubble = { s: pick(['Not fair!', 'We’ll be back!', 'Next time, grumpy!']), t: 0 };
+  R.hold = null; R.vy = -200;
+  endFlight(false);
+}
+function guardSave(g) { if (!g || g.out === 'won' || g.echo) return; S.guard = S.guard || {}; const s = S.guard[g.id] || {}; s.hp = Math.max(0.02, g.hp / g.max); s.tries = (s.tries || 0) + 1; S.guard[g.id] = s; }
+
+// ---------------------------------------------------------------- drawing
+function drawGloomBody(c, r, t, o = {}) { // a grumpy soot puff: lumpy outline, rim light, angry little eyes
+  const wob = o.wob || 0;
+  c.save();
+  const g = c.createRadialGradient(0, 0, r * 0.4, 0, 0, r * 1.5); g.addColorStop(0, 'rgba(201,166,255,.32)'); g.addColorStop(1, 'rgba(201,166,255,0)');
+  c.fillStyle = g; circ(c, 0, 0, r * 1.5); c.fill();
+  ink(c, 3);
+  c.beginPath();
+  const n = 9;
+  for (let i = 0; i <= n; i++) { const a = i / n * TAU, rr2 = r * (0.86 + 0.14 * Math.sin(i * 2.7 + t * 3 + wob)); const x = Math.cos(a) * rr2, y = Math.sin(a) * rr2; if (i === 0) c.moveTo(x, y); else { const am = (i - 0.5) / n * TAU, rm = r * 1.1; c.quadraticCurveTo(Math.cos(am) * rm, Math.sin(am) * rm, x, y); } }
+  c.closePath();
+  if (o.rim) { c.save(); c.lineWidth = o.rim; c.strokeStyle = 'rgba(238,228,255,.9)'; c.stroke(); c.restore(); }
+  fillStroke(c, o.flash ? '#ffffff' : (o.col || '#5b4a7a'), o.ink || 3);
+  if (!o.flash) { c.fillStyle = 'rgba(160,140,210,.55)'; c.beginPath(); c.ellipse(-r * 0.28, -r * 0.38, r * 0.34, r * 0.2, -0.4, 0, TAU); c.fill(); }
+  // eyes
+  const ey = -r * 0.08 + (o.puff ? -r * 0.06 : 0), ex = r * 0.32, er = r * 0.2;
+  for (const s of [-1, 1]) {
+    c.fillStyle = '#fff'; circ(c, s * ex, ey, er); c.fill(); c.lineWidth = 2; c.strokeStyle = INK; c.stroke();
+    c.fillStyle = o.angry ? '#ff5a5f' : '#2b2240'; circ(c, s * ex + (o.lx || 0) * er * 0.4, ey + er * 0.25, er * 0.5); c.fill();
+    c.lineWidth = Math.max(2.5, r * 0.09); c.beginPath(); c.moveTo(s * (ex + er * 1.1), ey - er * 1.5); c.lineTo(s * (ex - er * 0.9), ey - er * 0.7); c.stroke();
+  }
+  // mouth: a frown, or puffed cheeks before a spit
+  if (o.puff) { c.fillStyle = '#ff8ad0'; for (const s of [-1, 1]) { circ(c, s * r * 0.55, r * 0.3, r * 0.22); c.fill(); } c.fillStyle = INK; circ(c, 0, r * 0.42, r * 0.12); c.fill(); }
+  else { c.lineWidth = Math.max(2.5, r * 0.08); c.beginPath(); c.arc(0, r * 0.62, r * 0.24, -Math.PI * 0.8, -Math.PI * 0.2); c.stroke(); }
+  c.restore();
+}
+function drawHpPip(c, o) { // little health bar over big things once they're hurt
+  if (!(o.maxHp > 6) || o.hp >= o.maxHp) return;
+  const w = Math.max(40, o.r * 1.2), y = -o.r - 18;
+  c.save(); rr(c, -w / 2, y, w, 8, 4); c.fillStyle = 'rgba(43,34,64,.75)'; c.fill();
+  c.fillStyle = '#ffe58a'; rr(c, -w / 2 + 2, y + 2, Math.max(0, (w - 4) * o.hp / o.maxHp), 4, 2); c.fill(); c.restore();
+}
+function drawGloomObs(c, o, t) {
+  const fl = o.flash > 0;
+  switch (o.type) {
+    case 'gloom': {
+      const warn = o.dive > 0; if (warn) c.translate(Math.sin(t * 60) * 2, 0);
+      drawGloomBody(c, o.r, t + o.seed * 9, { flash: fl, angry: warn || o.dive < 0, lx: clamp(((G.R ? G.R.x : 0) - o.x) / 200, -1, 1), rim: Math.max(6, 8 / G.cam.z), ink: Math.max(3, 1.8 / G.cam.z) });
+      break;
+    }
+    case 'spitter': {
+      const s = o.warn ? 1 + 0.12 * Math.sin(clamp(0.5 - o.spitT, 0, 0.5) / 0.5 * Math.PI) : 1; c.scale(s, s);
+      drawGloomBody(c, o.r, t + o.seed * 9, { flash: fl, puff: o.warn, col: '#4a3b6a', angry: o.warn, rim: Math.max(6, 8 / G.cam.z), ink: Math.max(3, 1.8 / G.cam.z) });
+      c.save(); ink(c, 2.5); c.beginPath(); c.moveTo(-o.r * 0.3, -o.r * 0.95); c.quadraticCurveTo(0, -o.r * 1.35, o.r * 0.3, -o.r * 0.95); fillStroke(c, '#7d6aa3', 2.5); c.restore(); // a little soot tuft
+      drawHpPip(c, o); break;
+    }
+    case 'megaroid': case 'rock': case 'pebble': {
+      c.save(); c.rotate(o.rot);
+      ink(c, 3); c.beginPath(); o.verts.forEach(([a, k], i) => { const x = Math.cos(a) * o.r * k, y = Math.sin(a) * o.r * k; i ? c.lineTo(x, y) : c.moveTo(x, y); }); c.closePath();
+      fillStroke(c, fl ? '#ffffff' : o.type === 'megaroid' ? '#6d6380' : '#7d7290', o.type === 'pebble' ? 2.5 : 3);
+      if (!fl && o.craters) for (const [cx, cy, cr] of o.craters) { circ(c, cx * o.r, cy * o.r, cr * o.r); fillStroke(c, '#564d68', 2); }
+      if (o.type !== 'pebble') { // glowing gloom cracks that spread as it takes damage
+        const dmgK = 1 - o.hp / (o.maxHp || 1), n = 2 + Math.floor(dmgK * 4);
+        c.strokeStyle = `rgba(255,138,208,${0.5 + dmgK * 0.5})`; c.lineWidth = o.type === 'megaroid' ? 4 : 3;
+        for (let i = 0; i < n; i++) { const a = hash(i * 7 + (o.seed * 100 | 0)) * TAU; c.beginPath(); c.moveTo(Math.cos(a) * o.r * 0.15, Math.sin(a) * o.r * 0.15); c.lineTo(Math.cos(a + 0.3) * o.r * 0.5, Math.sin(a + 0.3) * o.r * 0.5); c.lineTo(Math.cos(a - 0.1) * o.r * 0.85, Math.sin(a - 0.1) * o.r * 0.85); c.stroke(); }
+      }
+      c.restore();
+      if (o.type === 'megaroid') { // and a grumpy face, because of course
+        c.save(); c.lineWidth = 4; c.strokeStyle = INK; for (const s of [-1, 1]) { c.fillStyle = '#fff'; circ(c, s * o.r * 0.28, -o.r * 0.1, o.r * 0.12); c.fill(); c.stroke(); c.fillStyle = INK; circ(c, s * o.r * 0.26, -o.r * 0.07, o.r * 0.055); c.fill(); c.beginPath(); c.moveTo(s * o.r * 0.45, -o.r * 0.3); c.lineTo(s * o.r * 0.12, -o.r * 0.2); c.stroke(); }
+        c.beginPath(); c.arc(0, o.r * 0.32, o.r * 0.18, -Math.PI * 0.85, -Math.PI * 0.15); c.stroke(); c.restore();
+        drawHpPip(c, o);
+      }
+      break;
+    }
+    case 'block': {
+      const s = o.r * 0.98;
+      c.save(); ink(c, 3);
+      rr(c, -s, -s * 0.82, s * 2, s * 1.64, s * 0.3);
+      c.save(); c.lineWidth = Math.max(6, 8 / G.cam.z); c.strokeStyle = 'rgba(238,228,255,.85)'; c.stroke(); c.restore(); // light rim: walls read on dark skies
+      fillStroke(c, fl ? '#ffffff' : o.weak ? '#8a77b0' : '#4a3b66', Math.max(3, 1.8 / G.cam.z));
+      if (!fl) { c.fillStyle = o.weak ? 'rgba(255,255,255,.25)' : 'rgba(160,140,210,.35)'; rr(c, -s * 0.8, -s * 0.66, s * 1.6, s * 0.36, s * 0.16); c.fill(); }
+      if (o.weak) { c.strokeStyle = '#ffe58a'; c.lineWidth = 3; c.beginPath(); c.moveTo(-s * 0.4, -s * 0.6); c.lineTo(-s * 0.05, -s * 0.1); c.lineTo(-s * 0.3, s * 0.2); c.lineTo(s * 0.15, s * 0.65); c.stroke(); }
+      if (o.eyes && !o.weak) { for (const sd of [-1, 1]) { c.fillStyle = '#fff'; circ(c, sd * s * 0.3, s * 0.05, s * 0.15); c.fill(); c.lineWidth = 2; c.stroke(); c.fillStyle = INK; circ(c, sd * s * 0.3, s * 0.1, s * 0.07); c.fill(); } c.lineWidth = 3; c.beginPath(); c.moveTo(-s * 0.5, -s * 0.22); c.lineTo(-s * 0.12, -s * 0.1); c.moveTo(s * 0.5, -s * 0.22); c.lineTo(s * 0.12, -s * 0.1); c.stroke(); }
+      c.restore();
+      break;
+    }
+    case 'blob': {
+      c.save();
+      const g = c.createRadialGradient(0, 0, 2, 0, 0, o.r * 2.2); g.addColorStop(0, 'rgba(255,138,208,.45)'); g.addColorStop(1, 'rgba(255,138,208,0)'); c.fillStyle = g; circ(c, 0, 0, o.r * 2.2); c.fill();
+      const sp = Math.hypot(o.vx || 0, o.scr || 0) || 1, a = Math.atan2(o.scr || 0, o.vx || 0);
+      c.rotate(a); ink(c, 2.5); c.beginPath(); c.ellipse(-o.r * 0.25, 0, o.r * 1.35, o.r, 0, 0, TAU); void sp; fillStroke(c, fl ? '#fff' : '#3b2d55', 2.5);
+      c.fillStyle = 'rgba(255,255,255,.7)'; circ(c, o.r * 0.25, -o.r * 0.35, o.r * 0.28); c.fill();
+      c.restore(); break;
+    }
+    case 'ball': {
+      c.save(); c.rotate(o.rot); ink(c, 3); circ(c, 0, 0, o.r); fillStroke(c, fl ? '#fff' : '#fff6e5', 3);
+      c.save(); circ(c, 0, 0, o.r - 1.5); c.clip(); c.fillStyle = o.col || '#ff5a5f'; for (let i = -1; i <= 1; i += 2) c.fillRect(i * o.r * 0.45 - o.r * 0.18, -o.r, o.r * 0.36, o.r * 2); c.restore();
+      circ(c, 0, 0, o.r); c.stroke(); c.fillStyle = 'rgba(255,255,255,.8)'; circ(c, -o.r * 0.35, -o.r * 0.35, o.r * 0.22); c.fill();
+      c.restore(); break;
+    }
+  }
+}
+function drawShots() {
+  if (!G.shots.length) return;
+  ctx.save(); ctx.lineCap = 'round';
+  for (const s of G.shots) {
+    const x = s.x, y = -s.py;
+    if (s.k === 'seek') {
+      const a = Math.atan2(s.vx, s.vy - (G.R ? G.R.vpy || 0 : 0));
+      ctx.save(); ctx.translate(x, y); ctx.rotate(a); ink(ctx, 2); rr(ctx, -4, -10, 8, 18, 4); fillStroke(ctx, '#fff6e5', 2); ctx.beginPath(); ctx.moveTo(-4, -6); ctx.quadraticCurveTo(0, -16, 4, -6); fillStroke(ctx, '#ff5a8a', 2); ctx.fillStyle = '#ffd93d'; ctx.beginPath(); ctx.moveTo(-3, 8); ctx.lineTo(0, 16 + Math.sin(G.t * 50) * 3); ctx.lineTo(3, 8); ctx.fill(); ctx.restore();
+      continue;
+    }
+    const len = s.k === 'lance' ? 58 : s.k === 'wing' ? 16 : 24, w = s.k === 'lance' ? 9 : s.k === 'wing' ? 5 : 7;
+    const ux = Math.sin(s.ang || 0), uy = Math.cos(s.ang || 0);
+    const col = s.k === 'lance' ? '#ffd93d' : s.k === 'scat' ? '#ff8ad0' : s.k === 'wing' ? '#4fd8ff' : '#fff6c8';
+    ctx.globalAlpha = 0.35; ctx.strokeStyle = col; ctx.lineWidth = w * 2.4; ctx.beginPath(); ctx.moveTo(x - ux * len * 0.2, y + uy * len * 0.2); ctx.lineTo(x - ux * len, y + uy * len); ctx.stroke();
+    ctx.globalAlpha = 1; ctx.strokeStyle = col; ctx.lineWidth = w; ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x - ux * len, y + uy * len); ctx.stroke();
+    ctx.strokeStyle = '#ffffff'; ctx.lineWidth = w * 0.45; ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x - ux * len * 0.7, y + uy * len * 0.7); ctx.stroke();
+  }
+  ctx.restore();
+}
+function drawWingDrones() {
+  const R = G.R; if (!R || !R.wing || !G.st.gun || R.alt < GATE_ALT * 0.99 || R.crashed) return;
+  const sc = G.rocketScale;
+  for (const w of R.wing) {
+    ctx.save(); ctx.translate(w.x, -w.py); ctx.scale(sc * 1.3, sc * 1.3);
+    ink(ctx, 2.5); ctx.beginPath(); ctx.ellipse(0, 4, 17, 7, 0, 0, TAU); fillStroke(ctx, '#4fd8ff', 2.5);
+    ctx.beginPath(); ctx.arc(0, 2, 9, Math.PI, 0); fillStroke(ctx, 'rgba(191,248,255,.85)', 2.5);
+    ctx.fillStyle = '#8be36b'; circ(ctx, 0, 0, 4.5); ctx.fill(); ctx.fillStyle = INK; circ(ctx, -1.6, -0.6, 1); circ(ctx, 1.6, -0.6, 1); ctx.fill();
+    ctx.fillStyle = Math.sin(G.t * 8 + w.side) > 0 ? '#ff5a5f' : '#ffd93d'; circ(ctx, w.side * 12, 6, 2.2); ctx.fill();
+    ctx.restore();
+  }
+}
+function drawNovaRing() {
+  const R = G.R, n = R && R.nova; if (!n) return;
+  const k = n.t / 0.6, rad = n.r * (0.2 + 0.8 * easeOutCubic(Math.min(1, k * 1.4)));
+  ctx.save(); ctx.globalAlpha = 1 - k;
+  const g = ctx.createRadialGradient(R.x, -R.py, rad * 0.6, R.x, -R.py, rad); g.addColorStop(0, 'rgba(255,246,200,0)'); g.addColorStop(0.8, 'rgba(255,229,138,.35)'); g.addColorStop(1, 'rgba(255,138,208,0)');
+  ctx.fillStyle = g; circ(ctx, R.x, -R.py, rad); ctx.fill();
+  ctx.lineWidth = 6; ctx.strokeStyle = '#fff6c8'; circ(ctx, R.x, -R.py, rad); ctx.stroke();
+  ctx.restore();
+}
+// ---- the bosses themselves (drawn in world space at the boss's radius)
+function drawGuard() {
+  const R = G.R, g = R && R.guard; if (!g) return;
+  const p = g.pos, r = p.r, t = G.t, look = g.d.look, fl = g.hurt > 0.04;
+  ctx.save();
+  if (g.out === 'won') { // bursts into starlight
+    const k = clamp(g.outT / 0.6, 0, 1); if (k >= 1) { ctx.restore(); return; }
+    ctx.globalAlpha = 1 - k; ctx.translate(p.x, -p.py); ctx.scale(1 + k * 0.5, 1 + k * 0.5);
+  } else { if (g.out === 'lost') ctx.globalAlpha = clamp(1 - (g.outT - 1) / 1, 0, 1); ctx.translate(p.x, -p.py); }
+  // charge warning: a dashed line down to where it will lunge
+  if (g.charge && g.charge.st === 'warn') { ctx.save(); ctx.globalAlpha = 0.5 + 0.5 * Math.sin(t * 20); ctx.setLineDash([14, 12]); ctx.lineWidth = 5; ctx.strokeStyle = '#ff5a5f'; ctx.beginPath(); ctx.moveTo(0, r * 0.8); ctx.lineTo(0, p.py - (G.R.py) + r * 0.4); ctx.stroke(); ctx.restore(); }
+  if (g.rage && !g.out) { ctx.save(); ctx.globalAlpha = 0.25 + 0.15 * Math.sin(t * 8); ctx.fillStyle = '#ff5a5f'; circ(ctx, 0, 0, r * 1.25); ctx.fill(); ctx.restore(); }
+  const bob = Math.sin(t * 1.6) * r * 0.04; ctx.translate(0, bob);
+  const mouth = (g.mouthT || 0) > 0; if (g.mouthT > 0) g.mouthT -= 1 / 60;
+  drawGuardLook(ctx, look, r, t, fl, g.rage, mouth, g.hp / g.max);
+  // the weak spot twinkles
+  if (!g.out) { const w = g.d.weak, a = 0.5 + 0.5 * Math.sin(t * 6); ctx.save(); ctx.globalAlpha = 0.35 * a; ctx.strokeStyle = '#ffe58a'; ctx.lineWidth = 3; ctx.setLineDash([6, 6]); ctx.lineDashOffset = -t * 30; circ(ctx, w[0] * r, w[1] * r, w[2] * r * 1.1); ctx.stroke(); ctx.restore(); }
+  ctx.restore();
+}
+function drawGuardLook(c, look, r, t, fl, rage, mouth, hpK) {
+  if (look === 'rock') drawGrumbleberg(c, r, t, fl, rage, mouth, hpK);
+  else if (look === 'cloud') drawMotherGloom(c, r, t, fl, rage, mouth);
+  else if (look === 'robot') drawJuggler(c, r, t, fl, rage, mouth);
+  else if (look === 'fish') drawGloomfin(c, r, t, fl, rage, mouth);
+  else drawInkblot(c, r, t, fl, rage, mouth);
+}
+const angryBrows = (c, x, y, w, s, lw) => { c.lineWidth = lw; c.beginPath(); c.moveTo(x - s * w, y - w * 0.35); c.lineTo(x + s * w * 0.2, y + w * 0.12); c.stroke(); };
+function bossEye(c, x, y, er, angry, lookX = 0) { c.fillStyle = '#fff'; circ(c, x, y, er); c.fill(); c.lineWidth = Math.max(2.5, er * 0.18); c.strokeStyle = INK; c.stroke(); c.fillStyle = angry ? '#ff5a5f' : INK; circ(c, x + lookX * er * 0.3, y + er * 0.2, er * 0.48); c.fill(); c.fillStyle = '#fff'; circ(c, x + lookX * er * 0.3 - er * 0.15, y + er * 0.05, er * 0.14); c.fill(); }
+function drawGrumbleberg(c, r, t, fl, rage, mouth, hpK) {
+  ink(c, 5);
+  c.beginPath(); for (let i = 0; i < 14; i++) { const a = i / 14 * TAU, k = 0.88 + 0.12 * hash(i * 13 + 3); const x = Math.cos(a) * r * k * 1.08, y = Math.sin(a) * r * k; i ? c.lineTo(x, y) : c.moveTo(x, y); } c.closePath();
+  fillStroke(c, fl ? '#ffffff' : '#9c8778', 5);
+  if (!fl) { c.fillStyle = 'rgba(255,255,255,.15)'; c.beginPath(); c.ellipse(-r * 0.3, -r * 0.45, r * 0.45, r * 0.22, -0.3, 0, TAU); c.fill(); for (const [x, y, s] of [[-0.55, 0.25, 0.16], [0.62, 0.1, 0.12], [0.35, 0.6, 0.1], [-0.2, 0.7, 0.08]]) { circ(c, x * r, y * r, s * r); fillStroke(c, '#806b5e', 3); } }
+  // the glowing crack on its forehead (the weak spot) grows as it takes damage
+  c.strokeStyle = '#ff8ad0'; c.lineWidth = 6; c.beginPath(); c.moveTo(-r * 0.2, -r * 0.62); c.lineTo(-r * 0.02, -r * 0.4); c.lineTo(-r * 0.14, -r * 0.24); if (hpK < 0.6) { c.lineTo(r * 0.06, -r * 0.08); } c.moveTo(-r * 0.02, -r * 0.4); c.lineTo(r * 0.18, -r * 0.5); c.stroke();
+  c.strokeStyle = INK;
+  for (const s of [-1, 1]) { bossEye(c, s * r * 0.36, -r * 0.08, r * 0.16, rage, Math.sin(t) * 0.5); angryBrows(c, s * r * 0.36, -r * 0.3, r * 0.26 * s, 1, r * 0.08); }
+  // soot moustache and a grumbling mouth
+  c.fillStyle = '#3b2d55'; for (const s of [-1, 1]) { c.beginPath(); c.ellipse(s * r * 0.2, r * 0.3, r * 0.24, r * 0.1, s * 0.25, 0, TAU); c.fill(); c.lineWidth = 3; c.stroke(); }
+  c.lineWidth = r * 0.06; c.beginPath(); if (mouth) { c.fillStyle = '#3b2d55'; c.ellipse(0, r * 0.52, r * 0.16, r * 0.12, 0, 0, TAU); c.fill(); c.stroke(); } else { c.arc(0, r * 0.62, r * 0.2, -Math.PI * 0.85, -Math.PI * 0.15); c.stroke(); }
+}
+function drawMotherGloom(c, r, t, fl, rage, mouth) {
+  const puffs = [[0, 0, 0.78], [-0.62, 0.12, 0.5], [0.62, 0.1, 0.52], [-0.38, -0.45, 0.46], [0.36, -0.48, 0.48], [0, -0.68, 0.36], [-0.3, 0.5, 0.42], [0.32, 0.52, 0.42]];
+  const gl = c.createRadialGradient(0, 0, r * 0.5, 0, 0, r * 1.6); gl.addColorStop(0, 'rgba(201,166,255,.35)'); gl.addColorStop(1, 'rgba(201,166,255,0)'); c.fillStyle = gl; circ(c, 0, 0, r * 1.6); c.fill();
+  ink(c, 5); for (const [x, y, s] of puffs) { circ(c, x * r + Math.sin(t * 2 + x * 5) * r * 0.03, y * r, s * r); fillStroke(c, fl ? '#ffffff' : '#5b4a7a', 5); }
+  c.fillStyle = fl ? '#ffffff' : '#5b4a7a'; for (const [x, y, s] of puffs) { circ(c, x * r + Math.sin(t * 2 + x * 5) * r * 0.03, y * r, s * r - 4); c.fill(); }
+  if (!fl) { c.fillStyle = 'rgba(160,140,210,.5)'; c.beginPath(); c.ellipse(-r * 0.3, -r * 0.42, r * 0.3, r * 0.14, -0.3, 0, TAU); c.fill(); }
+  // curlers (she's a busy mum) and a stern face with long lashes
+  for (const [x, y] of [[-0.42, -0.74], [0, -0.92], [0.42, -0.76]]) { rr(c, x * r - r * 0.09, y * r - r * 0.06, r * 0.18, r * 0.12, r * 0.06); fillStroke(c, '#ff8ad0', 3); }
+  for (const s of [-1, 1]) { bossEye(c, s * r * 0.3, -r * 0.05, r * 0.15, rage, Math.sin(t * 0.8) * 0.6); c.lineWidth = 3; for (let i = 0; i < 3; i++) { c.beginPath(); c.moveTo(s * r * (0.3 + (i - 1) * 0.08), -r * 0.19); c.lineTo(s * r * (0.3 + (i - 1) * 0.1), -r * 0.27); c.stroke(); } }
+  c.lineWidth = r * 0.06; c.beginPath(); if (mouth) { c.fillStyle = '#2a1f40'; circ(c, 0, r * 0.32, r * 0.13); c.fill(); c.stroke(); } else { c.moveTo(-r * 0.16, r * 0.34); c.quadraticCurveTo(0, r * 0.26, r * 0.16, r * 0.34); c.stroke(); }
+  // two little Gloomlets peeking out of her
+  for (const s of [-1, 1]) { c.save(); c.translate(s * r * 0.82, r * 0.42 + Math.sin(t * 3 + s) * r * 0.04); drawGloomBody(c, r * 0.17, t + s, {}); c.restore(); }
+}
+function drawJuggler(c, r, t, fl, rage, mouth) {
+  ink(c, 5);
+  // arms juggling three balls overhead
+  const balls = 3; for (let i = 0; i < balls; i++) { const a = t * 2.4 + i / balls * TAU, bx = Math.cos(a) * r * 0.95, by = -r * 0.95 - Math.abs(Math.sin(a)) * r * 0.5; c.save(); c.translate(bx, by); c.lineWidth = 3; circ(c, 0, 0, r * 0.13); fillStroke(c, ['#ff5a5f', '#4fd8ff', '#ffd93d'][i], 3); c.restore(); }
+  for (const s of [-1, 1]) { c.lineWidth = r * 0.07; c.beginPath(); c.moveTo(s * r * 0.75, -r * 0.1); c.quadraticCurveTo(s * r * 1.15, -r * 0.4, s * r * 0.8, -r * 0.85); c.stroke(); circ(c, s * r * 0.8, -r * 0.85, r * 0.08); fillStroke(c, '#c9ced8', 3); }
+  // boxy junk body with mismatched panels
+  rr(c, -r * 0.8, -r * 0.62, r * 1.6, r * 1.3, r * 0.18); fillStroke(c, fl ? '#ffffff' : '#8a93a6', 5);
+  if (!fl) { c.lineWidth = 3; rr(c, -r * 0.7, r * 0.18, r * 0.5, r * 0.36, 6); fillStroke(c, '#c9ced8', 3); rr(c, r * 0.05, r * 0.24, r * 0.6, r * 0.3, 6); fillStroke(c, '#6b7488', 3); for (let i = 0; i < 4; i++) { circ(c, -r * 0.62 + i * r * 0.11, r * 0.36, r * 0.03); c.fillStyle = INK; c.fill(); } }
+  // satellite-dish ear and antenna
+  c.lineWidth = 4; c.beginPath(); c.moveTo(-r * 0.8, -r * 0.2); c.lineTo(-r * 1.0, -r * 0.3); c.stroke(); c.beginPath(); c.arc(-r * 1.05, -r * 0.32, r * 0.2, -Math.PI * 0.4, Math.PI * 0.6); fillStroke(c, '#c9ced8', 4);
+  c.beginPath(); c.moveTo(r * 0.1, -r * 0.62); c.lineTo(r * 0.2, -r * 0.9); c.stroke(); c.fillStyle = Math.sin(t * 6) > 0 ? '#ff5a5f' : '#ffd93d'; circ(c, r * 0.2, -r * 0.94, r * 0.06); c.fill(); c.stroke();
+  // one big glass eye (the weak spot) and one tiny one
+  c.lineWidth = 4; circ(c, r * 0.24, -r * 0.12, r * 0.24); fillStroke(c, '#bff8ff', 4);
+  c.fillStyle = rage ? '#ff5a5f' : '#2b2240'; circ(c, r * 0.24 + Math.sin(t) * r * 0.06, -r * 0.1, r * 0.1); c.fill(); c.fillStyle = '#fff'; circ(c, r * 0.18, -r * 0.18, r * 0.05); c.fill();
+  bossEye(c, -r * 0.34, -r * 0.14, r * 0.1, rage); angryBrows(c, -r * 0.34, -r * 0.3, r * 0.16, -1, r * 0.06);
+  c.lineWidth = 3; rr(c, -r * 0.4, r * 0.0, r * 0.5, r * 0.12, 4); fillStroke(c, mouth ? '#ff8ad0' : '#3b2d55', 3); for (let i = 1; i < 5; i++) { c.beginPath(); c.moveTo(-r * 0.4 + i * r * 0.1, r * 0.0); c.lineTo(-r * 0.4 + i * r * 0.1, r * 0.12); c.stroke(); }
+}
+function drawGloomfin(c, r, t, fl, rage, mouth) {
+  ink(c, 5);
+  // the lure: a stalk with the stolen lighthouse lamp on the end
+  const lx = Math.sin(t * 1.3) * r * 0.12, ly = -r * 1.05;
+  c.lineWidth = 5; c.beginPath(); c.moveTo(r * 0.05, -r * 0.62); c.quadraticCurveTo(r * 0.3, -r * 1.2, lx, ly); c.stroke();
+  const gw = c.createRadialGradient(lx, ly, 2, lx, ly, r * 0.55); gw.addColorStop(0, 'rgba(255,246,200,.85)'); gw.addColorStop(1, 'rgba(255,229,138,0)'); c.fillStyle = gw; circ(c, lx, ly, r * 0.55); c.fill();
+  c.lineWidth = 3; rr(c, lx - r * 0.12, ly - r * 0.16, r * 0.24, r * 0.3, 5); fillStroke(c, '#ffe58a', 3); c.beginPath(); c.moveTo(lx - r * 0.14, ly - r * 0.16); c.lineTo(lx, ly - r * 0.28); c.lineTo(lx + r * 0.14, ly - r * 0.16); fillStroke(c, '#ff5a5f', 3);
+  // tail and fins
+  c.lineWidth = 5; for (const s of [-1, 1]) { c.beginPath(); c.moveTo(s * r * 0.75, r * 0.1); c.quadraticCurveTo(s * r * 1.25, -r * 0.1 + Math.sin(t * 3 + s) * r * 0.1, s * r * 1.15, r * 0.45); c.quadraticCurveTo(s * r * 1.0, r * 0.3, s * r * 0.7, r * 0.42); fillStroke(c, fl ? '#fff' : '#2f4f5a', 5); }
+  // big round body
+  c.beginPath(); c.ellipse(0, 0, r * 0.92, r * 0.78, 0, 0, TAU); fillStroke(c, fl ? '#ffffff' : '#36515e', 5);
+  if (!fl) { c.fillStyle = 'rgba(138,255,193,.18)'; c.beginPath(); c.ellipse(-r * 0.25, -r * 0.4, r * 0.4, r * 0.18, -0.3, 0, TAU); c.fill(); for (let i = 0; i < 6; i++) { c.fillStyle = 'rgba(138,255,193,.5)'; circ(c, -r * 0.6 + i * r * 0.24, r * 0.5 + Math.sin(i) * r * 0.06, r * 0.035); c.fill(); } }
+  for (const s of [-1, 1]) { bossEye(c, s * r * 0.3, -r * 0.22, r * (s < 0 ? 0.16 : 0.13), rage, Math.sin(t * 0.7)); angryBrows(c, s * r * 0.3, -r * 0.42, r * 0.22 * s, 1, r * 0.06); }
+  // a big goofy grin full of wonky teeth
+  const mo = mouth ? 0.2 : 0.1;
+  c.beginPath(); c.moveTo(-r * 0.55, r * 0.08); c.quadraticCurveTo(0, r * (0.32 + mo * 2), r * 0.55, r * 0.08); c.quadraticCurveTo(0, r * 0.22, -r * 0.55, r * 0.08); fillStroke(c, '#1d1630', 4);
+  c.fillStyle = '#fff6e5'; c.lineWidth = 2; for (let i = 0; i < 6; i++) { const x = -r * 0.42 + i * r * 0.17, y = r * (0.12 + 0.08 * Math.sin((i + 0.5) / 6 * Math.PI)); c.beginPath(); c.moveTo(x - r * 0.05, y); c.lineTo(x, y + r * 0.1); c.lineTo(x + r * 0.05, y); c.closePath(); c.fill(); c.stroke(); }
+}
+function drawInkblot(c, r, t, fl, rage, mouth) {
+  // a wobbling splodge of ink with drips, an old quill stuck in it and one huge eye
+  c.save(); c.lineWidth = 6; c.strokeStyle = '#8a5a2a'; c.beginPath(); c.moveTo(r * 0.45, -r * 0.55); c.lineTo(r * 1.0, -r * 1.25); c.stroke();
+  c.lineWidth = 3; c.strokeStyle = INK; c.beginPath(); c.moveTo(r * 1.0, -r * 1.25); c.quadraticCurveTo(r * 1.25, -r * 0.95, r * 0.75, -r * 0.9); c.quadraticCurveTo(r * 1.05, -r * 1.35, r * 1.0, -r * 1.25); fillStroke(c, '#fff6e5', 3); c.restore();
+  ink(c, 5);
+  c.beginPath();
+  const n = 16;
+  for (let i = 0; i <= n; i++) { const a = i / n * TAU, k = 0.84 + 0.12 * Math.sin(i * 3.1 + t * 2.2) + 0.06 * Math.sin(i * 5.3 - t * 3.1); const x = Math.cos(a) * r * k * 1.05, y = Math.sin(a) * r * k; i ? c.lineTo(x, y) : c.moveTo(x, y); }
+  c.closePath(); fillStroke(c, fl ? '#ffffff' : '#1d1630', 5);
+  if (!fl) { for (let i = 0; i < 5; i++) { const x = (-0.6 + i * 0.3) * r, l = r * (0.25 + 0.2 * Math.sin(t * 1.5 + i * 2)); c.beginPath(); c.moveTo(x - r * 0.08, r * 0.7); c.lineTo(x - r * 0.05, r * 0.7 + l); c.arc(x, r * 0.7 + l, r * 0.05, Math.PI, 0, true); c.lineTo(x + r * 0.08, r * 0.7); fillStroke(c, '#1d1630', 3); }
+    c.fillStyle = 'rgba(255,229,138,.18)'; c.beginPath(); c.ellipse(-r * 0.3, -r * 0.45, r * 0.35, r * 0.15, -0.4, 0, TAU); c.fill(); }
+  // one huge eye with a gold rim (the weak spot), and a toothy little grin
+  c.lineWidth = 5; circ(c, 0, -r * 0.1, r * 0.32); fillStroke(c, '#fff6e5', 5);
+  c.strokeStyle = '#ffe58a'; c.lineWidth = 4; circ(c, 0, -r * 0.1, r * 0.25); c.stroke(); c.strokeStyle = INK;
+  const px = Math.sin(t * 0.9) * r * 0.08; c.fillStyle = rage ? '#ff5a5f' : '#2b2240'; circ(c, px, -r * 0.06, r * 0.14); c.fill(); c.fillStyle = '#fff'; circ(c, px - r * 0.05, -r * 0.12, r * 0.045); c.fill();
+  c.lineWidth = r * 0.07; c.beginPath(); c.moveTo(-r * 0.36, -r * 0.5); c.lineTo(-r * 0.08, -r * 0.42); c.moveTo(r * 0.36, -r * 0.5); c.lineTo(r * 0.08, -r * 0.42); c.stroke();
+  c.lineWidth = 4; c.beginPath(); c.moveTo(-r * 0.3, r * 0.38); c.quadraticCurveTo(0, r * (mouth ? 0.62 : 0.48), r * 0.3, r * 0.38); fillStroke(c, '#3b2d55', 4);
+  c.fillStyle = '#fff6e5'; c.lineWidth = 2; for (const x of [-0.16, 0, 0.16]) { c.beginPath(); c.moveTo((x - 0.05) * r, r * 0.4); c.lineTo(x * r, r * 0.48); c.lineTo((x + 0.05) * r, r * 0.4); c.fill(); c.stroke(); }
+}
+// ---- the boss's health bar and the grip timer, under the top of the HUD
+function drawGuardHUD() {
+  const R = G.R, g = R && R.guard; if (!g || g.out === 'won' && g.outT > 1.2) return;
+  const B = guardBar(), small = B.small, w = B.w, x = B.x, y = B.y, h = B.h;
+  ctx.save(); ctx.globalAlpha = clamp(g.enter * 2, 0, 1) * (g.out ? clamp(1 - g.outT / 1.2, 0, 1) : 1);
+  text(ctx, g.echo ? `${g.d.name} · rematch` : g.d.name, x + w / 2, y + 2, B.fs, g.d.col, 'center', INK, 4, 'top');
+  const by = y + (small ? 20 : 24);
+  rr(ctx, x, by, w, h, h / 2); ink(ctx, 3); fillStroke(ctx, 'rgba(43,34,64,.75)', 3);
+  const k = clamp(g.hp / g.max, 0, 1), was = clamp(guardLeft(g.id), 0, 1);
+  ctx.save(); rr(ctx, x + 3, by + 3, w - 6, h - 6, (h - 6) / 2); ctx.clip();
+  ctx.fillStyle = 'rgba(255,255,255,.18)'; ctx.fillRect(x + 3, by + 3, (w - 6) * Math.max(k, was), h - 6); // this flight's damage shows as a pale strip
+  const gr = ctx.createLinearGradient(x, 0, x + w, 0); gr.addColorStop(0, '#ff5a8a'); gr.addColorStop(1, g.d.col); ctx.fillStyle = gr; ctx.fillRect(x + 3, by + 3, (w - 6) * k, h - 6);
+  if (g.hurt > 0) { ctx.fillStyle = 'rgba(255,255,255,.45)'; ctx.fillRect(x + 3, by + 3, (w - 6) * k, h - 6); }
+  ctx.restore();
+  // grip timer on the right
+  const tl = Math.max(0, Math.ceil(g.tLeft)), hot = g.tLeft < 10 && !g.out;
+  ctx.globalAlpha *= hot && Math.sin(G.t * 10) < 0 ? 0.55 : 1;
+  text(ctx, `${tl}s`, x + w + 8, by + h / 2 + 1, small ? 13 : 15, hot ? '#ff5a5f' : '#ffffff', 'left', INK, 3);
+  text(ctx, `${Math.ceil(k * 100)}%`, x + w / 2, by + h / 2 + 1, small ? 10 : 12, '#ffffff', 'center', INK, 3);
+  ctx.restore();
+}
+
 const CHATTER = {
   generic: ['Wheee!', 'Are we there yet?', 'Best. Flight. Ever.', 'I can see my house!', 'Ooooh!', 'My ears popped!', 'Faster!', 'Is that a bird?', 'Wow, look!'],
   r0: ['...', '!!!', '...?'],
@@ -4703,7 +5485,7 @@ function updateWish(R, dt) {
     if (w && w.d.endOk && w.t > 3 && !(w.d.fail && w.d.fail(R, w))) { w.t = w.d.dur; resolveWish(R, 1); } else R.wish = null;
     return;
   }
-  const fight = R.boss && R.boss.id !== 'whale';
+  const fight = R.boss && R.boss.id !== 'whale' || R.guard || R.hold;
   if (w && fight) { R.wish = null; R.wishN--; R.wishT = rand(3, 6); return; }
   if (!w) {
     if (R.wishN >= 2 || fight || R.vy < 40) return;
@@ -4800,6 +5582,12 @@ const TIPS = {
   wrench: 'Wrenches fix one heart.',
   star: 'A lucky star! Worth a pile of coins.',
   dash: 'Dash Jets ready! Double-tap ← or → (or one side of the screen) to zip sideways. Dash right through hazards for a bonus!',
+  gloom: 'The Gloom! Grumpy soot that eats starlight. Steer under it and your Star Blaster pops it.',
+  spitter: 'A Spitter puffs out its cheeks before it spits ink at you. Dodge sideways!',
+  megaroid: 'A Megaroid! A huge gloomy rock. Keep shooting and it cracks into smaller rocks.',
+  block: 'A Gloom wall! Blast a hole through it. The cracked brick breaks fastest.',
+  blob: 'Ink blobs! Shoot them or dodge them.',
+  ball: 'Juggling balls! They bounce off the sides. Shoot them down.',
   lost: 'Lost property! Catch it and it goes back to its owner. Check Lost & Found in the trophy book.',
 };
 function tipOnce(type) {
@@ -4819,6 +5607,7 @@ function updateObstacles(dt) {
   G.warnings.length = 0;
   for (const o of G.obs) {
     if (o.dead) continue;
+    if (o.gl) { if (o.scr != null) o.vy = (G.mode === 'flight' ? R.vpy || 0 : 0) - o.scr; gloomTick(o, dt, R); if (o.dead) continue; }
     o.x += o.vx * dt; o.py += o.vy * dt; o.rot += o.vr * dt;
     if (o.hitT > 0) o.hitT -= dt;
     if (o.knock) { o.x += o.knock.x * dt; o.py += o.knock.y * dt; o.knock.x *= 0.96; o.knock.y *= 0.96; o.rot += 6 * dt; }
@@ -4871,7 +5660,7 @@ function updateObstacles(dt) {
     if (o.py < camBottom - 300 || Math.abs(o.x - G.cam.x) > vw * 1.6) { o.dead = true; continue; }
     if (!R.ended && o.py - R.py < 380 && o.py - R.py > -50 && Math.abs(o.x - G.cam.x) < vw / 2) tipOnce(o.type);
     // radar warnings for hazards above screen
-    if (st.radar && !o.harmless) {
+    if (st.radar && !o.harmless && !o.gl && !R.hold) {
       const viewTop = G.cam.py + (H * G.cam.anchor) / G.cam.z;
       const rel = o.py - viewTop;
       const closing = Math.max(60, pxv(R.vy) - o.vy);
@@ -4879,7 +5668,7 @@ function updateObstacles(dt) {
       if (rel > 0 && tta < 0.8 + st.radar * 0.5) G.warnings.push({ x: o.x, k: 1 - tta / (0.8 + st.radar * 0.5), big: o.dmg > 1 });
     }
     // near-miss bonus
-    if (!o.harmless && !o.nm && !R.crashed) {
+    if (!o.harmless && !o.nm && !R.crashed && !o.gl) {
       const dd = Math.hypot(o.x - R.x, o.py - R.py) - (o.w ? o.w * 0.45 : o.r);
       if (o.minD === undefined || dd < o.minD) o.minD = dd;
       if (o.py < R.py - 70 && o.hitT <= 0 && !o.wasHit) { o.nm = true; if (o.minD < 34 && o.minD > -5) { const v = coinValue(R.alt) * 3; R.coins += 3; R.coinCash += v; R.nearMiss = (R.nearMiss || 0) + 1; S.stats.close++; floater(R.x, R.py + 60, `CLOSE CALL! +${fmtMoney(v)}`, '#bff8ff', 17); sfx.whoosh(); if (G.slowT <= 0) { G.slow = 0.55; G.slowT = 0.16; } } }
@@ -4910,6 +5699,7 @@ function hitRocket(o, lightning) {
   o.hitT = 0.8; o.wasHit = true;
   // ram prow smashes small stuff, and so does a rocket on full afterburner
   if ((st.ram || R.abT > 0) && o.small && !lightning) {
+    if (o.gl) { R.smashed++; S.stats.smashed++; killObstacle(o, R); G.cam.shake = Math.max(G.cam.shake, 5); return; }
     o.dead = true; R.smashed++; S.stats.smashed++; sfx.smash(); if (o.type === 'crystal') sfx.chime();
     sparks(o.x, o.py, 14, ['#ffffff', '#c9ced8', '#ffd93d']); puff(o.x, o.py, 6, '#ffffff', 120);
     const v = coinValue(R.alt) * 3; R.coins += 3; R.coinCash += v; floater(o.x, o.py, `SMASH +${fmtMoney(v)}`, '#ffd93d', 16);
@@ -4921,7 +5711,7 @@ function hitRocket(o, lightning) {
   if (R.shieldOn) {
     R.shieldOn = false; R.shieldT = 0; sfx.shield(); R.invuln = 0.5;
     sparks(R.x, R.py, 18, ['#bfe9ff', '#ffffff', '#4d96ff']);
-    if (!o.cloud) o.knock = { x: (o.x - R.x) * 6, y: 200 };
+    if (o.gl) killObstacle(o, R, true); else if (!o.cloud) o.knock = { x: (o.x - R.x) * 6, y: 200 };
     floater(R.x, R.py + 50, 'BLOCKED!', '#bfe9ff');
     return;
   }
@@ -4939,7 +5729,8 @@ function hitRocket(o, lightning) {
   sparks(R.x, R.py + 20, 16);
   puff(R.x, R.py + 20, 8, '#ffffff', 140);
   floater(R.x, R.py + 60, dmg > 1 ? `-${dmg} ♥` : '-1 ♥', '#ff5a5f', 22);
-  if (!o.cloud) { o.knock = { x: (o.x - R.x) * 5 + rand(-60, 60), y: 160 }; o.vr = rand(-6, 6); }
+  if (o.gl) { o.dead = true; puff(o.x, o.py, 6, '#5b4a7a', 160); if (o.type === 'block') { sparks(o.x, o.py, 12, ['#c9a6ff', '#fff']); floater(R.x, R.py + 90, 'CRASHED THROUGH!', '#c9a6ff', 16); } }
+  else if (!o.cloud) { o.knock = { x: (o.x - R.x) * 5 + rand(-60, 60), y: 160 }; o.vr = rand(-6, 6); }
   if (o.type === 'eel') { R.stun = Math.max(R.stun || 0, 0.5); sfx.zap(); G.cam.flash = Math.max(G.cam.flash, 0.18); G.cam.flashCol = '#bfffe9'; floater(R.x, R.py + 90, 'BZZT!', '#8affc1', 18); }
   if (o.type === 'crystal') { sfx.chime(); sparks(o.x, o.py, 12, [o.hue, '#ffffff']); }
   if (o.type === 'dragonling') floater(o.x, o.py + 30, 'Boop!', '#ffd9a0', 16);
@@ -5058,6 +5849,8 @@ function endFlight(crashed) {
   const R = G.R;
   if (R.ended) return;
   R.ended = true; R.endT = 0;
+  if (R.guard && !R.guard.out) { guardSave(R.guard); R.guard.out = 'lost'; R.guard.outT = 0; R.guard.saved = true; } // quit mid-fight: the boss floats off, its damage is kept
+  R.hold = null;
   if (R.wish && !crashed) updateWish(R, 0);
   G.mode = 'ending';
   AudioSys.setEngine(0, false);
@@ -5139,6 +5932,7 @@ function shieldDims(cap) {
 function updateEnding(dt) {
   const R = G.R, r = R.ret;
   R.endT += dt;
+  if (R.guard && R.guard.out) { const g = R.guard; g.t += dt; g.outT += dt; if (g.outT > 2.2) R.guard = null; else g.pos = guardGeom(g); } // a boss left on screen floats off and fades
   updateReturn(R, dt);
   const plunging = r && r.space && r.t > RET.plunge && r.t < retMainT(r) + 0.4;
   if (R.capsule) {
@@ -5178,6 +5972,8 @@ function computeResult() {
   rows.push(['Altitude ' + fmtAlt(alt), altPay]);
   const coinPay = Math.round(R.coinCash * ctrlMul);
   rows.push([`Coins ×${R.coins}`, coinPay]);
+  if (R.killCash > 0) rows.push([`Gloom popped ×${R.kills}`, Math.round(R.killCash * ctrlMul)]);
+  if (R.guardCash) rows.push([`${R.guard && R.guard.echo ? 'Rematch bounty' : 'Bounty'}: ${GUARDS[R.guardWon].name}`, R.guardCash]);
   const cnd = CONDS[R.cond] || CONDS.clear;
   if (cnd.coinMul) rows.push([`${cnd.name}: coins +${Math.round((cnd.coinMul - 1) * 100)}%`, Math.round(coinPay * (cnd.coinMul - 1))]);
   if (cnd.altMul) rows.push([`${cnd.name}: height +${Math.round((cnd.altMul - 1) * 100)}%`, Math.round(altPay * (cnd.altMul - 1))]);
@@ -5239,8 +6035,12 @@ function computeResult() {
   if (rivalWon) badges.push('Rival beaten');
   if ((R.nearMiss || 0) >= 3) badges.push(`${R.nearMiss} close calls`);
   if (jobsPaid) badges.push(jobsPaid > 1 ? `${jobsPaid} jobs done` : 'Job done');
+  if (R.guard && !R.guard.out) guardSave(R.guard); // a crash mid-fight still keeps the damage you did
+  if (R.guardWon) badges.push('Gloom busted!');
+  { const gid = !R.guardWon && R.guard && !R.guard.echo ? R.guard.id : null; if (gid) badges.push(`${GUARDS[gid].name}: ${Math.ceil(guardLeft(gid) * 100)}% left`); }
+  if ((R.popped || 0) >= 25) badges.push(`${R.popped} Gloom popped`);
   if (R.crashed) badges.push('Kaboom');
-  G.result = { faces: R.faces, rows, total, alt, crashed: R.crashed, delivered: R.delivered, route: r, firstTime, stars, record, badges, shown: false, zone: zoneAt(alt).name, time: R.time, daily: R.daily, dailyDone: R.dailyDone, dailyPaid };
+  G.result = { guard: !R.guardWon && R.guard && !R.guard.echo ? R.guard.id : null, guardWon: R.guardWon || null, faces: R.faces, rows, total, alt, crashed: R.crashed, delivered: R.delivered, route: r, firstTime, stars, record, badges, shown: false, zone: zoneAt(alt).name, time: R.time, daily: R.daily, dailyDone: R.dailyDone, dailyPaid };
   // ---- apply to save immediately (so closing the tab does not lose the flight)
   const prevFlights = S.flights;
   S.money += total; S.earned += total; S.flights++;
@@ -5260,7 +6060,7 @@ function computeResult() {
     if (firstTime) {
       S.pendingStory = r.id;
       const nx = nextRoute(); if (nx) S.route = nx.id; else S.route = r.fr ? 'x5' : 'r7';
-      if (r.id === 'r7') S.ended = true;
+      if (r.id === 'r7') { S.ended = true; if (!lvl('blaster')) S.up.blaster = 1; } // Ada fits a Star Blaster for the trip past the Gate
     }
   }
   if (rivalWon) { S.rival = S.rival || {}; S.rival[rivalWon.id] = 1; S.pendingRival = rivalWon.id; if (rivalWon.id === 'v5') { S.met = S.met || {}; S.met.baron = Math.max(S.met.baron || 0, 30); } }
@@ -5340,12 +6140,22 @@ const ACH = [
   { id: 'rainbow', prog: () => [S.stats.rainbows || 0, 5], name: 'Pot of Gold', desc: 'Fly up through 5 rainbows', test: () => (S.stats.rainbows || 0) >= 5, reward: 1500 },
   { id: 'phase', prog: () => [S.stats.phased || 0, 5], name: 'Untouchable', desc: 'Dash straight through 5 hazards', test: () => (S.stats.phased || 0) >= 5, reward: 2500 },
   { id: 'fork', name: 'Decisions!', desc: 'Pick your first fork upgrade', test: () => UPGRADES.some(u => u.fork && lvl(u.id) > 0), reward: 500 },
+  { id: 'gloom1', name: 'Gloom Buster', desc: 'Beat your first Gloom boss', test: () => guardsBeaten() >= 1, reward: 100000 },
+  { id: 'gloom5', prog: () => [guardsBeaten(), 5], name: 'Starlight Restored', desc: 'Beat all five Gloom bosses', test: () => guardsBeaten() >= 5, reward: 2000000 },
+  { id: 'pop500', prog: () => [S.stats.popped || 0, 500], name: 'Pop Star', desc: 'Pop 500 Gloom', test: () => (S.stats.popped || 0) >= 500, reward: 300000 },
+  { id: 'cleanboss', name: 'Not a Scratch', desc: 'Beat a Gloom boss without losing a heart', test: () => (S.stats.cleanBoss || 0) >= 1, reward: 400000 },
+  { id: 'echo5', prog: () => [S.stats.echoes || 0, 5], name: 'Gloom Hunter', desc: 'Win 5 Gloom boss rematches', test: () => (S.stats.echoes || 0) >= 5, reward: 3000000 },
   { id: 'catch10', prog: () => [S.stats.catches || 0, 10], name: 'Catch of the Day', desc: 'Catch 10 boosters with the Catch Arms', test: () => (S.stats.catches || 0) >= 10, reward: 4000 },
 ];
 // ---- trophy medals: one little drawing per achievement, on a bronze, silver or gold medal
 const T_ = (t, fs = 12) => `<text x="32" y="${28 + fs * 0.36}" text-anchor="middle" font-size="${fs}" font-weight="900" font-family="Fredoka, 'Arial Rounded MT Bold', Nunito, sans-serif" fill="${INK}" stroke="none">${t}</text>`;
 const T_KM = (n, fs) => `<text x="32" y="${27.5 + fs * 0.1}" text-anchor="middle" font-size="${fs}" font-weight="900" font-family="Fredoka, 'Arial Rounded MT Bold', Nunito, sans-serif" fill="${INK}" stroke="none">${n}</text><text x="32" y="38" text-anchor="middle" font-size="7.5" font-weight="800" font-family="Fredoka, 'Arial Rounded MT Bold', Nunito, sans-serif" fill="#5b4e72" stroke="none">km</text>`;
 const ACH_SYM = {
+  gloom1: '<circle cx="31" cy="29" r="11" fill="#5b4a7a" stroke-width="2.5"/><circle cx="27" cy="28" r="2.6" fill="#fff" stroke-width="1.5"/><circle cx="35" cy="28" r="2.6" fill="#fff" stroke-width="1.5"/><path d="M24 23l5 2M38 23l-5 2M28 34q3-2 6 0" stroke-width="2"/><path d="M43 13l1.6 3.4 3.4 1.6-3.4 1.6L43 23l-1.6-3.4L38 18l3.4-1.6z" fill="#ffe58a" stroke-width="1.5"/>',
+  gloom5: '<path d="M32 15l3.2 6.4 7 1-5.1 5 1.2 7L32 31l-6.3 3.4 1.2-7-5.1-5 7-1z" fill="#ffe58a" stroke-width="2.5"/><path d="M18 38l1 2 2 1-2 1-1 2-1-2-2-1 2-1zM46 38l1 2 2 1-2 1-1 2-1-2-2-1 2-1zM32 39l1 2 2 1-2 1-1 2-1-2-2-1 2-1z" fill="#fff6c8" stroke-width="1.2"/>',
+  echo5: '<circle cx="32" cy="28" r="13" fill="none" stroke="#ff5a5f" stroke-width="2.5"/><circle cx="32" cy="28" r="7" fill="#5b4a7a" stroke-width="2"/><path d="M32 11v6M32 39v6M15 28h6M43 28h6" stroke-width="2.5"/>',
+  pop500: '<circle cx="32" cy="28" r="7" fill="#fff6c8" stroke-width="2.5"/><path d="M32 13v6M32 37v6M17 28h6M41 28h6M21 17l4 4M43 39l-4-4M43 17l-4 4M21 39l4-4" stroke="#ff5a8a" stroke-width="2.5"/>',
+  cleanboss: '<path d="M32 15l11 4v8c0 7-5 11-11 13-6-2-11-6-11-13v-8z" fill="#bfe9ff" stroke-width="2.5"/><path d="M32 33c-5-3-7-6-5-8.5 1.5-1.8 4-1 5 1 1-2 3.5-2.8 5-1 2 2.5 0 5.5-5 8.5z" fill="#ff5a5f" stroke-width="1.8"/>',
   dragonrace: '<path d="M14 40c6-2 10-8 14-14l6 4c-4 6-8 10-14 14z" fill="#7be0c0" stroke-width="2.5"/><circle cx="36" cy="22" r="8" fill="#7be0c0" stroke-width="2.5"/><circle cx="38" cy="20" r="2.4" fill="#fff" stroke-width="1.5"/><path d="M33 14l-1-6 5 4M40 14l2-6 2 6" fill="#ffd93d" stroke-width="2"/><path d="M44 28l8 2-6 4" fill="#ffd93d" stroke-width="2"/><path d="M12 22h8M10 28h7M14 16h6" stroke="#4d96ff" stroke-width="2.5"/>',
   stargazer: '<path d="M14 40L24 22 36 30 48 14" fill="none" stroke="#e0a800" stroke-width="2.5" stroke-dasharray="0"/><path d="M14 36l1.6 3.4 3.4 1.6-3.4 1.6L14 46l-1.6-3.4L9 41l3.4-1.6zM24 17l1.6 3.4 3.4 1.6-3.4 1.6L24 27l-1.6-3.4L19 22l3.4-1.6zM36 25l1.6 3.4 3.4 1.6-3.4 1.6L36 35l-1.6-3.4L31 30l3.4-1.6zM48 9l1.6 3.4 3.4 1.6-3.4 1.6L48 19l-1.6-3.4L43 14l3.4-1.6z" fill="#fff6c8" stroke-width="1.5"/>',
   atlas: '<path d="M14 16l12-4 12 4 12-4v30l-12 4-12-4-12 4z" fill="#2a1450" stroke-width="2.5"/><path d="M26 12v30M38 16v30" stroke-width="2"/><path d="M18 34l5-9 8 5 6-10 7 6" fill="none" stroke="#ffd93d" stroke-width="2"/><circle cx="18" cy="34" r="1.8" fill="#fff6c8" stroke="none"/><circle cx="23" cy="25" r="1.8" fill="#fff6c8" stroke="none"/><circle cx="31" cy="30" r="1.8" fill="#fff6c8" stroke="none"/><circle cx="37" cy="20" r="1.8" fill="#fff6c8" stroke="none"/><circle cx="44" cy="26" r="1.8" fill="#fff6c8" stroke="none"/>',
@@ -5507,7 +6317,7 @@ function viewAlt() {
 function render() {
   const alt = viewAlt();
   const abv = G.R && G.mode === 'flight' ? (G.R.abVis || 0) : 0;
-  const z = G.cam.z = worldZoom() * (1 - 0.075 * abv + 0.03 * (G.R && G.R.abKick > 0 ? Math.sin(G.R.abKick / 0.5 * Math.PI) : 0));
+  const z = G.cam.z = worldZoom() * lerp(1, combatZoom(), G.zoomK) * (1 - 0.075 * abv + 0.03 * (G.R && G.R.abKick > 0 ? Math.sin(G.R.abKick / 0.5 * Math.PI) : 0)); // past the Gate the camera pulls well back
   ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
   // ---- sky
   const [top, bot] = skyColors(alt);
@@ -5532,12 +6342,16 @@ function render() {
   drawStationAndRecord();
   for (const p of G.parts) if (p.k === 'smoke' || p.k === 'glow' || p.k === 'line') drawParticle(p);
   for (const p of G.picks) if (p.type === 'rainbow') drawPickup(p);
+  drawGuard();
   for (const o of G.obs) drawObstacle(o);
   for (const p of G.picks) if (p.type !== 'rainbow') drawPickup(p);
   drawGhostRocket();
   drawRivalRocket();
   drawBoss();
+  drawShots();
+  drawWingDrones();
   drawPlayerRocket();
+  drawNovaRing();
   for (const p of G.parts) if (!(p.k === 'smoke' || p.k === 'glow' || p.k === 'line')) drawParticle(p);
   for (const f of G.floaters) { const a = 1 - clamp((f.t - 0.6) / 0.5, 0, 1); ctx.globalAlpha = a; text(ctx, f.s, f.x, -f.py - f.t * 40, f.size * (f.t < 0.12 ? 0.6 + f.t * 3.3 : 1), f.col); ctx.globalAlpha = 1; }
   // ---- screen space
@@ -6689,6 +7503,7 @@ function drawObstacleShape(c, o, t) {
     case 'eel': drawEel(c, o, t); break;
     case 'dragonling': drawDragonling(c, o, t); break;
     case 'fireball': drawFireball(c, o, t); break;
+    case 'gloom': case 'spitter': case 'megaroid': case 'rock': case 'pebble': case 'block': case 'blob': case 'ball': drawGloomObs(c, o, t); break;
   }
 }
 function drawPickup(p) {
@@ -6729,6 +7544,11 @@ function drawParticle(p) {
   else if (p.k === 'goo') { ctx.globalAlpha = 1 - k; ctx.translate(p.x, -p.py); const r = p.r * (1 + k * 0.5), w = 1 + 0.18 * Math.sin(p.t * 12 + p.rot); ctx.scale(w, 2 - w); ink(ctx, 2); circ(ctx, 0, 0, r); fillStroke(ctx, p.col, 2); ctx.fillStyle = 'rgba(255,255,255,.75)'; circ(ctx, -r * 0.35, -r * 0.35, r * 0.25); ctx.fill(); }
   else if (p.k === 'doub') { ctx.globalAlpha = 1 - k * k; ctx.translate(p.x, -p.py); const sq = Math.abs(Math.cos(p.t * 9 + p.r)); ink(ctx, 2); ctx.beginPath(); ctx.ellipse(0, 0, p.r * Math.max(0.15, sq), p.r, 0, 0, TAU); fillStroke(ctx, '#ffd93d', 2); if (sq > 0.5) { ctx.strokeStyle = '#e0a800'; ctx.beginPath(); ctx.ellipse(0, 0, p.r * sq * 0.55, p.r * 0.55, 0, 0, TAU); ctx.stroke(); } }
   else if (p.k === 'feather') { ctx.globalAlpha = 1 - k; ctx.translate(p.x, -p.py); ctx.rotate(p.rot); ink(ctx, 2); ctx.beginPath(); ctx.ellipse(0, 0, 7, 3, 0, 0, TAU); fillStroke(ctx, p.col, 2); }
+  else if (p.k === 'freed') {
+    ctx.globalAlpha = 1 - clamp((k - 0.6) / 0.4, 0, 1); ctx.translate(p.x, -p.py); ctx.rotate(Math.sin(p.t * 4 + p.rot) * 0.3);
+    const r = p.r * (0.6 + 0.4 * Math.min(1, k * 5)); ctx.beginPath(); for (let j = 0; j < 10; j++) { const a = -Math.PI / 2 + j / 10 * TAU, rr2 = j % 2 ? r * 0.48 : r; ctx.lineTo(Math.cos(a) * rr2, Math.sin(a) * rr2); } ctx.closePath(); ink(ctx, 2); fillStroke(ctx, '#ffe58a', 2);
+    ctx.fillStyle = INK; circ(ctx, -r * 0.2, -r * 0.04, r * 0.09); ctx.fill(); circ(ctx, r * 0.2, -r * 0.04, r * 0.09); ctx.fill(); ctx.lineWidth = 1.5; ctx.beginPath(); ctx.arc(0, r * 0.08, r * 0.2, 0.25, Math.PI - 0.25); ctx.stroke();
+  }
   else if (p.k === 'debris') {
     ctx.globalAlpha = 1 - clamp((k - 0.7) / 0.3, 0, 1); ctx.translate(p.x, -p.py); ctx.rotate(p.rot); ink(ctx, 3);
     const sc = G.rocketScale;
@@ -6753,6 +7573,7 @@ function updateParticles(dt) {
     else if (p.k === 'shell') { p.vy -= 260 * dt; if (p.t + dt >= p.life && !p.popped) { p.popped = 1; burst(p); } }
     else if (p.k === 'heart' || p.k === 'star4' || p.k === 'bubble' || p.k === 'goo') { p.vx *= 0.95; p.vy *= 0.95; p.vy += 30 * dt; }
     else if (p.k === 'cstar') { p.vx *= 0.97; p.vy *= 0.97; }
+    else if (p.k === 'freed') { p.vx *= 0.95; p.vy = p.vy * 0.95 + 60 * dt; }
     else if (p.k === 'doub') { p.vx *= 0.95; p.vy *= 0.95; p.vy -= 60 * dt; }
   }
   G.parts = G.parts.filter(p => p.t < p.life);
@@ -7218,6 +8039,7 @@ function drawHUD() {
     ctx.restore();
   }
   if (R.stun > 0) text(ctx, 'ZAPPED!', W / 2, H * 0.3, 28, '#fff36b');
+  if (R.guard) drawGuardHUD();
 }
 function drawJobsHUD(R, small, pad) {
   const fs = small ? 11 : 13, lh = small ? 19 : 23, bx = fs * 1.35;
@@ -7263,6 +8085,7 @@ function drawProgressTrack() {
   for (const zz of ZONES) { if (zz.alt <= start || zz.alt > maxA) continue; const yy = toY(zz.alt); ctx.strokeStyle = 'rgba(255,255,255,.6)'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(x - 10, yy); ctx.lineTo(x + 10, yy); ctx.stroke(); }
   if (S.bestAlt > start) { const yy = toY(S.bestAlt); ink(ctx, 2.5); ctx.beginPath(); ctx.moveTo(x - 4, yy); ctx.lineTo(x - 20, yy); ctx.stroke(); ctx.beginPath(); ctx.moveTo(x - 20, yy); ctx.lineTo(x - 20, yy - 14); ctx.lineTo(x - 32, yy - 10); ctx.lineTo(x - 20, yy - 6); fillStroke(ctx, '#ffd93d', 2.5); }
   if (r) { const yy = toY(r.alt); ctx.save(); ctx.translate(x, yy); ink(ctx, 3); circ(ctx, 0, 0, 11); fillStroke(ctx, R.docked ? '#5fd068' : '#ffffff', 3); text(ctx, R.docked ? '✓' : '★', 0, 1, 12, INK, 'center', null); ctx.restore(); if (!small) text(ctx, fmtAlt(r.alt), x - 18, yy, 12, '#fff', 'right'); }
+  { const ga = !R.guard && !R.guardWon ? guardAhead() : null; if (ga) { const yy = toY(guardAlt(ga)); ctx.save(); ctx.translate(x - (small ? 20 : 24), yy); ctx.scale(small ? 0.32 : 0.38, small ? 0.32 : 0.38); drawGloomBody(ctx, 26, G.t, {}); ctx.restore(); } }
   if (R.daily) { const yy = toY(R.daily.target); ctx.save(); ctx.translate(x, yy); ink(ctx, 3); circ(ctx, 0, 0, 13); fillStroke(ctx, R.dailyDone ? '#5fd068' : '#ffd6e6', 3); if (R.dailyDone) text(ctx, '✓', 0, 1, 12, INK, 'center', null); else drawParcel(ctx, 0.4); ctx.restore(); if (!small) text(ctx, fmtAlt(R.daily.target), x - 18, yy, 12, '#fff', 'right'); }
   const gp = G.ghost && G.mode === 'flight' ? ghostAt(G.ghost, R.time) : null;
   if (G.rival && !R.rivalBeat && G.mode === 'flight') { const yy = toY(G.rival.alt); ctx.save(); ctx.translate(x + (small ? 18 : 22), yy); ink(ctx, 2.5); circ(ctx, 0, 0, small ? 9 : 10); fillStroke(ctx, '#3a3554', 2.5); drawFace(ctx, 'baron', small ? 6 : 7, 'happy', G.t); ctx.restore(); }
@@ -7275,6 +8098,8 @@ function drawProgressTrack() {
 function boostBtnPos() { const small = W < 600; return { x: W - (small ? 78 : 110), y: H - (small ? 78 : 96), r: small ? 44 : 50 }; }
 function drawBoostButton() {
   const R = G.R, st = G.st, b = boostBtnPos();
+  const nv = st.gun && st.gun.nova && R.alt >= GATE_ALT && (R.hold || (R.fuel <= 0 && R.dropFuel <= 0) || R.abCd > 0) && R.abT <= 0;
+  if (nv) { drawNovaButton(R, st, b); return; }
   const ready = R.abCd <= 0 && (R.fuel > 0 || R.dropFuel > 0), on = R.abT > 0;
   ctx.save(); ink(ctx, 4);
   if (on || ready) { // a glow: pulsing when ready, blazing while it burns
@@ -7287,6 +8112,17 @@ function drawBoostButton() {
   else if (!ready && R.abCd > 0) { ctx.strokeStyle = '#ffd93d'; ctx.lineWidth = 6; ctx.beginPath(); ctx.arc(b.x, b.y, b.r - 8, -Math.PI / 2, -Math.PI / 2 + TAU * (1 - R.abCd / (st.ab.cd + st.ab.dur))); ctx.stroke(); }
   text(ctx, 'BOOST', b.x, b.y - 4, b.r * 0.36, '#fff');
   text(ctx, W > 700 ? 'SPACE' : '', b.x, b.y + b.r * 0.38, b.r * 0.22, '#ffd93d', 'center', INK, 3);
+  ctx.restore();
+}
+function drawNovaButton(R, st, b) { // past the Gate with an empty tank, BOOST becomes NOVA
+  const ready = !(R.novaCd > 0), cd = novaCdOf(st.gun.nova);
+  ctx.save(); ink(ctx, 4);
+  if (ready) { const gr = b.r * (1.35 + Math.sin(G.t * 5) * 0.06), g = ctx.createRadialGradient(b.x, b.y, b.r * 0.8, b.x, b.y, gr); g.addColorStop(0, 'rgba(255,138,208,.45)'); g.addColorStop(1, 'rgba(255,138,208,0)'); ctx.fillStyle = g; circ(ctx, b.x, b.y, gr); ctx.fill(); }
+  circ(ctx, b.x, b.y + 5, b.r); ctx.fillStyle = INK; ctx.fill();
+  circ(ctx, b.x, b.y + (G.input.boostPressed ? 4 : 0), b.r); fillStroke(ctx, ready ? '#ff5a8a' : '#8a7f9a', 4);
+  if (!ready) { ctx.strokeStyle = '#ffe58a'; ctx.lineWidth = 6; ctx.beginPath(); ctx.arc(b.x, b.y, b.r - 8, -Math.PI / 2, -Math.PI / 2 + TAU * (1 - R.novaCd / cd)); ctx.stroke(); }
+  text(ctx, 'NOVA', b.x, b.y - 4, b.r * 0.36, '#fff');
+  text(ctx, W > 700 ? 'SPACE' : '', b.x, b.y + b.r * 0.38, b.r * 0.22, '#ffe58a', 'center', INK, 3);
   ctx.restore();
 }
 function drawLaunchGauge() {
@@ -7321,6 +8157,7 @@ function drawBanners() {
   const compactB = W < 600 || H < 520;
   let yAcc = Math.max(H * 0.3, W < 600 ? Math.max(126, G.hudB || 0) + 82 : H < 520 ? 140 : 0); // phones: below the tips; landscape: below the coins and faces
   const bs = G.R && G.R.boss;
+  if (G.R && G.R.guard && guardFlat()) yAcc = Math.max(yAcc, guardBar().bot + 44); // landscape: titles go under the Gloom boss bar
   if (bs && /^(storm|pirates|bandit|gobble)$/.test(bs.id) && H >= 520) { // bosses that hover up top: titles go under them, not across their face
     const u = G.cam.z, tgt = bs.id === 'gobble' ? gobbleY(u) : Math.min(Math.max(H * 0.2, 120 + 70 * u), H * G.cam.anchor - 240 * u);
     yAcc = Math.min(Math.max(yAcc, tgt + (bs.id === 'gobble' ? 96 * gobbleS(u) : 92 * u)), H * 0.44);
@@ -7928,7 +8765,8 @@ const UI = (() => {
       else if (!mystery) {
         meta.innerHTML = `<span class="chip alt">${fmtAlt(r.alt)}</span>` +
           (r.pax ? `<span class="chip pax ${!px.ok ? 'warn' : ''}">${done ? `up to ${r.pax * 2}` : r.pax} passenger${r.pax > 1 || done ? 's' : ''}${!px.ok ? ` · need ${r.pax} seats` : ''}</span>` : '<span class="chip pax">Buckley</span>') +
-          (done ? `<span class="chip ok">Done · ${fmtMoney(r.fare)}/seat</span>` : `<span class="chip pay">${fmtMoney(r.reward)} bonus</span>`);
+          (done ? `<span class="chip ok">Done · ${fmtMoney(r.fare)}/seat</span>` : `<span class="chip pay">${fmtMoney(r.reward)} bonus</span>`) +
+          (r.fr && GUARDS[r.id] && combatOn() && unlocked ? (guardBeaten(r.id) ? `<span class="chip ok">${GUARDS[r.id].name} busted</span>` : `<span class="chip boss">Guarded by ${GUARDS[r.id].name}${guardLeft(r.id) < 1 ? ` · ${Math.ceil(guardLeft(r.id) * 100)}% left` : ''}</span>`) : '');
         main.appendChild(meta);
         main.appendChild(el('div', 'r-desc', unlocked ? r.desc : 'Deliver the previous route to unlock.'));
       } else main.appendChild(el('div', 'r-desc', 'Somewhere further up...'));
@@ -8032,9 +8870,9 @@ const UI = (() => {
       const got = guideSeen(g); if (got) seen++;
       const card = el('div', 'route' + (got ? '' : ' locked'));
       const ico = el('div', 'r-ico'); ico.appendChild(guideIcon(g, !got)); card.appendChild(ico);
-      const beaten = g.boss && S.stats[g.stat] > 0;
+      const beaten = g.boss ? S.stats[g.stat] > 0 : g.guard ? guardBeaten(g.guard) : false;
       const fresh = got && !S.seen[guideKey(g)];
-      const chips = got ? `<span class="chip ${beaten ? 'ok' : 'pay'}">${g.boss ? (beaten ? 'Beaten!' : 'Boss') : 'Spotted'}</span>${fresh ? '<span class="chip ok">New!</span>' : ''}` : '';
+      const chips = got ? `<span class="chip ${beaten ? 'ok' : 'pay'}">${g.boss || g.guard ? (beaten ? 'Beaten!' : g.guard ? 'Gloom boss' : 'Boss') : 'Spotted'}</span>${fresh ? '<span class="chip ok">New!</span>' : ''}` : '';
       card.appendChild(el('div', 'r-main', `<div class="r-name">${got ? g.name : '???'}</div><div class="r-desc">${got ? g.desc : (guideMinAlt(g) > 0 ? 'Not spotted yet. Lives above ' + fmtAlt(guideMinAlt(g)) + '.' : 'Not spotted yet. Lives near the ground.')}</div><div class="r-meta">${chips}</div>`));
       list.appendChild(card);
     }
@@ -8456,7 +9294,8 @@ const UI = (() => {
     const gEl = $('res-goal'); gEl.innerHTML = '';
     const nr = nextRoute();
     let label = '', k = 0;
-    if (res.daily && !res.dailyDone) { label = `<b>Daily special</b>: ${fmtAlt(res.alt)} of ${fmtAlt(res.daily.target)}`; k = res.alt / res.daily.target; }
+    if (res.guard) { const d = GUARDS[res.guard], left = guardLeft(res.guard); label = `<b>${d.name}</b>: ${Math.ceil(left * 100)}% left. The damage stays, so it’s weaker next time!`; k = 1 - left; }
+    else if (res.daily && !res.dailyDone) { label = `<b>Daily special</b>: ${fmtAlt(res.alt)} of ${fmtAlt(res.daily.target)}`; k = res.alt / res.daily.target; }
     else if (res.route && !res.delivered && !routeDone(res.route.id)) { label = `<b>${res.route.to}</b>: ${fmtAlt(res.alt)} of ${fmtAlt(res.route.alt)}`; k = res.alt / res.route.alt; }
     else if (nr) { label = `Next up: <b>${nr.to}</b> at ${fmtAlt(nr.alt)}${nr.pax ? ` · ${nr.pax}\u00a0seat${nr.pax > 1 ? 's' : ''}` : ''}`; k = S.bestAlt / nr.alt; }
     else { label = `Record: <b>${fmtAlt(S.bestAlt)}</b>`; k = res.alt / Math.max(1, S.bestAlt); }
@@ -8515,6 +9354,7 @@ const UI = (() => {
     const lines = [];
     if (S.pendingFirst) { S.pendingFirst = false; lines.push(...STORY.firstFlight); }
     if (S.pendingLine) { S.pendingLine = false; lines.push(...STORY.newline); }
+    if (S.pendingGuard) { lines.push(...(STORY['g_' + S.pendingGuard] || [])); S.pendingGuard = null; }
     if (S.pendingStory) { if ((S.line || 1) === 1 || S.pendingStory === 'r7') lines.push(...(STORY[S.pendingStory] || [])); S.pendingStory = null; }
     if (S.pendingCrash) { S.pendingCrash = false; S.seen.crash = 1; lines.push(...STORY.crash); }
     if (S.pendingSpace) { S.pendingSpace = false; lines.push(...STORY.space); }
@@ -8534,6 +9374,7 @@ const UI = (() => {
     if (S.pendingRival) { const c = RIVAL.find(x => x.id === S.pendingRival); S.pendingRival = null; if (c) lines.push(...c.lose); }
     { const rc = rivalCur(); if (rc && !S.seen['rival_' + rc.id] && lines.length < 6 && S.flights >= 2) { S.seen['rival_' + rc.id] = 1; lines.push(...rc.intro); } }
     if (frontierOpen() && !S.seen.frontier && S.seen.endCredits && !lines.length) { S.seen.frontier = 1; lines.push(...STORY.frontier); }
+    if (combatOn() && S.seen.frontier && !S.seen.gloom && lines.length < 4) { S.seen.gloom = 1; lines.push(...STORY.gloom); }
     if (townOpen() && !S.seen.town && !lines.length) { S.seen.town = 1; lines.push(...STORY.town); }
     if (lvl('statue') > 0 && !S.seen.statue && !lines.length) { S.seen.statue = 1; lines.push(...STORY.statue); confetti(TOWN_SPOTS.statue, 260, 80); }
     if (chartedN() >= STAR_CHARTS.length && !S.seen.atlas && !lines.length) { S.seen.atlas = 1; S.seen.stars1 = 1; lines.push(...STORY.atlas); confetti(0, 220, 90); }
@@ -8772,7 +9613,7 @@ function update(dt) {
   // music by altitude
   if ((G.mode === 'flight' || G.mode === 'ending') && G.R) { // flight -> space -> deep as you climb (never back down), boss gallop during a fight
     const R = G.R; R.musTier = Math.max(R.musTier || 0, R.alt > 110000 ? 2 : R.alt > 12000 ? 1 : 0);
-    const fight = R.boss && R.boss.id !== 'whale' && G.mode === 'flight' && !R.boss.paid;
+    const fight = (R.boss && R.boss.id !== 'whale' && G.mode === 'flight' && !R.boss.paid) || (R.guard && !R.guard.out && G.mode === 'flight');
     const want = fight ? 'boss' : ['flight', 'space', 'deep'][R.musTier];
     if (Music.current !== want && ['flight', 'space', 'deep', 'boss'].includes(Music.current)) Music.play(want);
   }
@@ -8817,6 +9658,13 @@ function botSteer() {
     const dx = o.x - R.x; const rad = (o.w ? o.w * 0.5 : o.r) + 50;
     if (Math.abs(dx) < rad) push += (dx > 0 ? -1 : 1) * (1 - dy / 420) * 3;
   }
+  if (Math.abs(push) < 0.3 && G.st.gun && R.alt >= GATE_ALT) { // line up under the Gloom (or the boss) to shoot it
+    let tx = null;
+    if (R.guard && R.guard.enter >= 1 && !R.guard.out) tx = R.guard.pos.x;
+    else { let bd = 1e9; for (const o of G.obs) { if (o.dead || !(o.hp > 0) || o.shot) continue; const dy = o.py - R.py; if (dy < 120 || dy > 900) continue; const d = Math.abs(o.x - R.x) + dy * 0.3; if (d < bd) { bd = d; tx = o.x; } } }
+    if (tx != null) push = clamp((tx - R.x) / 60, -1, 1);
+  }
+  if (G.st.gun && G.st.gun.nova && !(R.novaCd > 0) && R.alt >= GATE_ALT && G.obs.some(o => !o.dead && o.gl && Math.hypot(o.x - R.x, o.py - R.py) < 260)) tryAfterburner();
   if (Math.abs(push) < 0.3) { // drift toward coins/rings
     let best = null, bd = 1e9;
     for (const p of G.picks) { const dy = p.py - R.py; if (dy < 0 || dy > 500) continue; const d = Math.abs(p.x - R.x) + dy * 0.5; if (d < bd) { bd = d; best = p; } }
@@ -8829,6 +9677,7 @@ function botSteer() {
 
 // ================================================================ BOOT
 loadSave();
+if (routeDone('r7') && !lvl('blaster')) S.up.blaster = 1; // saves from before the Arsenal: Ada fits the Star Blaster
 if (!S.mailGot && S.flights > 0) { S.mailGot = {}; S.mail = []; const due = MAIL.filter(m => { try { return m.when(); } catch (e) { return false; } }); for (const m of due) S.mailGot[m.id] = 1; const last = due.filter(m => ROUTES.some(r => r.id === m.id)).pop(); if (last) S.mail.push(last.id); }
 if (!S.met) { S.met = {}; for (const r of ROUTES) if (routeDone(r.id)) for (const f of (r.pax ? r.who.slice(0, r.pax) : ['buckley'])) S.met[f] = 1; }
 resize();
@@ -8868,7 +9717,8 @@ requestAnimationFrame(frame);
 
 // debug / test hooks
 window.__skyhop = {
-  G, DEBUG, RIVAL, SKY_EVENTS, BOSSES, get S() { return S; }, computeStats, simulateFlight, UPGRADES, ROUTES, UP, art: { drawStation, routeIconCanvas, drawFace, makePostcard, guideIcon, GUIDE },
+  G, DEBUG, RIVAL, SKY_EVENTS, BOSSES, get S() { return S; }, w2s, computeStats, simulateFlight, UPGRADES, ROUTES, UP, art: { drawStation, routeIconCanvas, drawFace, makePostcard, guideIcon, GUIDE },
+  guardNow(id, echo) { if (G.R && G.mode === 'flight') { G.R.guardSeen = false; startGuard(G.R, routeById(id), !!echo); } },
   set bot(v) { DEBUG.bot = v; }, set timeScale(v) { DEBUG.timeScale = v; }, set season(v) { DEBUG.season = v; },
   setMoney(v) { S.money = v; if (UI.current === 'hangar') UI.refresh(); },
   setLevel(id, l) { S.up[id] = l; G.look = rocketLook(); G.st = computeStats(); if (UI.current === 'hangar') UI.refresh(); },
